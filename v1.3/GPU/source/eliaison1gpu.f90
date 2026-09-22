@@ -223,6 +223,7 @@ subroutine eliaison1cu
       &,x_,y_,z_,x,y,z,loc,iuse&
       &,n,nbloc,siz,useAll,grx,gry,grz,grtx,grty,grtz&
       &,ered_buf1,vred_buff&
+      &,use_virial&
       &)
    call check_launch_kernel("<eliaison1_kcu>")
 !$acc end host_data

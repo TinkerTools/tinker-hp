@@ -11,7 +11,9 @@
 !
 #include "tinker_macro.h"
 module interfaces
+   use config, only: config_t, raw_cli_t
    use iso_c_binding ,only: c_int,c_float,c_double
+   use status, only: status_t
 #ifdef _OPENACC
    use cudafor ,only:cuda_stream_kind
 #endif
@@ -105,6 +107,33 @@ module interfaces
 
    integer ProgramID
 
+   interface
+      subroutine field(config_defaults_only)
+         logical, intent(in) :: config_defaults_only
+      end subroutine
+      subroutine initial(raw_cli)
+         import :: raw_cli_t
+         type(raw_cli_t), intent(in), optional :: raw_cli
+      end subroutine
+      subroutine getxyz(key_is_loaded)
+         logical, intent(in), optional :: key_is_loaded
+      end subroutine
+      subroutine get_xyz_filename(xyzfile, key_is_loaded)
+         character(len=240), intent(inout) :: xyzfile
+         logical, intent(in), optional :: key_is_loaded
+      end subroutine
+      subroutine mechanic(configuration, status_value)
+         import :: config_t, status_t
+         type(config_t), intent(inout), optional :: configuration
+         type(status_t), intent(out), optional :: status_value
+      end subroutine
+      subroutine prtxyz(ixyz,x_frame,y_frame,z_frame,atom_count_frame)
+         integer, intent(in) :: ixyz
+         real(r_p), optional, intent(in) :: x_frame(:),y_frame(:),z_frame(:)
+         integer, optional, intent(in) :: atom_count_frame
+      end subroutine
+   end interface
+
 
 !  #############################################################################
 !  SECTION
@@ -194,7 +223,7 @@ module interfaces
       end subroutine
       subroutine tmatxb_gen( X,h,shortRange )
          logical   ,intent(in) :: shortRange
-         real(t_p) ,intent(in) :: X(:,:,:)
+         real(t_p) ,intent(inout) :: X(:,:,:)
          real(t_p) ,intent(out):: h(:,:,:)
       end subroutine
       subroutine tmatxb_pme_core1(mu,efi)

@@ -547,7 +547,6 @@ subroutine vdw_scalingnl
       &xbegproc,ybegproc,zbegproc,&
       &xendproc,yendproc,zendproc
 #ifdef _OPENACC
-   use utilcu ,only: cu_update_skipvdw12
 #endif
    use inform ,only: deb_Path,tindPath
    use mpi
@@ -591,7 +590,6 @@ subroutine vdw_scalingnl
 
    skipvdw12 = merge(.true.,.false.,v2scale.eq.0.0_ti_p)
 #ifdef _OPENACC
-   call cu_update_skipvdw12(skipvdw12)
 #endif
 
 !$acc serial async

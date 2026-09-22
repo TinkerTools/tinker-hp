@@ -9,21 +9,23 @@
 !
 !
 attributes(global) subroutine __Cat(emreal,__sufx__)&
-   &( ipole, pglob, loc, ieblst, eblst&
-   &, npolelocnlb, npolelocnlb_pair, npolebloc, n&
-   &, x, y, z, rpole&
-   &, shortheal, scut, loff2, off2, f&
-   &, alsq2, alsq2n, aewald&
-   &, ugrp, grplist, wgrp&
-   &, ulamdyn, elambda, mut, u_cflx, pot&
-   &, dem, tem, em_buff, vir_buff, lam_buff, nem_buff&
-   &, p_xbeg,p_xend,p_ybeg,p_yend,p_zbeg,p_zend&
-   &, mcorrect_ik,mcorrect_scale,ipole_,loc_,x_,y_,z_&
-   &, n_mscale&
-   &)
+    ( ipole, pglob, loc, ieblst, eblst&
+    , npolelocnlb, npolelocnlb_pair, npolebloc, n&
+    , x, y, z, rpole&
+    , shortheal, scut, loff2, off2, f&
+    , alsq2, alsq2n, aewald&
+    , ugrp, grplist, wgrp&
+    , ulamdyn, elambda, mut, u_cflx, pot&
+    , dem, tem, em_buff, vir_buff, lam_buff, nem_buff&
+    , p_xbeg,p_xend,p_ybeg,p_yend,p_zbeg,p_zend&
+    , mcorrect_ik,mcorrect_scale,ipole_,loc_,x_,y_,z_&
+    , n_mscale&
+    , nproc,ngrp&
+    )
 implicit none
 integer  ,value :: npolelocnlb,npolebloc,n&
    &,npolelocnlb_pair,n_mscale
+integer  ,value :: nproc,ngrp
 logical  ,value :: ugrp,ulamdyn,u_cflx
 real(t_p),value,intent(in):: p_xbeg,p_xend,p_ybeg,p_yend&
    &,p_zbeg,p_zend,loff2,shortheal,elambda&

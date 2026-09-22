@@ -267,7 +267,7 @@ subroutine analysis (energy)
 !
 !     MPI : get total energy
 !
-   if (rank.eq.0) then
+   if (nproc.gt.1.and.rank.eq.0) then
       call MPI_REDUCE(MPI_IN_PLACE,ec,1,MPI_RPREC,MPI_SUM,0,&
          &COMM_TINKER,ierr)
       call MPI_REDUCE(MPI_IN_PLACE,nec,1,MPI_INT,MPI_SUM,0,&
@@ -366,7 +366,7 @@ subroutine analysis (energy)
          &COMM_TINKER,ierr)
       call MPI_REDUCE(MPI_IN_PLACE,nemlpot,1,MPI_INT,MPI_SUM,0,&
          &COMM_TINKER,ierr)
-   else
+   else if (nproc.gt.1) then
       call MPI_REDUCE(ec,ec,1,MPI_RPREC,MPI_SUM,0,&
          &COMM_TINKER,ierr)
       call MPI_REDUCE(nec,nec,1,MPI_INT,MPI_SUM,0,&

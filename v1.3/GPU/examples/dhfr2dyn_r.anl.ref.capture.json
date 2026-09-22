@@ -1,0 +1,143 @@
+{
+  "build_report": {
+    "bytes": 1995,
+    "path": "/pik/tinker-hp/pmegpu/build/gpu-sm75-double-make/tinkerhp-build-report.txt",
+    "sha256": "c20deb07294a5c87aac042de1fdf139de312545130bd58a10a7063348a0009b4"
+  },
+  "command": [
+    "/opt/nvidia/hpc_sdk/Linux_x86_64/24.7/comm_libs/mpi/bin/mpirun",
+    "-n",
+    "1",
+    "/pik/tinker-hp/pmegpu/build/gpu-sm75-double-make/bin/analyze.gpu",
+    "dhfr2dyn",
+    "-k",
+    "dhfr2dyn_r",
+    "E"
+  ],
+  "configuration": {
+    "backend": "GPU",
+    "build_features": {
+      "Colvars enabled": false,
+      "Deep-HP NN enabled": false,
+      "FPA enabled": true,
+      "NVTX enabled": false,
+      "No-mutation enabled": false,
+      "Orthogonal-box-only enabled": false,
+      "PLUMED enabled": false
+    },
+    "features": [],
+    "precision": "DOUBLE"
+  },
+  "environment": {
+    "gpu": {
+      "command": [
+        "/usr/bin/nvidia-smi",
+        "--query-gpu=name,uuid,driver_version",
+        "--format=csv,noheader"
+      ],
+      "output": "Quadro RTX 3000, GPU-2decf55b-beb1-27c4-9796-08589d004cb1, 580.159.03",
+      "returncode": 0
+    },
+    "hostname": "vilya.emc2.jussieu.fr",
+    "mpi": {
+      "command": [
+        "/opt/nvidia/hpc_sdk/Linux_x86_64/24.7/comm_libs/mpi/bin/mpirun",
+        "--version"
+      ],
+      "output": "mpirun (Open MPI) 4.1.5\n\nReport bugs to http://www.open-mpi.org/community/help/",
+      "returncode": 0
+    },
+    "platform": "Linux-6.8.0-124-generic-x86_64-with-glibc2.35",
+    "python": "3.10.12",
+    "variables": {
+      "LD_LIBRARY_PATH": "/opt/nvidia/hpc_sdk/Linux_x86_64/24.7/comm_libs/nvshmem/lib:/opt/nvidia/hpc_sdk/Linux_x86_64/24.7/comm_libs/nccl/lib:/opt/nvidia/hpc_sdk/Linux_x86_64/24.7/comm_libs/mpi/lib:/opt/nvidia/hpc_sdk/Linux_x86_64/24.7/math_libs/lib64:/opt/nvidia/hpc_sdk/Linux_x86_64/24.7/compilers/lib:/opt/nvidia/hpc_sdk/Linux_x86_64/24.7/compilers/extras/qd/lib:/opt/nvidia/hpc_sdk/Linux_x86_64/24.7/cuda/extras/CUPTI/lib64:/opt/nvidia/hpc_sdk/Linux_x86_64/24.7/cuda/lib64:/opt/nvidia/hpc_sdk/Linux_x86_64/24.7/cuda/12.5/targets/x86_64-linux/lib",
+      "PATH": "/home/regis/.codex/packages/standalone/releases/0.144.3-x86_64-unknown-linux-musl/codex-path:/home/regis/.local/bin:/home/regis/.codex/tmp/arg0/codex-arg0R3qaPC:/home/regis/.codex/packages/standalone/releases/0.144.3-x86_64-unknown-linux-musl/codex-path:/home/regis/.local/bin:/home/regis/pyLLM/bin:/home/regis/.local/bin:/opt/nvidia/hpc_sdk/Linux_x86_64/24.7/compilers/extras/qd/bin:/opt/nvidia/hpc_sdk/Linux_x86_64/24.7/comm_libs/mpi/bin:/opt/nvidia/hpc_sdk/Linux_x86_64/24.7/compilers/bin:/opt/nvidia/hpc_sdk/Linux_x86_64/24.7/cuda/bin:/home/regis/.local/bin:/home/regis/pyLLM/bin:/home/regis/.nvm/versions/node/v20.20.2/bin:/home/regis/.local/bin:/usr/share/Modules/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/games:/usr/local/games:/snap/bin"
+    }
+  },
+  "executable": {
+    "bytes": 60237840,
+    "path": "/pik/tinker-hp/pmegpu/build/gpu-sm75-double-make/bin/analyze.gpu",
+    "sha256": "edbe7627a5bdae7347199f93535bca887f5d6684232d222bb972e81b4da39d14"
+  },
+  "gates": {
+    "functional": {
+      "reason": "process completed with the maintained normal-termination marker",
+      "returncode": 0,
+      "status": "PASS"
+    },
+    "reference_precision": {
+      "minimum_decimal_places": 8,
+      "reason": "printed reference resolution is finer than the required threshold",
+      "status": "PASS",
+      "threshold": "1E-12",
+      "worst_relative_resolution": "7.386712106237081769393082268E-14"
+    },
+    "scientific_energy": {
+      "candidate": "-67689.11429184",
+      "reason": "Total Potential Energy is within threshold",
+      "reference": "-67689.11429184",
+      "relative_error": "0",
+      "status": "PASS",
+      "threshold": "1E-12"
+    }
+  },
+  "input": {
+    "fixtures": {
+      "dhfr2dyn.dyn": {
+        "bytes": 7444729,
+        "path": "/pik/tinker-hp/pmegpu/examples/dhfr2dyn.dyn",
+        "sha256": "4ecdc535fadc3cddb9b14980a4aa2c48487585bad3b5bbc805c37ef77fea30b9"
+      },
+      "dhfr2dyn.ref": {
+        "bytes": 7444729,
+        "path": "/pik/tinker-hp/pmegpu/examples/dhfr2dyn.ref",
+        "sha256": "4ecdc535fadc3cddb9b14980a4aa2c48487585bad3b5bbc805c37ef77fea30b9"
+      },
+      "dhfr2dyn.xyz": {
+        "bytes": 1471024,
+        "path": "/pik/tinker-hp/pmegpu/examples/dhfr2dyn.xyz",
+        "sha256": "400ee0adc3f46d6ba174c6d2feb8bbbb6d528c55038205b1fd9a476f02b7e9ce"
+      },
+      "dhfr2dyn_r.key": {
+        "bytes": 1615,
+        "path": "/pik/tinker-hp/pmegpu/examples/dhfr2dyn_r.key",
+        "sha256": "5fa43558f5bac92240947c8f0914bd432da37f0104a75e6b9fe3cbcde1861925"
+      }
+    },
+    "maintained_fixtures_unchanged": true,
+    "parameters": {
+      "/pik/tinker-hp/pmegpu/params1/amoebabio09.prm": {
+        "bytes": 531850,
+        "path": "/pik/tinker-hp/pmegpu/params1/amoebabio09.prm",
+        "sha256": "a3a83890fecded952bd538d9e4e512ba1e1ad33cb5c333c49ad0fb56e351933b"
+      }
+    },
+    "seed": 12345,
+    "selected_key": {
+      "bytes": 1615,
+      "path": "/pik/tinker-hp/pmegpu/examples/dhfr2dyn_r.key",
+      "sha256": "5fa43558f5bac92240947c8f0914bd432da37f0104a75e6b9fe3cbcde1861925"
+    }
+  },
+  "mpi": {
+    "layout": "1x1x1",
+    "observed_decomposition": {
+      "grid": null,
+      "mode": "auto"
+    },
+    "ranks": 1
+  },
+  "observable": {
+    "bytes": 1248,
+    "path": "/tmp/tinkerhp-issue33-analyze-20260812-final-rerun/analyze.stdout",
+    "sha256": "b8ac2afbe9269f9e80176add8e11b17fb94bdb92051b8adca2fda2dd682a86a4"
+  },
+  "program": "analyze",
+  "recorded_at": "2026-08-12T12:38:51.538358+00:00",
+  "schema_version": 1,
+  "scientific_reference": {
+    "bytes": 1244,
+    "path": "/pik/tinker-hp/pmegpu/examples/dhfr2dyn_r.anl.ref",
+    "sha256": "729893a5b35d52ff5276224dae61abb972c7248e891e2ddc0f4c9fde292c4ae4"
+  }
+}

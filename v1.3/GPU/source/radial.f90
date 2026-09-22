@@ -16,30 +16,42 @@
 !     pair of atom types via analysis of a set of coordinate frames
 !
 !
-#include "tinker_precision.h"
+#include "tinker_macro.h"
 module radial_inl
 contains
 #include "image.inc.f90"
 end module
 
 program radial
+   use config, only: raw_cli_t, capture_raw_cli
+   use domdec, only: rank
+   use iounit, only: iout
    use mpi
-#ifdef _OPENACC
-   use utilgpu,only: bind_gpu
-#endif
+   use mdevice, only: bind_device
+   use status, only: status_t, failed
    implicit none
-   integer ierr,nthreadsupport
-#ifdef _OPENACC
-   call bind_gpu
-#endif
+   integer ierr,nthreadsupport,world_rank
+   type(raw_cli_t) raw_cli
+   type(status_t) status_value
+   call bind_device(status_value)
+   if (failed(status_value)) stop 1
+   call capture_raw_cli(raw_cli)
 !      call MPI_INIT_THREAD(MPI_THREAD_MULTIPLE,nthreadsupport,ierr)
    call MPI_INIT(ierr)
-   call radial_bis
+   call MPI_COMM_RANK(MPI_COMM_WORLD,world_rank,ierr)
+   iout = 6
+   rank = world_rank
+   call radial_bis(raw_cli,status_value)
+   if (failed(status_value)) then
+      if (world_rank.eq.0) write(iout,*) trim(status_value%message)
+      call MPI_BARRIER(MPI_COMM_WORLD,ierr)
+      __TINKER_FATAL__
+   end if
    call MPI_BARRIER(MPI_COMM_WORLD,ierr)
    call MPI_FINALIZE(ierr)
 end
 
-subroutine radial_bis
+subroutine radial_bis(raw_cli,status_value)
    use argue
    use atmtyp
    use atoms
@@ -48,14 +60,18 @@ subroutine radial_bis
    use files
    use inform
    use iounit
-   use cutoff
    use math
    use molcul
-   use potent
    use mpi
    use radial_inl
    use dcdmod
    use domdec
+   use config, only: raw_cli_t, config_t
+   use initialization, only: initialize, radial_application
+   use mdevice, only: channel_t, finalize_device
+   use parallel, only: parallel_t, release
+   use status, only: status_t, failed
+   use structure, only: structure_t
    implicit none
    integer i,j,k
    integer nframe,iframe
@@ -86,13 +102,21 @@ subroutine radial_bis
    character*240 dcdfile
    integer freeunit
    type(dcdinfo_t) :: dcdinfo
+   type(raw_cli_t), intent(in) :: raw_cli
+   type(config_t) :: configuration
+   type(structure_t) molecular_structure
+   type(parallel_t) platform
+   type(channel_t) reciprocal_work
+   type(status_t), intent(out) :: status_value
+   type(status_t) :: cleanup_status
 
 !
 !
 !     perform the standard initialization functions
 !
-   call initial
-   call initmpi
+   call initialize(radial_application, raw_cli, configuration, molecular_structure, &
+      &platform, reciprocal_work, status_value)
+   if (failed(status_value)) return
    if(nproctot/=1 .and. ranktot==0) then
       write(0,*) "Error: radial is a serial program"
       call fatal
@@ -100,22 +124,6 @@ subroutine radial_bis
 !
 !     open the trajectory archive and read the initial frame
 !
-   call getxyz
-!
-!     get the unitcell parameters and number of molecules
-!
-   call unitcell
-!
-!     set cutoffs small to enforce use of minimum images
-!
-   use_vdw = .true.
-   use_charge = .false.
-   use_mpole = .false.
-   use_ewald = .false.
-   call cutoffs
-   call lattice
-   call drivermpi
-   call mechanic
 !
 !     get numbers of the coordinate frames to be processed
 !
@@ -460,4 +468,7 @@ subroutine radial_bis
       close (unit=iarc)
    end if
    call final
+   call finalize_device(cleanup_status)
+   call release(platform, cleanup_status)
+   if (failed(cleanup_status)) status_value = cleanup_status
 end

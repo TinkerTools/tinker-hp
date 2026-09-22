@@ -48,12 +48,10 @@ subroutine kpolar(init,istep)
    integer,save:: nlocnl_save=0
    integer npg,next
    integer pg(maxvalue)
-   integer winalt
    real(t_p),parameter:: zero=0.0_ti_p
    real(t_p) pol,thl
    real(t_p) sixth
    real(t_p) d
-   real(t_p),pointer:: buffer3d(:,:,:)
    real(8) m1,m2,m3
    logical header
    character*20 keyword
@@ -816,6 +814,7 @@ subroutine orderPole
 !
 !     Initiate poleglob sending
 !
+!$acc wait(rec_queue)
 !$acc host_data use_device(poleglob)
    do i = 1, nbig_send
       call MPI_ISEND(poleglob(1),npoleloc,MPI_INT,pbig_send(i)&
@@ -1278,3 +1277,20 @@ subroutine alloc_shared_polar
    call shmem_request(pdamp,   winpdamp,   [n],config=mhostacc)
    call shmem_request(tholed, wintholed, [n],config=mhostacc)
 end
+
+subroutine dealloc_polar_predictor
+#ifdef USE_NVSHMEM_CUDA
+   use tinMemory, only: shmem_request, mnvshonly
+   use uprior, only: buffer3d, winalt, c_udalt, d_udalt, c_upalt, d_upalt, &
+      &c_altbuf, d_altbuf, c_udshortalt, d_udshortalt, c_upshortalt, d_upshortalt
+#endif
+   implicit none
+
+#ifdef USE_NVSHMEM_CUDA
+   call shmem_request(buffer3d,winalt,[0],c_udalt,d_udalt,config=mnvshonly)
+   call shmem_request(buffer3d,winalt,[0],c_upalt,d_upalt,config=mnvshonly)
+   call shmem_request(buffer3d,winalt,[0],c_altbuf,d_altbuf,config=mnvshonly)
+   call shmem_request(buffer3d,winalt,[0],c_udshortalt,d_udshortalt,config=mnvshonly)
+   call shmem_request(buffer3d,winalt,[0],c_upshortalt,d_upshortalt,config=mnvshonly)
+#endif
+end subroutine

@@ -29,7 +29,7 @@ subroutine unwrap_pos(xr,yr,zr,wrapIdx,k)
    zr = zr + int(wrapIdx(kk+3))*zcell
 end subroutine
 
-subroutine prtxyz (ixyz)
+subroutine prtxyz (ixyz,x_frame,y_frame,z_frame,atom_count_frame)
    use atmtyp
    use atoms    ,only: type,pbcunwrap,pbcWrapIdx
    use atomsMirror
@@ -43,6 +43,9 @@ subroutine prtxyz (ixyz)
    use titles
    implicit none
    integer i,k,ixyz
+   real(r_p), optional, intent(in) :: x_frame(:),y_frame(:),z_frame(:)
+   integer, optional, intent(in) :: atom_count_frame
+   integer atom_count
    integer size,crdsiz
    real(r_p) crdmin,crdmax,xi,yi,zi
    logical opened
@@ -52,6 +55,8 @@ subroutine prtxyz (ixyz)
    character*25 fstr
    character*240 xyzfile
 !
+   atom_count = n
+   if (present(atom_count_frame)) atom_count = atom_count_frame
    call timer_enter(timer_io)
 !
 !     open the output unit if not already done
@@ -66,17 +71,24 @@ subroutine prtxyz (ixyz)
 !     check for large systems needing extended formatting
 !
    atmc = 'i6'
-   if (n .ge. 100000)  atmc = 'i7'
-   if (n .ge. 1000000)  atmc = 'i8'
+   if (atom_count .ge. 100000)  atmc = 'i7'
+   if (atom_count .ge. 1000000)  atmc = 'i8'
    crdmin = 0.0_ti_p
    crdmax = 0.0_ti_p
+   if (present(x_frame)) then
+      do i = 1, atom_count
+         crdmin = min(crdmin,x_frame(i),y_frame(i),z_frame(i))
+         crdmax = max(crdmax,x_frame(i),y_frame(i),z_frame(i))
+      end do
+   else
 !$acc update host(x,y,z) async
 !$acc parallel loop present(x,y,z) async
-   do i = 1, n
+   do i = 1, atom_count
       crdmin = min(crdmin,x(i),y(i),z(i))
       crdmax = max(crdmax,x(i),y(i),z(i))
    end do
 !$acc wait
+   end if
    crdsiz = 6
    if (crdmin .le. -1000.0_re_p)  crdsiz = 7
    if (crdmax .ge. 10000.0_re_p)  crdsiz = 7
@@ -97,10 +109,10 @@ subroutine prtxyz (ixyz)
 !
    if (ltitle .eq. 0) then
       fstr = '('//atmc//')'
-      write (ixyz,fstr(1:4))  n
+      write (ixyz,fstr(1:4))  atom_count
    else
       fstr = '('//atmc//',2x,a)'
-      write (ixyz,fstr(1:9))  n,title(1:ltitle)
+      write (ixyz,fstr(1:9))  atom_count,title(1:ltitle)
    end if
 !
 !     write out the periodic cell lengths and angles
@@ -115,18 +127,29 @@ subroutine prtxyz (ixyz)
    fstr = '('//atmc//',2x,a3,3f'//crdc//&
       &'.'//digc//',i6,8'//atmc//')'
    if (pbcunwrap) then
-      do i = 1, n
-         xi = x(i)
-         yi = y(i)
-         zi = z(i)
+      do i = 1, atom_count
+         if (present(x_frame)) then
+            xi = x_frame(i)
+            yi = y_frame(i)
+            zi = z_frame(i)
+         else
+            xi = x(i)
+            yi = y(i)
+            zi = z(i)
+         end if
          call unwrap_pos(xi,yi,zi,pbcWrapIdx,i)
          write (ixyz,fstr)  i,name(i),xi,yi,zi,type(i),&
             &(i12(k,i),k=1,n12(i))
       end do
    else
-      do i = 1, n
-         write (ixyz,fstr)  i,name(i),x(i),y(i),z(i),type(i),&
-            &(i12(k,i),k=1,n12(i))
+      do i = 1, atom_count
+         if (present(x_frame)) then
+            write (ixyz,fstr)  i,name(i),x_frame(i),y_frame(i),z_frame(i),type(i),&
+               &(i12(k,i),k=1,n12(i))
+         else
+            write (ixyz,fstr)  i,name(i),x(i),y(i),z(i),type(i),&
+               &(i12(k,i),k=1,n12(i))
+         end if
       end do
    end if
 !

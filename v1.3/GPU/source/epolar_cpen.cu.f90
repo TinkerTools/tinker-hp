@@ -21,9 +21,10 @@
 #include "tinker_cudart.h"
 
 module epolar_cpencu
-   use utilcu  ,only: nproc,ndir,BLOCK_DIM,ALL_LANES
-   use utilgpu ,only: BLOCK_SIZE,RED_BUFF_SIZE&
+   use utilcu  ,only: BLOCK_DIM,ALL_LANES
+   use utilgpu ,only: BLOCK_SIZE&
       &,WARP_SIZE
+   use reduction,only: RED_BUFF_SIZE
    use tinTypes,only: real3,real6,mdyn3_r,rpole_elt
    implicit none
    private

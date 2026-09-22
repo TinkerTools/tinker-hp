@@ -24,6 +24,7 @@
 #include "tinker_macro.h"
 module qtb
    use spectra, only: compteur_type
+   use mpi, only: MPI_COMM_NULL
    implicit none
 !      integer, allocatable :: repartnoise(:)
    integer :: skipseg
@@ -100,9 +101,20 @@ module qtb
       procedure(qtb_optimizer_type), pointer, nopass :: p
    end type
 
+   ! Borrowed polymer topology used only by PIQTB communication. The parallel
+   ! owner retains the communicator and invalidates it during topology reset.
+   type piqtb_comm_t
+      private
+      integer :: communicator = MPI_COMM_NULL
+      integer :: replica_size = 0
+      integer :: replica_rank = 0
+      integer :: domain_size = 0
+   end type piqtb_comm_t
+
    type(qtbdat_t), allocatable :: qtbdata(:)
    logical, allocatable :: qtbdata_allocated(:)
    type(qtbopt_t), allocatable :: adapt_gamma(:)
+   type(piqtb_comm_t) :: piqtb_communication
 
    save
    private
@@ -120,9 +132,24 @@ module qtb
       &,adqtb_smooth_default&
       &,qtbdata, QTB_update_state&
       &,adqtb_win_corr,corr_pot_corr_fact&
-      &,get_qtb_compteur, piqtb,QTB_verbose
+      &,get_qtb_compteur, piqtb,QTB_verbose&
+      &,configure_piqtb_communication, clear_piqtb_communication
 
 contains
+
+   subroutine configure_piqtb_communication(communicator, replica_size, replica_rank, domain_size)
+      integer, intent(in) :: communicator, replica_size, replica_rank, domain_size
+
+      piqtb_communication%communicator = communicator
+      piqtb_communication%replica_size = replica_size
+      piqtb_communication%replica_rank = replica_rank
+      piqtb_communication%domain_size = domain_size
+   end subroutine configure_piqtb_communication
+
+   subroutine clear_piqtb_communication()
+
+      piqtb_communication = piqtb_comm_t()
+   end subroutine clear_piqtb_communication
 
 !
 !      subroutine qtbinit: initialize the QTB
@@ -277,25 +304,28 @@ contains
       if(corr_pot) then
          if(ranktot==0) write(*,*)&
             &'WARNING -  Using potential correction'
-         inquire (file='corr_pot.dat', exist=corr_pot_found)
-         if (corr_pot_found) then
-            open(315,file='corr_pot.dat')
-            read(315,*) bufchar,Tseg_file, gamma_file,omegacut_file
-            if((Tseg_file.ne.Tseg).or.(omegacut_file.ne.omegacut)&
-               &.or.(gamma_file.ne.gamma)) then
-               ! NOTE: dangerous comparison of real types
-!            write(*,*) 'ERROR, NOT THE SAME PARAMETERS WHILE USING
+         corr_pot_found=.FALSE.
+         if (nproctot==1) then
+            inquire (file='corr_pot.dat', exist=corr_pot_found)
+            if (corr_pot_found) then
+               open(315,file='corr_pot.dat')
+               read(315,*) bufchar,Tseg_file, gamma_file,omegacut_file
+               if((Tseg_file.ne.Tseg).or.(omegacut_file.ne.omegacut)&
+                  &.or.(gamma_file.ne.gamma)) then
+                  ! NOTE: dangerous comparison of real types
+!               write(*,*) 'ERROR, NOT THE SAME PARAMETERS WHILE USING
 !     & THE POTENTIAL CORRECTION'
-!            call fatal
-               corr_pot_found=.FALSE.
-            else
-               do i=1,nad
-                  read(315,*) omega,corr_pot_ratio(i,:)
-               enddo
+!               call fatal
+                  corr_pot_found=.FALSE.
+               else
+                  do i=1,nad
+                     read(315,*) omega,corr_pot_ratio(i,:)
+                  enddo
+               endif
+               close(315)
             endif
-            close(315)
          endif
-         if(.NOT.corr_pot_found) then
+         if(nproctot>1 .or. .NOT.corr_pot_found) then
             call generate_corr_pot()
          endif
       endif
@@ -2520,7 +2550,7 @@ contains
       real(r_p) :: f_omega,w
       integer :: k,ierr,ibead
 
-      if(rank==0) then
+      if(ranktot==0) then
          if(ranktot==0) write(*,*) "--- Generating corr_pot.dat ---"
          allocate(omsym(2*nad-1),s0sym(2*nad-1))
          allocate(sout(2*nad-1),srec(2*nad-1))
@@ -2554,7 +2584,7 @@ contains
          close(315)
       endif
       call MPI_BCAST(corr_pot_ratio,nbeads*nad,MPI_RPREC&
-         &,0,COMM_TINKER,ierr)
+         &,0,MPI_COMM_WORLD,ierr)
    end subroutine generate_corr_pot
 
    subroutine compute_corr_fact(mCvv_in)
@@ -2675,7 +2705,7 @@ contains
       integer :: maxrecv,nproc_recv
       integer :: isend,ii,ierr,ns,nr,iloc,kk,l
       integer, parameter :: mptag_size=0,mptag_data=1
-      integer :: reqs(2*nproc_polymer)
+      integer :: reqs(2*piqtb_communication%replica_size)
       LOGICAL :: flag
       integer :: nbeadslocmax, nlocproc
       integer :: ibeadbeg,ibeadend,nu
@@ -2685,7 +2715,7 @@ contains
       real(4), allocatable :: bufferpi_s(:,:,:,:)
       real(4), allocatable :: bufferpi_r(:,:,:,:,:)
 
-      if(nproc_polymer==1 .or. nproc==1) return
+      if(piqtb_communication%replica_size==1 .or. piqtb_communication%domain_size==1) return
       reqs(:)=MPI_REQUEST_NULL
 
       if(deb_path) then
@@ -2695,19 +2725,19 @@ contains
 
       nelt=3*nseg
 
-      maxloc=nlocpis(nproc_polymer)
-      nlocproc=int(nloc/nproc_polymer)
+      maxloc=nlocpis(piqtb_communication%replica_size)
+      nlocproc=int(nloc/piqtb_communication%replica_size)
 
       allocate(bufferpi_s(3,nelt,nbeads,maxloc))
       allocate(bufferpi_r(3,nelt,nbeads,maxloc&
-         &,nproc_polymer))
+         &,piqtb_communication%replica_size))
 
-!$acc enter data create(bufferpi_r,bufferpi_s) async
+!$acc enter data create(bufferpi_r,bufferpi_s)
 
       !PUT DATA INTO BUFFER ARRAYS
 
-      ilocbeg=ilocpi_beg(rank_polymer+1)
-      ilocend=ilocpi_end(rank_polymer+1)
+      ilocbeg=ilocpi_beg(piqtb_communication%replica_rank+1)
+      ilocend=ilocpi_end(piqtb_communication%replica_rank+1)
 
 !$acc parallel loop collapse(3) async
       DO k=1,nbeads; DO iloc=1,ilocend-ilocbeg+1; do l=1,3*nseg
@@ -2728,23 +2758,23 @@ contains
 !$acc wait
 !$acc host_data use_device(bufferpi_s,bufferpi_r)
       ii=0
-      DO iproc=1,nproc_polymer
-         if(rank_polymer==iproc-1) CYCLE
+      DO iproc=1,piqtb_communication%replica_size
+         if(piqtb_communication%replica_rank==iproc-1) CYCLE
          ii=ii+1
          call MPI_ISEND(bufferpi_s&
              ,3*nelt*(ilocend-ilocbeg+1)*nbeads&
              ,MPI_REAL4&
-             ,iproc-1, mptag_data, COMM_POLYMER, reqs(ii),ierr)
+             ,iproc-1, mptag_data, piqtb_communication%communicator, reqs(ii),ierr)
       ENDDO
 
-      DO iproc=1,nproc_polymer
-         if(rank_polymer==iproc-1) CYCLE
+      DO iproc=1,piqtb_communication%replica_size
+         if(piqtb_communication%replica_rank==iproc-1) CYCLE
          ii=ii+1
          ilocbeg=ilocpi_beg(iproc)
          ilocend=ilocpi_end(iproc)
          call MPI_IRECV(bufferpi_r(1,1,1,1,iproc)&
              ,3*nelt*(ilocend-ilocbeg+1)*nbeads&
-             ,MPI_REAL4,iproc-1,mptag_data, COMM_POLYMER&
+             ,MPI_REAL4,iproc-1,mptag_data, piqtb_communication%communicator&
              ,reqs(ii),ierr)
       ENDDO
 !$acc end host_data
@@ -2753,8 +2783,8 @@ contains
 
 !$acc parallel loop collapse(3) async
       DO k=1,nbeads; DO iloc=1,nloc; DO l=1,3*nseg
-               iproc=min(nproc_polymer,int((iloc-1)/nlocproc)+1)
-               if(rank_polymer==iproc-1) CYCLE
+               iproc=min(piqtb_communication%replica_size,int((iloc-1)/nlocproc)+1)
+               if(piqtb_communication%replica_rank==iproc-1) CYCLE
                ilocbeg=ilocpi_beg(iproc)
                ilocend=ilocpi_end(iproc)
                i=glob(iloc)
@@ -2772,7 +2802,7 @@ contains
                endif
             ENDDO; ENDDO; ENDDO
 
-!!$acc wait
+!$acc wait
 !      call MPI_BARRIER(COMM_POLYMER,ierr)
 
 !$acc exit data delete(bufferpi_s,bufferpi_r)
@@ -2796,7 +2826,7 @@ contains
       integer :: maxrecv,nproc_recv
       integer :: isend,ii,ierr,ns,nr,iloc,kk,l
       integer, parameter :: mptag_size=0,mptag_data=1
-      integer :: reqs(2*nproc_polymer)
+      integer :: reqs(2*piqtb_communication%replica_size)
       LOGICAL :: flag
       integer :: nbeadslocmax, nlocproc
       integer :: ibeadbeg,ibeadend,nu
@@ -2805,7 +2835,7 @@ contains
       integer :: send_vel_
       real(4), allocatable :: buffer(:,:,:,:)
 
-      if(nproc_polymer==1 .or. nproc==1) return
+      if(piqtb_communication%replica_size==1 .or. piqtb_communication%domain_size==1) return
       reqs(:)=MPI_REQUEST_NULL
 
       if(deb_path) then
@@ -2815,16 +2845,16 @@ contains
 
       nelt=nseg
 
-      maxloc=nlocpis(nproc_polymer)
-      nlocproc=int(nloc/nproc_polymer)
+      maxloc=nlocpis(piqtb_communication%replica_size)
+      nlocproc=int(nloc/piqtb_communication%replica_size)
 
       allocate(buffer(3,nelt,nloc,nbeads))
 !$acc data create(buffer) async
 
       !PUT DATA INTO BUFFER ARRAYS
 
-      ilocbeg=ilocpi_beg(rank_polymer+1)
-      ilocend=ilocpi_end(rank_polymer+1)
+      ilocbeg=ilocpi_beg(piqtb_communication%replica_rank+1)
+      ilocend=ilocpi_end(piqtb_communication%replica_rank+1)
 
 !$acc parallel loop collapse(4) async
       do k=1,nbeads; do i=1,nloc; do l=1,nseg; do j=1,3
@@ -2837,7 +2867,7 @@ contains
       call MPI_ALLREDUCE(MPI_IN_PLACE,buffer&
          &,3*nelt*nbeads*nloc&
          &,MPI_REAL4,MPI_SUM&
-         &,COMM_POLYMER,ierr)
+         &,piqtb_communication%communicator,ierr)
 !$acc end host_data
 
 !$acc parallel loop collapse(4) async
@@ -2846,6 +2876,7 @@ contains
                   qtbdata(iglob)%vad(j,l,k)=buffer(j,l,i,k)
                enddo; enddo; enddo; enddo
 
+!$acc wait
 !$acc end data
       deallocate(buffer)
 

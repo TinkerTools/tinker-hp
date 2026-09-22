@@ -1,0 +1,32 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+compiler="$1"
+shift
+
+has_openacc=false
+for argument in "$@"; do
+  case "${argument}" in
+    -acc|-acc=*) has_openacc=true ;;
+  esac
+done
+
+source_root='@TINKERHP_MAKEFILE_LAUNCHER_SOURCE_DIR@'
+compiler_arguments=()
+for argument in "$@"; do
+  if [[ "${has_openacc}" == true
+      && ( "${argument}" == -D_OPENACC || "${argument}" == -D_OPENACC=* ) ]]; then
+    continue
+  fi
+
+  case "${argument}" in
+    "${source_root}"/*.f90|"${source_root}"/*.F90|"${source_root}"/*.f|"${source_root}"/*.F|"${source_root}"/*.for|"${source_root}"/*.FOR)
+      compiler_arguments+=("$(realpath --relative-to="${PWD}" -- "${argument}")")
+      ;;
+    *)
+      compiler_arguments+=("${argument}")
+      ;;
+  esac
+done
+
+exec "${compiler}" "${compiler_arguments[@]}"

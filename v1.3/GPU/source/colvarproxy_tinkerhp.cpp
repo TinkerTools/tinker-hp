@@ -25,7 +25,9 @@ void compute_colvars ()
 
 void delete_colvars ()
 {
-  delete unique_colvarproxy_object;
+  colvarproxy_tinkerhp *proxy = unique_colvarproxy_object;
+  unique_colvarproxy_object = nullptr;
+  delete proxy;
 }
 
 
@@ -39,11 +41,12 @@ colvarproxy_tinkerhp::colvarproxy_tinkerhp()
 
 colvarproxy_tinkerhp::~colvarproxy_tinkerhp()
 {
-  if ( rankcv != NULL && rankcv == 0) {
+  if (rankcv == 0 && colvars != nullptr) {
     // Finalize e.g. output from biases, and flush output streams
     post_run();
     // Delete the colvarmodule instance
     delete colvars;
+    colvars = nullptr;
   }
 }
 

@@ -539,6 +539,7 @@ contains
   subroutine decomp_2d_finalize
 
     implicit none
+    integer :: ierror
 
     call decomp_info_finalize(decomp_main)
 
@@ -549,6 +550,7 @@ contains
        deallocate(alltoall_recv_pattern)
        deallocate(alltoall_send_pattern)
     end if
+    decomp_allToall_fin = .true.
 
     decomp_buf_size = 0
     cufft_worksize  = 0
@@ -560,6 +562,43 @@ contains
     call free_c_pinned(work2_c)
     !deallocate(work1_c, work2_c)
     !nullify(work1_c,work2_c)
+
+#ifdef SHM
+    if (decomp_main%ROW_INFO%SND_P /= 0) &
+       call DEALLOC_SHM(decomp_main%ROW_INFO%SND_P, decomp_main%ROW_INFO%CORE_COMM)
+    if (decomp_main%ROW_INFO%RCV_P /= 0) &
+       call DEALLOC_SHM(decomp_main%ROW_INFO%RCV_P, decomp_main%ROW_INFO%CORE_COMM)
+    if (decomp_main%ROW_INFO%SND_P_c /= 0) &
+       call DEALLOC_SHM(decomp_main%ROW_INFO%SND_P_c, decomp_main%ROW_INFO%CORE_COMM)
+    if (decomp_main%ROW_INFO%RCV_P_c /= 0) &
+       call DEALLOC_SHM(decomp_main%ROW_INFO%RCV_P_c, decomp_main%ROW_INFO%CORE_COMM)
+    if (decomp_main%COL_INFO%SND_P /= 0) &
+       call DEALLOC_SHM(decomp_main%COL_INFO%SND_P, decomp_main%COL_INFO%CORE_COMM)
+    if (decomp_main%COL_INFO%RCV_P /= 0) &
+       call DEALLOC_SHM(decomp_main%COL_INFO%RCV_P, decomp_main%COL_INFO%CORE_COMM)
+    if (decomp_main%COL_INFO%SND_P_c /= 0) &
+       call DEALLOC_SHM(decomp_main%COL_INFO%SND_P_c, decomp_main%COL_INFO%CORE_COMM)
+    if (decomp_main%COL_INFO%RCV_P_c /= 0) &
+       call DEALLOC_SHM(decomp_main%COL_INFO%RCV_P_c, decomp_main%COL_INFO%CORE_COMM)
+    if (decomp_main%ROW_INFO%SMP_COMM /= MPI_COMM_NULL) &
+       call MPI_Comm_free(decomp_main%ROW_INFO%SMP_COMM, ierror)
+    if (decomp_main%ROW_INFO%CORE_COMM /= MPI_COMM_NULL) &
+       call MPI_Comm_free(decomp_main%ROW_INFO%CORE_COMM, ierror)
+    if (decomp_main%COL_INFO%SMP_COMM /= MPI_COMM_NULL) &
+       call MPI_Comm_free(decomp_main%COL_INFO%SMP_COMM, ierror)
+    if (decomp_main%COL_INFO%CORE_COMM /= MPI_COMM_NULL) &
+       call MPI_Comm_free(decomp_main%COL_INFO%CORE_COMM, ierror)
+#endif
+    if (DECOMP_2D_COMM_CART_X /= MPI_COMM_NULL) &
+       call MPI_Comm_free(DECOMP_2D_COMM_CART_X, ierror)
+    if (DECOMP_2D_COMM_CART_Y /= MPI_COMM_NULL) &
+       call MPI_Comm_free(DECOMP_2D_COMM_CART_Y, ierror)
+    if (DECOMP_2D_COMM_CART_Z /= MPI_COMM_NULL) &
+       call MPI_Comm_free(DECOMP_2D_COMM_CART_Z, ierror)
+    if (DECOMP_2D_COMM_ROW /= MPI_COMM_NULL) &
+       call MPI_Comm_free(DECOMP_2D_COMM_ROW, ierror)
+    if (DECOMP_2D_COMM_COL /= MPI_COMM_NULL) &
+       call MPI_Comm_free(DECOMP_2D_COMM_COL, ierror)
 
   end subroutine decomp_2d_finalize
 

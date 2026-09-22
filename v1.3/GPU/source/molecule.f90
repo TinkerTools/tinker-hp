@@ -239,13 +239,13 @@ subroutine update_device_mol
    use atmtyp
    use domdec ,only: rank
    use molcul
-   use sizes  ,only: tinkerdebug
+   use inform ,only: deb_Path
    use tinMemory
    implicit none
 
 #ifdef _OPENACC
 12 format(2x,'upload_device_mol')
-   if(rank.eq.0.and.tinkerdebug) print 12
+   if(deb_Path) print 12
 #endif
 !$acc enter data create(nmoleloc)
 !$acc update device(mass)

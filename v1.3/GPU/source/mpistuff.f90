@@ -2478,6 +2478,7 @@ subroutine reduceen(epot)
    use inter
    use inform ,only: deb_Energy
    use mpistuff_inl
+   use parallel, only: reduce_sum, reduction_all, reduction_root
    use potent
    use virial
    use mpi
@@ -2520,16 +2521,10 @@ subroutine reduceen(epot)
 !$acc end serial
 !
 !$acc host_data use_device(buffer1)
-   if (rank.eq.0) then
-      call MPI_REDUCE(MPI_IN_PLACE,buffer1,9,MPI_RPREC&
-         &,MPI_SUM,0,COMM_TINKER,ierr)
-   else
-      call MPI_REDUCE(buffer1,buffer1,9,MPI_RPREC&
-         &,MPI_SUM,0,COMM_TINKER,ierr)
-   end if
+   call reduce_sum(buffer1(1:9), reduction_root)
 !$acc end host_data
 !
-!$acc serial async
+!$acc serial
    ec     = buffer1(1)
    em     = buffer1(2)
    ep     = buffer1(3)
@@ -2547,8 +2542,7 @@ subroutine reduceen(epot)
       call mem_move(vir_copy,vir,nine,nill)
 !
 !$acc host_data use_device(vir_copy)
-      call MPI_ALLREDUCE(MPI_IN_PLACE,vir_copy(1,1),9,MPI_RPREC&
-         &,MPI_SUM,COMM_TINKER,ierr)
+      call reduce_sum(vir_copy, reduction_all)
 !$acc end host_data
 !
       call mem_move(vir,vir_copy,nine,nill)
@@ -2578,12 +2572,12 @@ subroutine reduceen(epot)
 !$acc end serial
 !
 !$acc host_data use_device(buffer2)
+   ! The debug energy subset follows the direct subgroup when PME cores are split.
+   ! Keep this routing adapter until the domain privately owns that subgroup.
    if (rank.eq.0) then
-      call MPI_REDUCE(MPI_IN_PLACE,buffer2,20,MPI_RPREC&
-         &,MPI_SUM,0,commloc,ierr)
+      call MPI_REDUCE(MPI_IN_PLACE,buffer2,20,MPI_RPREC,MPI_SUM,0,commloc,ierr)
    else
-      call MPI_REDUCE(buffer2,buffer2,20,MPI_RPREC&
-         &,MPI_SUM,0,commloc,ierr)
+      call MPI_REDUCE(buffer2,buffer2,20,MPI_RPREC,MPI_SUM,0,commloc,ierr)
    end if
 !$acc end host_data
 !
@@ -3300,62 +3294,31 @@ subroutine allreduceen(epot)
    use energi
    use inter
    use mpi
+   use parallel, only: reduce_sum, reduction_all
    use potent ,only: use_pmecore
    implicit none
-   integer ierr
    real(t_p) epot
+   real(t_p) epot_buffer(1)
+   real(r_p) buffer(22)
 !
    if (nproc.eq.1.or.use_pmecore.and.ndir.eq.1) return
 
-!$acc host_data use_device(eba,ea,eb,ec,em,ep,ev,eub,eaa,eopb,eopd, &
-!$acc          eid,eit,et,ept,ebt,eat,ett,esum,epot,eg,ex,einter)
-   call MPI_ALLREDUCE(MPI_IN_PLACE,eba,1,MPI_RPREC,MPI_SUM,&
-      &COMM_TINKER,ierr)
-   call MPI_ALLREDUCE(MPI_IN_PLACE,ea,1,MPI_RPREC,MPI_SUM,&
-      &COMM_TINKER,ierr)
-   call MPI_ALLREDUCE(MPI_IN_PLACE,eb,1,MPI_RPREC,MPI_SUM,&
-      &COMM_TINKER,ierr)
-   call MPI_ALLREDUCE(MPI_IN_PLACE,ec,1,MPI_RPREC,MPI_SUM,&
-      &COMM_TINKER,ierr)
-   call MPI_ALLREDUCE(MPI_IN_PLACE,em,1,MPI_RPREC,MPI_SUM,&
-      &COMM_TINKER,ierr)
-   call MPI_ALLREDUCE(MPI_IN_PLACE,ep,1,MPI_RPREC,MPI_SUM,&
-      &COMM_TINKER,ierr)
-   call MPI_ALLREDUCE(MPI_IN_PLACE,ev,1,MPI_RPREC,MPI_SUM,&
-      &COMM_TINKER,ierr)
-   call MPI_ALLREDUCE(MPI_IN_PLACE,eub,1,MPI_RPREC,MPI_SUM,&
-      &COMM_TINKER,ierr)
-   call MPI_ALLREDUCE(MPI_IN_PLACE,eaa,1,MPI_RPREC,MPI_SUM,&
-      &COMM_TINKER,ierr)
-   call MPI_ALLREDUCE(MPI_IN_PLACE,eopb,1,MPI_RPREC,MPI_SUM,&
-      &COMM_TINKER,ierr)
-   call MPI_ALLREDUCE(MPI_IN_PLACE,eopd,1,MPI_RPREC,MPI_SUM,&
-      &COMM_TINKER,ierr)
-   call MPI_ALLREDUCE(MPI_IN_PLACE,eid,1,MPI_RPREC,MPI_SUM,&
-      &COMM_TINKER,ierr)
-   call MPI_ALLREDUCE(MPI_IN_PLACE,eit,1,MPI_RPREC,MPI_SUM,&
-      &COMM_TINKER,ierr)
-   call MPI_ALLREDUCE(MPI_IN_PLACE,et,1,MPI_RPREC,MPI_SUM,&
-      &COMM_TINKER,ierr)
-   call MPI_ALLREDUCE(MPI_IN_PLACE,ept,1,MPI_RPREC,MPI_SUM,&
-      &COMM_TINKER,ierr)
-   call MPI_ALLREDUCE(MPI_IN_PLACE,ebt,1,MPI_RPREC,MPI_SUM,&
-      &COMM_TINKER,ierr)
-   call MPI_ALLREDUCE(MPI_IN_PLACE,eat,1,MPI_RPREC,MPI_SUM,&
-      &COMM_TINKER,ierr)
-   call MPI_ALLREDUCE(MPI_IN_PLACE,ett,1,MPI_RPREC,MPI_SUM,&
-      &COMM_TINKER,ierr)
-   call MPI_ALLREDUCE(MPI_IN_PLACE,esum,1,MPI_RPREC,MPI_SUM,&
-      &COMM_TINKER,ierr)
-   call MPI_ALLREDUCE(MPI_IN_PLACE,epot,1,MPI_RPREC,MPI_SUM,&
-      &COMM_TINKER,ierr)
-   call MPI_ALLREDUCE(MPI_IN_PLACE,eg,1,MPI_RPREC,MPI_SUM,&
-      &COMM_TINKER,ierr)
-   call MPI_ALLREDUCE(MPI_IN_PLACE,ex,1,MPI_RPREC,MPI_SUM,&
-      &COMM_TINKER,ierr)
-   call MPI_ALLREDUCE(MPI_IN_PLACE,einter,1,MPI_RPREC,MPI_SUM,&
-      &COMM_TINKER,ierr)
+!$acc data create(buffer,epot_buffer)
+!$acc serial
+   buffer = [eba,ea,eb,ec,em,ep,ev,eub,eaa,eopb,eopd,eid,eit,et,ept,ebt,eat,ett,esum,eg,ex,einter]
+   epot_buffer(1) = epot
+!$acc end serial
+!$acc host_data use_device(buffer,epot_buffer)
+   call reduce_sum(buffer, reduction_all)
+   call reduce_sum(epot_buffer, reduction_all)
 !$acc end host_data
+!$acc serial
+   eba=buffer(1); ea=buffer(2); eb=buffer(3); ec=buffer(4); em=buffer(5); ep=buffer(6)
+   ev=buffer(7); eub=buffer(8); eaa=buffer(9); eopb=buffer(10); eopd=buffer(11); eid=buffer(12)
+   eit=buffer(13); et=buffer(14); ept=buffer(15); ebt=buffer(16); eat=buffer(17); ett=buffer(18)
+   esum=buffer(19); eg=buffer(20); ex=buffer(21); einter=buffer(22); epot=epot_buffer(1)
+!$acc end serial
+!$acc end data
 end
 !
 !     subroutine orderbuffer : get the indexes of the particules in the neighboring processes

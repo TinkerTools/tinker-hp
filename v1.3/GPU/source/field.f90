@@ -15,13 +15,14 @@
 !
 !
 #include "tinker_macro.h"
-subroutine field
+subroutine field(config_defaults_only)
    use keys
    use inform ,only: app_id,dynamic_a,pimd_a
    use potent
    implicit none
    integer i
    character*240 record
+   logical, intent(in) :: config_defaults_only
 !
 !
 !     set the default values for the active potentials
@@ -114,6 +115,7 @@ subroutine field
 !
 !     read the potential energy force field parameter file
 !
+   if (config_defaults_only) return
    call getprm
 !
 !     check keywords for potential function control parameters

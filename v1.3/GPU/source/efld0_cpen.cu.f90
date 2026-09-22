@@ -9,8 +9,7 @@
 #include "tinker_cudart.h"
 
 module efld0_cpencu
-   use utilcu  ,only: nproc,BLOCK_DIM,ALL_LANES&
-      &,bal_comp=>balanced_comput
+   use utilcu  ,only: BLOCK_DIM,ALL_LANES
    use utilgpu ,only: BLOCK_SIZE
    use tintypes,only: rpole_elt,real3,real6,real7
    use neigh   ,only: i_bl=>inside_block,d_bl=>disc_block
@@ -24,24 +23,25 @@ contains
 #include "pair_efld_cp.inc.f90"
 
    attributes(global) subroutine efld0_cpen_kcu&
-      &(ipole,pglob,ploc,bapl,abpl&
-      &,x,y,z,pcore,pval,palpha,rpole&
-      &,na,nab,nbap,npolebloc,n,pentyp,cut2,aewald&
-      &,efi&
-      &,p_xbeg,p_xend,p_ybeg,p_yend,p_zbeg,p_zend&
-      &,scal_ik,scal_val,poleloc,ipole_,x_,y_,z_,n_dpscale)
+      (ipole,pglob,ploc,bapl,abpl&
+      ,x,y,z,pcore,pval,palpha,rpole&
+      ,na,nab,nbap,npolebloc,n,pentyp,cut2,aewald&
+      ,efi&
+      ,p_xbeg,p_xend,p_ybeg,p_yend,p_zbeg,p_zend&
+      ,scal_ik,scal_val,poleloc,ipole_,x_,y_,z_,n_dpscale&
+      ,nproc,bal_comp)
    implicit none
    integer  ,value,intent(in):: na,nab,npolebloc,n,nbap,pentyp&
       &,n_dpscale
+   integer  ,value,intent(in):: nproc
+   logical  ,value,intent(in):: bal_comp
    real(t_p),value,intent(in):: p_xbeg,p_xend,p_ybeg,p_yend&
-      &,p_zbeg,p_zend,cut2,aewald
+            ,p_zbeg,p_zend,cut2,aewald
    integer  ,device,intent(in)::ipole(nab),pglob(nab)&
-      &,ploc(nab),bapl(nbap)&
-      &,abpl(nbap*(BLOCK_SIZE+2))&
-      &,scal_ik(*),poleloc(*),ipole_(*)
+            ,ploc(nab),bapl(nbap),abpl(nbap*(BLOCK_SIZE+2))&
+            ,scal_ik(*),poleloc(*),ipole_(*)
    real(t_p),device,intent(in)::pcore(n),pval(n),palpha(n)&
-      &,x(nab),y(nab),z(nab),scal_val(*),x_(*),y_(*),z_(*)&
-      &,rpole(13,*)
+            ,x(nab),y(nab),z(nab),scal_val(*),x_(*),y_(*),z_(*),rpole(13,*)
    real(t_p),device,intent(inout):: efi(3,2,npolebloc)
 
    integer ithread,iwarp,nwarp,ilane,klane,nlane,istat,srclane

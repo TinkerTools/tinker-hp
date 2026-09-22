@@ -13,19 +13,20 @@
 #  error  __FILE__ is specific to charge penetration feature
 #endif
 attributes(global) subroutine __Cat(epreal_cpen,__sufx__)&
-   &( ipole,pglob,loc,ploc,bapl,abpl&
-   &, x,y,z,rpole,uind,uinp&
-   &, pcore,pval,palpha&
-   &, dep,trq,pot,ep_buff,vir_buff,nep_buff&
-   &, na,nab,nabp,npolebloc,n,idec,pentyp&
-   &, off2,f,ewald,ucflx&
-   &, p_xbeg,p_xend,p_ybeg,p_yend,p_zbeg,p_zend&
-   &, scal_ik,scal_val,n_scal,ipole_,polelocnl,loc_,x_,y_,z_&
-   &)
+   ( ipole,pglob,loc,ploc,bapl,abpl&
+   , x,y,z,rpole,uind,uinp&
+   , pcore,pval,palpha&
+   , dep,trq,pot,ep_buff,vir_buff,nep_buff&
+   , na,nab,nabp,npolebloc,n,idec,pentyp&
+   , off2,f,ewald,ucflx&
+   , p_xbeg,p_xend,p_ybeg,p_yend,p_zbeg,p_zend&
+   , scal_ik,scal_val,n_scal,ipole_,polelocnl,loc_,x_,y_,z_&
+   , nproc,ndir&
+   )
 
 implicit  none
 integer  ,value,intent(in):: na,nab,npolebloc,n,nabp,n_scal&
-   &,pentyp,idec
+         ,pentyp,idec,nproc,ndir
 logical  ,value,intent(in):: ucflx
 real(t_p),value:: p_xbeg,p_xend,p_ybeg,p_yend,p_zbeg,p_zend&
    &,off2,alsq2,alsq2n,ewald,f
@@ -402,4 +403,3 @@ do ii = iwarp, nabp, nwarp; block
 #endif
    end block; end do
 end subroutine
-

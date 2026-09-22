@@ -15,14 +15,15 @@
 !
 !
 #include "tinker_macro.h"
-subroutine mechanic
+subroutine mechanic(configuration, status_value)
    use atoms,only:n
+   use config, only: config_t, apply_defaults_prm_key
    use cutoff
    use domdec
    use deriv ,only: ConfigPotential
    use inform
    use iounit
-   use interfaces
+   use interfaces, only: field
    use neigh ,only: ineignl
    use potent
    use sizes ,only: tinkerdebug
@@ -36,7 +37,11 @@ subroutine mechanic
 #endif
    use mpi
    use polpot
+   use status, only: clear_status, status_t, failed
    implicit none
+   type(config_t), intent(inout), optional :: configuration
+   type(status_t), intent(out), optional :: status_value
+   type(status_t) :: configuration_status
 !
 !     set the bonded connectivity lists and active atoms
 !
@@ -53,7 +58,17 @@ subroutine mechanic
 !
 !     get the base force field from parameter file and keyfile
 !
-   call field
+   if (.not.present(configuration)) then
+      call field(.false.)
+   else
+      if (configuration%complete) then
+         call clear_status(configuration_status)
+      else
+         call apply_defaults_prm_key(configuration,configuration_status)
+      end if
+      if (present(status_value)) status_value = configuration_status
+      if (failed(configuration_status)) return
+   end if
 !
 !      call polymer
 !
@@ -1205,7 +1220,6 @@ subroutine disable_commreal_study
    use potent  ,only: use_mpole,use_polar
    use utilcomm,only: no_commdir
 #ifdef _OPENACC
-   use utilcu  ,only: cu_update_balanced_comput
 #endif
    use tinheader ,only: isrel_build
    implicit none
@@ -1233,7 +1247,6 @@ subroutine disable_commreal_study
       if (use_polar)  call kpolar (.false.,0)
    end if
 #ifdef _OPENACC
-   call cu_update_balanced_comput(.not.no_commdir)
 #endif
 end subroutine
 

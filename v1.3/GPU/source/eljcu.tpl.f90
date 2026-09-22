@@ -18,6 +18,7 @@ attributes(global) &
    ,loc,jvdw_,radmin1,epsilon1,radmin4,epsilon4,dev&
    ! Box data
    ,p_xbeg,p_xend,p_ybeg,p_yend,p_zbeg,p_zend&
+   ,ndir,ngrp,use_virial,skipvdw12,vcouple&
    )
 
 implicit none
@@ -25,7 +26,9 @@ implicit none
 integer  ,value,intent(in) :: nb2p,nvdwlocnlb_pair,n,nbloc&
    ,nvdwlocnl,nab,nvdwclass,radrule,epsrule&
    ,szc,n_vscale
+integer  ,value,intent(in) :: ndir,ngrp
 logical  ,value:: ugrp,ulamdyn
+logical  ,value:: use_virial,skipvdw12,vcouple
 real(t_p),value,intent(in) :: cut2,scut,rinv,off2,off,loff2,sheal&
    ,sck,sct,scs,scalpha,galpha,lambda,vlambda,glamb&
    ,lambdavt,lambdavt1&

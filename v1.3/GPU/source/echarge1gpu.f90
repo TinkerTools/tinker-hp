@@ -18,15 +18,15 @@
 module echarge1gpu_inl
    use utilgpu , only: real3,real3_red,rpole_elt
    implicit none
-   include "erfcore_data.inc.f90"
+!   include "erfcore_data.inc.f90"
 #include "atomicOp.h.f90"
 contains
 #include "convert.inc.f90"
 #include "image.inc.f90"
 #if defined(SINGLE) | defined(MIXED)
-   include "erfcscore.inc.f90"
+!   include "erfcscore.inc.f90"
 #else
-   include "erfcdcore.inc.f90"
+!   include "erfcdcore.inc.f90"
 #endif
 #include "atomicOp.inc.f90"
 #include "switch_respa.inc.f90"
@@ -568,7 +568,7 @@ subroutine ecreal1d_cu
       &, use_group, grplist, wgrp&
       &, ccorrect_ik,ccorrect_scale,chglist,x,y,z,loc,n_cscale,szcik&
       &, p_xbeg,p_xend,p_ybeg,p_yend,p_zbeg,p_zend&
-      &)
+      &,ndir,ngrp)
    call check_launch_kernel(" ecreal1d_core_cu")
 
 !$acc end host_data
@@ -616,15 +616,14 @@ subroutine ecreal_lj1_cu
    use usage
    use utilcu  ,only: BLOCK_DIM,check_launch_kernel&
       &, TRP_BLOCK_DIM,transpose_z3fl
-   use utilgpu ,only: def_queue,dir_queue,vred_buff&
-      &, reduce_energy_virial&
-      &, ered_buff=>ered_buf1,dir_stream,def_stream&
+   use utilgpu ,only: def_queue,dir_queue,dir_stream,def_stream&
       &, transpose_az3,get_GridDim
+   use reduction,only: vred_buff,reduce_energy_virial,ered_buff=>ered_buf1
    use vdw     ,only: ired,kred,jvdw,ivdw,radmin_c&
       &, epsilon_c,radmin,radmin4,epsilon,epsilon4&
       &, nvdwbloc,nvdwlocnl&
       &, nvdwlocnlb,nvdwclass&
-      &, nvdwlocnlb_pair,nvdwlocnlb2_pair
+      &, nvdwlocnlb_pair,nvdwlocnlb2_pair,skipvdw12
    use vdwpot  ,only: vcorrect_ik,vcorrect_scale,n_vscale,dhal,ghal&
       &, radrule_i,epsrule_i,radepsOpt_l
    use vdw_locArray
@@ -691,7 +690,7 @@ subroutine ecreal_lj1_cu
          &, n_cscale,loc,jvdw&
          &, radmin,epsilon,radmin4,epsilon4,dec&
          &, p_xbeg,p_xend,p_ybeg,p_yend,p_zbeg,p_zend&
-         &)
+         &,ndir,use_virial,skipvdw12)
       call check_launch_kernel(" echg_lj1_kcu_v0")
    else
       call echg_lj1_kcu_v1<<<gS,BLOCK_DIM,0,def_stream>>>&
@@ -707,7 +706,7 @@ subroutine ecreal_lj1_cu
          &, n_cscale,loc,jvdw&
          &, radmin,epsilon,radmin4,epsilon4,dec&
          &, p_xbeg,p_xend,p_ybeg,p_yend,p_zbeg,p_zend&
-         &)
+         &,ndir,use_virial,skipvdw12)
       call check_launch_kernel(" echg_lj1_kcu_v1")
    end if
 

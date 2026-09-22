@@ -189,6 +189,7 @@ subroutine mutate
       end if
 30    continue
    end do
+   call def_lambdadyn_init
    if (nproc.gt.1) then
       call MPI_BCAST(nmut,1,MPI_INT,0,hostcomm,ierr)
       call MPI_BCAST(lambda,1,MPI_TPREC,0,hostcomm,ierr)
@@ -472,7 +473,7 @@ subroutine altelec(option)
       enumerator hrank0,transfert
    end enum
 !
-   if (btest(option,hrank0).and.hostrank.ne.0) goto 20
+   if ((btest(option,hrank0).and.hostrank.ne.0).or..not.use_lambdadyn) goto 20
    if (deb_Path) write(*,'(3x,A,I4)') "altelec",option
 !
 !     set electrostatic parameters for partial charge models
@@ -682,7 +683,7 @@ subroutine def_lambdadyn
    end if
 
 #if (TINKER_SINGLE_PREC + TINKER_MIXED_PREC)
-   disp = rank_.eq.0.and.verbose.and.mod(step_c,iprint/100).eq.0
+   disp = rank_.eq.0.and.verbose.and.mod(step_c,max(100,iprint)/100).eq.0
 #else
    disp = rank_.eq.0.and.verbose
 #endif
@@ -718,7 +719,6 @@ subroutine upload_device_mutate
    use potent
    use tors
 #ifdef _OPENACC
-   use utilcu ,only: cu_update_vcouple
 #endif
    implicit none
 #ifdef _OPENACC
@@ -729,7 +729,11 @@ subroutine upload_device_mutate
 
    if (use_vdw) then
 #ifdef _OPENACC
-      call cu_update_vcouple(vcouple)
+   if (vcouple.ne.0.and.vcouple.ne.1) then
+      write(*,*) " WARNING !! Unusual value of vcouple",vcouple
+      write(*,*) " Disabling van der Waals coupling method"
+      vcouple = 0
+   end if
 #endif
    end if
    if (use_charge) then

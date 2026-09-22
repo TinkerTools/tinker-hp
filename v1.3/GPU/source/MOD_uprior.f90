@@ -59,14 +59,16 @@ module uprior
 
 #ifdef USE_NVSHMEM_CUDA
    ![c][d]_*  nvshmem data structure for *
-   type(r3dDPC),device,pointer::d_udalt(:),d_udshortalt(:)
+   integer :: winalt = 0
+   real(t_p), pointer :: buffer3d(:,:,:) => null()
+   type(r3dDPC),device,pointer::d_udalt(:)=>null(),d_udshortalt(:)=>null()
    type(r3dDPC),   allocatable::c_udalt(:),c_udshortalt(:)
-   type(r3dDPC),device,pointer::d_upalt(:),d_upshortalt(:)
+   type(r3dDPC),device,pointer::d_upalt(:)=>null(),d_upshortalt(:)=>null()
    type(r3dDPC),   allocatable::c_upalt(:),c_upshortalt(:)
    ! Pointers to d_udalt,d_udshortalt,d_upalt,d_upshortalt
    type(r3dDPC),device,pointer::upalt_p1(:),udalt_p1(:)
    ! Temp buffer to reduce (Remote Memory Adressing)
-   type(r3dDPC),device,pointer::d_altbuf(:)
+   type(r3dDPC),device,pointer::d_altbuf(:)=>null()
    type(r3dDPC),   allocatable::c_altbuf(:)
 #endif
 

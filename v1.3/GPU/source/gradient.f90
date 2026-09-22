@@ -48,7 +48,8 @@ subroutine gradient (energy,derivs)
    use timestat
    use tors
    use tortor
-   use utilgpu   ,only:rec_queue,def_queue,inf_r,zero_mdred_buffers
+   use utilgpu   ,only:rec_queue,def_queue,inf_r
+   use reduction ,only:zero_mdred_buffers
    use sizes
    use vdwpot
    use virial

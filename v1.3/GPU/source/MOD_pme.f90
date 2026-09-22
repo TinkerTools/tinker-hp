@@ -88,8 +88,23 @@ module pme
 !DIR$ ATTRIBUTES ALIGN:64:: igrid
    integer, allocatable,target :: igrid(:,:)
 
-!$acc declare create(bsmod1,bsmod2,bsmod3)
+   integer,parameter :: pme_qi1(6)=(/ 1, 2, 3, 1, 1, 2 /)
+   integer,parameter :: pme_qi2(6)=(/ 1, 2, 3, 2, 3, 3 /)
+   real(t_p) :: pme_ftc(10,10),pme_ctf(10,10)
+   logical :: pme_ftc_ready=.false.,pme_ctf_ready=.false.
+   logical :: pme_device_ready=.false.
 
+   interface
+      module subroutine initialize_pme_device(queue)
+         integer,intent(in) :: queue
+      end subroutine initialize_pme_device
+
+      module subroutine release_pme_device(queue)
+         integer,intent(in) :: queue
+      end subroutine release_pme_device
+   end interface
+
+!$acc declare create(bsmod1,bsmod2,bsmod3)
 end
 
 !     Is_MPI_GRID1D  keeps track of MPI_GRID1D allocation

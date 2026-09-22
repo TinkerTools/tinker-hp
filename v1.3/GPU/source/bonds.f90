@@ -160,14 +160,14 @@ subroutine upload_device_bond
    use bond
    use domdec,only:rank
    use nvshmem
-   use sizes,only:tinkerdebug
+   use inform,only:deb_Path
    use tinMemory
    implicit none
    integer d_size
 
 #ifdef _OPENACC
 12 format(2x,'upload_device_bond')
-   if(rank.eq.0.and.tinkerdebug) print 12
+   if(deb_Path) print 12
 #endif
 
 #ifdef USE_NVSHMEM_CUDA

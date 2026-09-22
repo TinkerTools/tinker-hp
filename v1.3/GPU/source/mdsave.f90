@@ -24,18 +24,20 @@ subroutine mdsave (istep,dt,epot)
    use bound
    use boxes
    use domdec
-   use dcdmod
+   use dcdmod  ,only:dcdio
    use files
    use group
    use inform
    use iounit
    use mdstuf
+   use mdtraj
    use moldyn
    use mpole
    use output
    use polar
    use potent
    use replicas
+   use status   ,only: status_t,failed
    use titles
    use USampling ,only: US_step=>step,prtUS&
       &,US_enable
@@ -43,7 +45,7 @@ subroutine mdsave (istep,dt,epot)
    use mpi
    implicit none
    integer   i,j,k,istep,iloc,nprocloc,count
-   integer   ixyz,iind,ivel,ifrc
+   integer   iind,ivel,ifrc
    integer   iend1,idump,lext
    integer   freeunit,trimtext,moddump
    integer   iproc,ierr,req(nproc*nproc)
@@ -56,9 +58,10 @@ subroutine mdsave (istep,dt,epot)
       &,pbcWrapTemp(:),bufbegpolesave(:),globpolesave(:)
    integer  ,parameter::PERIOD_INBOX_ATOMS=500
    character*7 ext
-   type(dcdinfo_t), save :: dcdinfo
    character*240 endfile,xyzfile,velfile,frcfile,indfile,exten
    character*3 numberreps
+   type(status_t) :: status_value
+   type(frame_view_t) :: frame
 !
    moddump = mod(istep,iwrite)
 !
@@ -514,19 +517,30 @@ subroutine mdsave (istep,dt,epot)
 !     save coordinates to an archive or numbered structure file, or dcd file
 !
    if (dcdio) then
-      call dcdio_write(dcdinfo,istep,dt,exten)
+      if (.not.dynamic_trajectory%is_active) then
+         call open_trajectory(dynamic_trajectory,dcd_backend,&
+            &filename(1:leng)//trim(exten)//'.dcd',.true.,status_value)
+         if (failed(status_value)) goto 900
+      end if
+      frame = frame_view_t(atoms=n,host_global=.true.,x=x,y=y,z=z)
+      call write_frame(dynamic_trajectory,frame,istep,dt,status_value)
+      if (failed(status_value)) goto 900
    else
-      ixyz = freeunit ()
+      if (dynamic_trajectory%is_active) then
+         call close_trajectory(dynamic_trajectory,status_value)
+         if (failed(status_value)) goto 900
+      end if
       if (archive) then
          xyzfile = filename(1:leng)//trim(exten)
          call suffix (xyzfile,'arc','old')
-
-         inquire (file=xyzfile,exist=exist)
-         if (exist) then
-            call openend (ixyz,xyzfile)
-         else
-            open (unit=ixyz,file=xyzfile,status='new')
-         end if
+         call open_trajectory(dynamic_trajectory,arc_backend,trim(xyzfile),&
+            &.true.,status_value)
+         if (failed(status_value)) goto 900
+         frame = frame_view_t(atoms=n,host_global=.true.,x=x,y=y,z=z)
+         call write_frame(dynamic_trajectory,frame,istep,dt,status_value)
+         if (failed(status_value)) goto 900
+         call close_trajectory(dynamic_trajectory,status_value)
+         if (failed(status_value)) goto 900
       else
          if (f_mdsave) then
             if (n_fwriten.eq.-1) then
@@ -540,10 +554,10 @@ subroutine mdsave (istep,dt,epot)
                &//'.'//ext(1:lext)
          end if
          call version (xyzfile,'new')
-         open (unit=ixyz,file=xyzfile,status='new')
+         frame = frame_view_t(atoms=n,host_global=.true.,x=x,y=y,z=z)
+         call write_snapshot(trim(xyzfile),frame,status_value)
+         if (failed(status_value)) goto 900
       end if
-      call prtxyz (ixyz)
-      close (unit=ixyz)
       write (iout,70)  xyzfile(1:trimtext(xyzfile))
 70    format (' Coordinate File',12x,a)
    end if
@@ -670,4 +684,9 @@ subroutine mdsave (istep,dt,epot)
       write (iout,210)
 210   format ()
    end if
+   return
+
+900 continue
+   write (iout,'(/,a)') trim(status_value%message)
+   call fatal
 end

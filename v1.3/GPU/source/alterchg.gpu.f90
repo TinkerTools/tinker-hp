@@ -42,7 +42,7 @@ subroutine alterchg1
    use potent
    use tinheader
    use tinMemory
-   use utilcomm
+   use parallel, only: accumulate, extend, halo_large
    use utilgpu
    implicit none
    integer i,k,ii
@@ -71,8 +71,8 @@ subroutine alterchg1
 !
 !     communicate neighboring values of delta to modify charges
 !
-   call commDDd_add(pdelta,1,ucBig+ucComm)
-   call commDDd_ext(pdelta,1,ucBig+ucComm)
+   call accumulate(pdelta,1,halo_large)
+   call extend(pdelta,1,halo_large)
 !
 !     alter atomic partial charge values for charge flux
 !
@@ -291,4 +291,3 @@ subroutine angchg1 (pdelta)
       call atomic_add( pdelta(ic),dq2 )
    end do
 end
-

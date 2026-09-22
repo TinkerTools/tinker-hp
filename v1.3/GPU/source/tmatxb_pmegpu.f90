@@ -7,18 +7,19 @@
 module tmatxb_inl_subroutines
    use tintypes ,only: real3,real6,real7
    integer:: icall=1,ndec=1
-   include "erfcore_data.inc.f90"
+!   include "erfcore_data.inc.f90"
    real(t_p),allocatable::mu3(:,:),mu4(:,:)
    real(t_p),allocatable::efi3(:,:),efi4(:,:)
 contains
 #include "image.inc.f90"
 #if defined(SINGLE) | defined(MIXED)
-   include "erfcscore.inc.f90"
+!   include "erfcscore.inc.f90"
 #else
-   include "erfcdcore.inc.f90"
+!   include "erfcdcore.inc.f90"
 #endif
  ! Compute one tmat scalar product
 #include "pair_tmatxb.inc.f90"
+
 end module
 
 !=========================================================================================
@@ -138,6 +139,7 @@ subroutine tmatxb_gen( X,h,shortRange )
    use ewald
    use interfaces ,only: tmatxb_p
    use mpole
+   use parallel, only: polar_ticket_t, polar_post_comm, polar_finish
    use math
    use inform
    use polar_temp
@@ -147,11 +149,12 @@ subroutine tmatxb_gen( X,h,shortRange )
    use utilgpu    ,only: rec_queue
    implicit none
    logical   ,intent(in) :: shortRange
-   real(t_p) ,intent(in) :: X(:,:,:)
+   real(t_p) ,intent(inout) :: X(:,:,:)
    real(t_p) ,intent(out):: h(:,:,:)
 
    integer i,j,k,nrhs
    integer,dimension(nproc) :: reqsend,reqrec,reqrecdirrec,reqrecdirsend
+   type(polar_ticket_t) :: polar_ticket
    real(t_p) term
    parameter(nrhs=2)
 
@@ -170,9 +173,8 @@ subroutine tmatxb_gen( X,h,shortRange )
          call commdirdirshort(nrhs,2,X,reqrec,reqsend)
       end if
    else
-      call commdirdirgpu(nrhs,0,X,reqrec,reqsend)
-      call commdirdirgpu(nrhs,1,X,reqrec,reqsend)
-      call commdirdirgpu(nrhs,2,X,reqrec,reqsend)
+      call polar_post_comm(polar_ticket, nrhs, X)
+      call polar_finish(polar_ticket, nrhs, X)
 
       call commrecdirdipgpu(nrhs,0,murec,X,buffermpimu1,buffermpimu2,reqrec,reqsend)
       call commrecdirdipgpu(nrhs,1,murec,X,buffermpimu1,buffermpimu2,reqrec,reqsend)
@@ -511,7 +513,7 @@ subroutine otf_dc_tmatxb_pmegpu(nrhs,dodiag,mu,efi)
    use shunt
    use tinheader ,only: ti_p
    use utils
-   use utilgpu
+   use utilgpu, only: def_queue,dir_queue,def_stream,dir_stream
    implicit none
    integer  ,intent(in ):: nrhs
    logical  ,intent(in ):: dodiag
@@ -1082,8 +1084,8 @@ subroutine tmatxb_pme_core3(mu,efi)
    use cudafor
    use interfaces, only : cu_tmatxb_pme
    use utilcu    , only : BLOCK_DIM,check_launch_kernel
-   use utilgpu   , only : def_stream,rec_stream,rec_queue,nSMP&
-      &, efit=>ug_workS_r, transposez_r6
+   use utilgpu   , only : def_stream,rec_stream,rec_queue,nSMP,transposez_r6
+   use tmatxb, only : efit=>tmatxb_workspace
    use tmatxb_pmecu,only: tmatxb_pme_core_cu
    use tmatxb_pme_cpencu ,only: tmatxb_pme_cpen_kcu
    use tinMemory , only : prmem_request
@@ -1147,7 +1149,8 @@ subroutine tmatxb_pme_core3(mu,efi)
             &,x_s,y_s,z_s,pdamp,thole,polarity,mu,efit&
             &,npolelocnl,npolelocnlb,nspnlb2,npolebloc,n&
             &,cut2,alsq2,alsq2n,aewald&
-            &,p_xbeg,p_xend,p_ybeg,p_yend,p_zbeg,p_zend)
+            &,p_xbeg,p_xend,p_ybeg,p_yend,p_zbeg,p_zend&
+            &,nproc,.not.no_commdir)
          call check_launch_kernel(" tmatxb_pme_core_cu")
 
 !$acc end host_data
@@ -1178,7 +1181,8 @@ subroutine tmatxb_pme_core3(mu,efi)
             &,x_s,y_s,z_s,pdamp,thole,polarity,mu,efit&
             &,npolelocnl,npolelocnlb,sized,npolebloc,n&
             &,cut2,alsq2,alsq2n,aewald&
-            &,p_xbeg,p_xend,p_ybeg,p_yend,p_zbeg,p_zend)
+            &,p_xbeg,p_xend,p_ybeg,p_yend,p_zbeg,p_zend&
+            &,nproc,.not.no_commdir)
          call check_launch_kernel(" tmatxb_pme_core_cu")
 
 !$acc end host_data
@@ -1202,7 +1206,8 @@ subroutine tmatxb_pme_core3(mu,efi)
             &,npolelocnl,npolelocnlb,nspnlb2,npolebloc,n,pentyp_i,1&
             &,cut2,alsq2,alsq2n,aewald&
             &,p_xbeg,p_xend,p_ybeg,p_yend,p_zbeg,p_zend&
-            &,ucorrect_ik,ucorrect_scale,poleloc,ipole,x,y,z,n_uscale,efi)
+            &,ucorrect_ik,ucorrect_scale,poleloc,ipole,x,y,z,n_uscale,efi&
+            &,nproc,.not.no_commdir)
          call check_launch_kernel(" tmatxb_pme_cpen_kcu")
 !$acc end host_data
       else
@@ -1222,7 +1227,8 @@ subroutine tmatxb_pme_core3(mu,efi)
             &,npolelocnl,npolelocnlb,sized,npolebloc,n,pentyp_i,icall&
             &,cut2,alsq2,alsq2n,aewald&
             &,p_xbeg,p_xend,p_ybeg,p_yend,p_zbeg,p_zend&
-            &,ucorrect_ik,ucorrect_scale,poleloc,ipole,x,y,z,n_uscale,efi)
+            &,ucorrect_ik,ucorrect_scale,poleloc,ipole,x,y,z,n_uscale,efi&
+            &,nproc,.not.no_commdir)
          call check_launch_kernel(" tmatxb_pme_cpen_kcu")
 !$acc end host_data
       end if range1
@@ -1334,7 +1340,8 @@ subroutine tmatxb_pme_core_v4(mu,efi)
          &,mu,mu3,mu4,efi,efi3,efi4&
          &,npolelocnlb,nspnlb2,npolebloc,n&
          &,cut2,alsq2,alsq2n,aewald&
-         &,p_xbeg,p_xend,p_ybeg,p_yend,p_zbeg,p_zend)
+         &,p_xbeg,p_xend,p_ybeg,p_yend,p_zbeg,p_zend&
+         &,nproc,.not.no_commdir)
       call check_launch_kernel(" tmatxb_pme_core_v4_cu")
 
 !$acc end host_data
@@ -1367,7 +1374,8 @@ subroutine tmatxb_pme_core_v4(mu,efi)
          &,mu,mu3,mu4,efi,efi3,efi4&
          &,npolelocnlb,sized,npolebloc,n&
          &,cut2,alsq2,alsq2n,aewald&
-         &,p_xbeg,p_xend,p_ybeg,p_yend,p_zbeg,p_zend)
+         &,p_xbeg,p_xend,p_ybeg,p_yend,p_zbeg,p_zend&
+         &,nproc,.not.no_commdir)
       call check_launch_kernel(" tmatxb_pme_core_v4_cu")
 
 !$acc end host_data
@@ -1409,6 +1417,7 @@ subroutine otf_dc_tmatxb_pme_core3(mu,efi)
    use potent  , only : use_polarshortreal
    use shunt   , only : cut2
    use tinheader ,only: ti_p
+   use utilcomm  ,only: no_commdir
    use utilgpu , only : def_queue, dir_queue,real3,real6
 #ifdef _OPENACC
    use cudafor
@@ -1461,7 +1470,8 @@ subroutine otf_dc_tmatxb_pme_core3(mu,efi)
          &,x_s,y_s,z_s,pdamp,thole,polarity,mu,efi&
          &,npolelocnlb,nspnlb2,npolebloc,n&
          &,cut2,alsq2,alsq2n,aewald&
-         &,p_xbeg,p_xend,p_ybeg,p_yend,p_zbeg,p_zend)
+         &,p_xbeg,p_xend,p_ybeg,p_yend,p_zbeg,p_zend&
+         &,nproc,.not.no_commdir)
 
       call check_launch_kernel(" otf_tmatxb_pme_core_cu")
 
@@ -1478,7 +1488,8 @@ subroutine otf_dc_tmatxb_pme_core3(mu,efi)
          &,x_s,y_s,z_s,pdamp,thole,polarity,mu,efi&
          &,npolelocnlb,npolelocnlb2_pair,npolebloc,n&
          &,cut2,alsq2,alsq2n,aewald&
-         &,p_xbeg,p_xend,p_ybeg,p_yend,p_zbeg,p_zend)
+         &,p_xbeg,p_xend,p_ybeg,p_yend,p_zbeg,p_zend&
+         &,nproc,.not.no_commdir)
       call check_launch_kernel(" otf_dc_tmatxb_pme_core_cu")
 
 !$acc end host_data

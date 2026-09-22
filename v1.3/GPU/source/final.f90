@@ -29,6 +29,7 @@ subroutine final
    use disp
    use divcon
    use domdec
+   use energi, only: delete_energi_on_device
    use fft
    !use fft    ,only: free_FFTgrid_p,is_fftInit
    use freeze
@@ -42,6 +43,8 @@ subroutine final
    use molcul
    use mdstate
    use mpi
+   use mdevice, only: channel_t, reciprocal_channel
+   use mdtraj , only: close_trajectory, dynamic_trajectory
    use mpole
    use neigh
    use pme
@@ -49,10 +52,18 @@ subroutine final
    use polpot
    use potent
    use sizes
+   use reduction, only: delete_reduction_buffers
+   use status, only: failed, status_t
+   use cflux, only: release_cflux_workspaces
+   use tmatxb, only: release_tmatxb_workspace
    use timestat
    use uprior
-   use utilgpu
+   use utilgpu, only: dir_queue, rec_queue
    use vdw
+   use virial, only: delete_vir_device
+#ifdef USE_NVSHMEM
+   use nvshmem, only: nvshmem_finalize
+#endif
 #ifdef PLUMED
    use plumed
 #endif
@@ -60,8 +71,31 @@ subroutine final
    use cudafor
 #endif
    implicit none
+#ifdef COLVARS
+   external colvars_finalize
+   character(len=8) :: repeat_colvars_finalize
+#endif
    integer i
+   type(channel_t) :: reciprocal_work
+   type(status_t) :: trajectory_status
+
+#ifdef PLUMED
+!     finalize adapters while borrowed MPI resources still exist
+   if (lplumed) call plumed_f_gfinalize()
+#endif
+#ifdef COLVARS
+   call colvars_finalize()
+   repeat_colvars_finalize = ''
+   call get_environment_variable('TINKERHP_COLVARS_REPEAT_FINALIZE', &
+      &repeat_colvars_finalize)
+   if (trim(repeat_colvars_finalize) == '1') call colvars_finalize()
+#endif
 !
+   call close_trajectory(dynamic_trajectory,trajectory_status)
+   if (failed(trajectory_status)) then
+      write (iout,'(/,a)') trim(trajectory_status%message)
+      call fatal
+   end if
    call timer_exit(timer_prog)
    if (tinkertime.eq.all_time) call display_timers
    if (fw_mds) call mds_prt
@@ -73,6 +107,16 @@ subroutine final
       call free_FFTgrid_p
       is_fftInit = .false.
    end if
+!$acc wait(dir_queue)
+!$acc wait(rec_queue)
+   call delete_reduction_buffers(dir_queue)
+   call release_cflux_workspaces(dir_queue)
+   call release_polar_workspace(dir_queue)
+   call release_tmatxb_workspace(dir_queue)
+   reciprocal_work = reciprocal_channel()
+   call release_pme_device(reciprocal_work%queue)
+   call delete_energi_on_device()
+   call delete_vir_device()
 ! Not supported for synchronous computation
 !#ifdef _OPENACC
 !      if (cudaStreamDestroy(dir_stream).ne.0)
@@ -95,6 +139,7 @@ subroutine final
    if (use_chgtrn) call dealloc_shared_chgct
    if (use_disp)   call dealloc_shared_disp
    call dealloc_shared_mutate
+   call dealloc_polar_predictor
 !
 !     module "analyz"
 !
@@ -356,20 +401,6 @@ subroutine final
 !
    call gpuFreeMdstuf1Data
 !
-!     module "pme"
-!
-   if (allocated(thetai1))      deallocate (thetai1)
-   if (allocated(thetai2))      deallocate (thetai2)
-   if (allocated(thetai3))      deallocate (thetai3)
-   if (allocated(qgridin_2d))   deallocate (qgridin_2d)
-   if (allocated(qgridout_2d))  deallocate (qgridout_2d)
-   if (allocated(qgrid2in_2d))  deallocate (qgrid2in_2d)
-   if (allocated(qgrid2out_2d)) deallocate (qgrid2out_2d)
-   if (allocated(qfac_2d))      deallocate (qfac_2d)
-   if (allocated(cphirec))      deallocate (cphirec)
-   if (allocated(fphirec))      deallocate (fphirec)
-   if (allocated(igrid))        deallocate (igrid)
-!
 !     module "polar"
 !
    if (allocated(uind)) deallocate (uind)
@@ -391,23 +422,21 @@ subroutine final
 !     module "vdw"
 !
    if (allocated(vdwlocnl)) deallocate (vdwlocnl)
-#ifdef PLUMED
-!
-!   plumed finalization
-!
-   if (lplumed) call plumed_f_gfinalize()
+#ifdef USE_NVSHMEM
+   call nvshmem_finalize()
 #endif
 !
 !     print a final status message before exiting TINKER-HP
 !
-   if (rank.eq.0) write (iout,10)
+   if (.not.final_message_suppressed .and. rank.eq.0) write (iout,10)
 10 format (/,' TINKER-HP is Exiting following Normal Termination')
 !
 !     may need a pause to avoid closing the execution window
 !
-   if (holdup) then
+   if (.not.final_message_suppressed .and. holdup) then
       read (input,20)
 20    format ()
    end if
+   final_message_suppressed = .false.
    return
 end

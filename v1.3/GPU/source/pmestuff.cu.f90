@@ -17,9 +17,9 @@ module pmestuffcu
    use math   ,only: pi
    use pme    ,only: maxorder
    use tinheader
-   use utilcu ,only: PME_BLOCK_DIM,PME_GRID_BDIM,PME_FPHI_DIM1&
-      &, octahedron,use_virial,all_lanes
-   use utilgpu,only: RED_BUFF_SIZE
+   use utilcu ,only: PME_BLOCK_DIM,PME_GRID_BDIM,PME_FPHI_DIM1,all_lanes
+   use cellcu ,only: octahedron
+   use reduction,only: RED_BUFF_SIZE
 
    integer,parameter ::  level=4
    integer,parameter ::  level1=2
@@ -2246,11 +2246,13 @@ attributes(global) subroutine pme_conv_kcu&
    &,kst2,jst2,ist2,qsz1,qsz2,qsz12,qsz&
    &,nff,nf1,nf2,nf3,nfft1,nfft2,nfft3&
    &,f,pterm,volterm,xbox,calc_e,use_bounds&
-   &,qgrid,e_buff,v_buff)
+   &,qgrid,e_buff,v_buff,use_virial_)
 implicit none
 integer  ,value:: nf1,nf2,nf3,nff,nfft1,nfft2,nfft3&
    &,kst2,jst2,ist2,qsz1,qsz2,qsz12,qsz
 logical  ,value:: calc_e,use_bounds
+logical  ,value:: use_virial_
+logical :: use_virial
 real(t_p),value:: pterm,f,xbox,volterm
 real(t_p),device:: bsmod1(*),bsmod2(*),bsmod3(*)&
    &,qgrid(2*qsz)
@@ -2263,6 +2265,8 @@ real(t_p) vterm,term,e0,stat&
    &,expterm&
    &,denom,hsq,struc2&
    &,h1,h2,h3,r1,r2,r3
+
+use_virial = use_virial_
 
 ithread = (blockIdx%x-1)*blockDim%x + threadIdx%x
 it = iand(ithread-1,RED_BUFF_SIZE-1) + 1
@@ -2335,11 +2339,13 @@ attributes(global) subroutine pme_convd_kcu&
    &(bsmod1,bsmod2,bsmod3,kst2,jst2,ist2,qsz1,qsz2,qsz12,qsz&
    &,nff,nf1,nf2,nf3,nfft1,nfft2,nfft3,bfac,fac1,fac2,fac3&
    &,denom0,pterm,xbox,calc_e,use_bounds&
-   &,qgrid,e_buff,v_buff)
+   &,qgrid,e_buff,v_buff,use_virial_)
 implicit none
 integer  ,value:: nf1,nf2,nf3,nff,nfft1,nfft2,nfft3&
    &,kst2,jst2,ist2,qsz1,qsz2,qsz12,qsz
 logical  ,value:: calc_e,use_bounds
+logical  ,value:: use_virial_
+logical :: use_virial
 real(t_p),value:: pterm,f,xbox,volterm,bfac,fac1,fac2,fac3,denom0
 real(t_p),device:: bsmod1(*),bsmod2(*),bsmod3(*)&
    &,qgrid(2*qsz)
@@ -2352,6 +2358,8 @@ real(t_p) vterm,term,e0,stat&
    &,expterm,erfcterm&
    &,denom,hsq,h,b,hhh,struc2&
    &,h1,h2,h3,r1,r2,r3
+
+use_virial = use_virial_
 
 ithread = (blockIdx%x-1)*blockDim%x + threadIdx%x
 it = iand(ithread-1,RED_BUFF_SIZE-1) + 1

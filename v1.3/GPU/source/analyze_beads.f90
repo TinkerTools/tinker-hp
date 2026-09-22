@@ -13,19 +13,37 @@
 !     "analyze_beads" computes and displays the total potential energy;
 !
 !
-#include "tinker_precision.h"
+#include "tinker_macro.h"
 program analyze_beads
    use mpi
+   use config, only: raw_cli_t, capture_raw_cli
+   use domdec, only: rank
+   use iounit, only: iout
+   use mdevice, only: bind_device
+   use status, only: failed, status_t
    implicit none
-   integer ierr!,nthreadsupport
+   integer ierr,world_rank
+   type(raw_cli_t) :: raw_cli
+   type(status_t) :: status_value
+   call bind_device(status_value)
+   if (failed(status_value)) stop 1
+   call capture_raw_cli(raw_cli)
    call MPI_INIT(ierr)
 !      call MPI_INIT_THREAD(MPI_THREAD_MULTIPLE,nthreadsupport,ierr)
-   call analyze_beads_bis
+   call MPI_COMM_RANK(MPI_COMM_WORLD,world_rank,ierr)
+   iout = 6
+   rank = world_rank
+   call analyze_beads_bis(raw_cli,status_value)
+   if (failed(status_value)) then
+      if (world_rank.eq.0) write(iout,*) trim(status_value%message)
+      call MPI_BARRIER(MPI_COMM_WORLD,ierr)
+      __TINKER_FATAL__
+   end if
    call MPI_BARRIER(MPI_COMM_WORLD,ierr)
    call MPI_FINALIZE(ierr)
 end
 !
-subroutine analyze_beads_bis
+subroutine analyze_beads_bis(raw_cli,status_value)
    use ascii, only: int_to_str
    use atomsMirror
    use bath
@@ -35,6 +53,12 @@ subroutine analyze_beads_bis
    use energi
    use files
    use inform
+   use config, only: config_t, raw_cli_t
+   use initialization, only: analyze_beads_application, initialize
+   use mdevice, only: channel_t, finalize_device
+   use parallel, only: parallel_t, release
+   use status, only: failed, status_t
+   use structure, only: structure_t
    use iounit
    use mpi
    use beads
@@ -65,29 +89,21 @@ subroutine analyze_beads_bis
    character*240 dcdfile,exten
    logical :: only_long
    type(dcdinfo_t) :: dcdinfo
+   type(raw_cli_t), intent(in) :: raw_cli
+   type(config_t) :: configuration
+   type(structure_t) :: molecular_structure
+   type(parallel_t) :: platform
+   type(channel_t) :: reciprocal_work
+   type(status_t) :: cleanup_status
+   type(status_t), intent(out) :: status_value
 
 !
-   ! Sign running program
-   app_id = analyze_beads_a
-!
-!     set up the structure and mechanics calculation
-!
-   call initial
-   call init_keys
-   call read_bead_config
-   call initmpi
-   call MPI_BARRIER(MPI_COMM_WORLD,ierr)
-   call getxyz
-   call unitcell
-   call cutoffs
-   call lattice
-!
-!     setup for MPI
-!
-   call drivermpi
-   call reinitnl(0)
-!
-   call mechanic
+   call initialize(analyze_beads_application, raw_cli, configuration, molecular_structure, &
+      &platform, reciprocal_work, status_value)
+   if (failed(status_value)) return
+   ! Preserve the historical parser position after common initialization has
+   ! loaded the primary structure directly from the captured command line.
+   call nextarg(string,exist)
 !
 !     call nblist(0)
 
@@ -346,4 +362,7 @@ subroutine analyze_beads_bis
       end if
    enddo
    call final
+   call finalize_device(cleanup_status)
+   call release(platform, cleanup_status)
+   if (failed(cleanup_status)) status_value = cleanup_status
 end

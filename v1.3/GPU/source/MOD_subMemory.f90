@@ -2996,6 +2996,16 @@ module subroutine prmem_real_req2( array, nl, nc, async, queue,&
          sd_prmem = sd_prmem + s_array
       end if
       if(debMem.ne.0) print*,'alloc r 2',nc.ne.s_alloc,nl,nc
+   else if (btest(cfg,memfree).or.nl*nc.eq.0) then
+      ashape = shape(array)
+      s_array = ashape(1)*ashape(2)*szoTp
+      if (btest(cfg,memacc)) then
+         sd_prmem = sd_prmem - s_array
+!$acc wait(rec_queue)
+!$acc exit data delete(array)
+      end if
+      s_prmem = s_prmem - s_array
+      deallocate(array)
    else
       ashape  = shape(array)
       s_array = ashape(1)*ashape(2)*szoTp

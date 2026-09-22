@@ -39,6 +39,7 @@ module inform
    integer iwrite,isend,n_fwriten,idumpdyn
    logical silent,verbose,dd_verbose
    logical debug,holdup,abort
+   logical final_message_suppressed
    integer tinEssai
    integer mtc_nacc
 

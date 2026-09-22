@@ -46,11 +46,14 @@ module dcdmod
    save
 
    interface
-      module subroutine dcdio_write(dcdinfo,istep,dt,suffix)
+      module subroutine dcdio_write(dcdinfo,trajectory_file,istep,dt,append,&
+         &x_frame,y_frame,z_frame)
          type(dcdinfo_t), intent(inout) :: dcdinfo
-         character(*), intent(in) :: suffix
+         character(*), intent(in) :: trajectory_file
          integer, intent(in) :: istep
          real(r_p), intent(in) :: dt
+         logical, intent(in) :: append
+         real(r_p), intent(in) :: x_frame(:),y_frame(:),z_frame(:)
       end subroutine
    end interface
 

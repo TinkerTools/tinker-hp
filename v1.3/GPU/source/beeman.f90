@@ -36,6 +36,7 @@ subroutine beeman (istep,dt)
    use beeman_inl
    use cutoff
    use domdec
+   use parallel, only: migrate_atoms
    use deriv     ,only:info_forces,cBond,cNBond,comm_forces,tdes_l&
       &,dr_stride,de_tot,derivx
    use energi
@@ -81,7 +82,7 @@ subroutine beeman (istep,dt)
 !     Reassign the particules that have changed of domain
 !
 !     -> real space
-   call reassign
+   call migrate_atoms
 !
 !     -> reciprocal space
    call reassignpme(.false.)

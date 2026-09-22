@@ -17,16 +17,35 @@
 #include "tinker_macro.h"
 program minimize
    use mpi
+   use config, only: raw_cli_t, capture_raw_cli
+   use domdec, only: rank
+   use iounit, only: iout
+   use mdevice, only: bind_device
+   use status, only: status_t, failed
    implicit none
-   integer ierr
+   integer ierr,world_rank
+   type(raw_cli_t) raw_cli
+   type(status_t) status_value
+   call bind_device(status_value)
+   if (failed(status_value)) stop 1
+   call capture_raw_cli(raw_cli)
    call MPI_INIT(ierr)
-   call minimize_bis
+   call MPI_COMM_RANK(MPI_COMM_WORLD,world_rank,ierr)
+   iout = 6
+   rank = world_rank
+   call minimize_bis(raw_cli,status_value)
+   if (failed(status_value)) then
+      if (world_rank.eq.0) write(iout,*) trim(status_value%message)
+      call MPI_BARRIER(MPI_COMM_WORLD,ierr)
+      __TINKER_FATAL__
+   end if
    call MPI_BARRIER(MPI_COMM_WORLD,ierr)
    call MPI_FINALIZE(ierr)
 end
 
-subroutine minimize_bis
+subroutine minimize_bis(raw_cli,status_value)
    use atomsMirror
+   use config, only: raw_cli_t, config_t
    use domdec
    use deriv  ,only: ftot_l,cDef,dr_stride3,de_tot&
       &,info_forces,comm_forces
@@ -35,11 +54,17 @@ subroutine minimize_bis
    use keys
    use inform
    use iounit
-   use interfaces,only: LBFGS
+   use interfaces,only: LBFGS,prtxyz
+   use output, only: cyclesave
    use scales
    use tinMemory ,only: prmem_requestm
    use usage
-   use utilgpu   ,only: rec_queue,ti_p,re_p
+   use utilgpu   ,only: ti_p,re_p
+   use mdevice, only: channel_t, finalize_device
+   use initialization, only: initialize, minimize_application
+   use parallel, only: parallel_t, release
+   use structure, only: structure_t
+   use status, only: status_t, failed
    use mpi
    implicit none
    integer i,j,imin,ierr
@@ -54,6 +79,15 @@ subroutine minimize_bis
    real(r_p), allocatable :: xx(:)
    real(r_p), allocatable :: derivs(:,:)
    logical exist,analytic
+   logical write_minimize_xyz
+   logical prepare_minimize_xyz
+   type(raw_cli_t), intent(in) :: raw_cli
+   type(config_t) configuration
+   type(structure_t) molecular_structure
+   type(parallel_t) platform
+   type(channel_t) reciprocal_work
+   type(status_t), intent(out) :: status_value
+   type(status_t) cleanup_status
    character*20 keyword
    character*240 minfile
    character*240 record
@@ -62,24 +96,9 @@ subroutine minimize_bis
    external minimiz1
    external optsave
 !
-   ! Sign running program
-   app_id = minimize_a
-!
-!     set up the structure and mechanics calculation
-!
-   call initial
-   call initmpi
-   call getxyz
-   call cutoffs
-   call unitcell
-   call lattice
-!
-!     setup for MPI
-!
-   call drivermpi
-   call reinitnl(0)
-!
-   call mechanic
+   call initialize(minimize_application, raw_cli, configuration, molecular_structure, &
+      &platform, reciprocal_work, status_value)
+   if (failed(status_value)) return
    call nblist(0)
    call allocstep
 !
@@ -107,6 +126,8 @@ subroutine minimize_bis
          read (string,*,err=10,end=10)  iprint
       else if (keyword(1:9) .eq. 'WRITEOUT ') then
          read (string,*,err=10,end=10)  iwrite
+      else if (keyword(1:7) .eq. 'IWRITE ') then
+         read (string,*,err=10,end=10)  iwrite
       end if
 10    continue
    end do
@@ -127,14 +148,23 @@ subroutine minimize_bis
 !
 !     write out a copy of coordinates for later update
 !
-   imin = freeunit ()
-   minfile = filename(1:leng)//'.xyz'
-   call version (minfile,'new')
-   if (rank.eq.0) then
-      open (unit=imin,file=minfile,status='new')
-      call prtxyz (imin)
-      close (unit=imin)
-      outfile = minfile
+   write_minimize_xyz = configuration%minimize_xyz_enabled
+   prepare_minimize_xyz = write_minimize_xyz
+   if (.not.write_minimize_xyz .and. iwrite.gt.0 .and. .not.cyclesave) then
+      prepare_minimize_xyz = .true.
+   else if (.not.write_minimize_xyz .and. .not.cyclesave) then
+      iwrite = 0
+   end if
+   if (prepare_minimize_xyz) then
+      imin = freeunit ()
+      minfile = filename(1:leng)//'.xyz'
+      call version (minfile,'new')
+      if (rank.eq.0) then
+         open (unit=imin,file=minfile,status='new')
+         call prtxyz (imin)
+         close (unit=imin)
+         outfile = minfile
+      end if
    end if
 !
 !     set scaling parameter for function and derivative values;
@@ -270,7 +300,7 @@ subroutine minimize_bis
 !
 !     write the final coordinates into a file
 !
-   if (rank.eq.0) then
+   if (write_minimize_xyz .and. rank.eq.0) then
       imin = freeunit ()
       open (unit=imin,file=minfile,status='old')
       rewind (unit=imin)
@@ -281,6 +311,9 @@ subroutine minimize_bis
 !     perform any final tasks before program exit
 !
    call final
+   call finalize_device(cleanup_status)
+   call release(platform, cleanup_status)
+   if (failed(cleanup_status)) status_value = cleanup_status
 end
 !
 !

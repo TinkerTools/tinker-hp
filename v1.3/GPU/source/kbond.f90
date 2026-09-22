@@ -544,13 +544,13 @@ subroutine upload_device_kbond
    use bond
    use domdec,only:rank
    use nvshmem
-   use sizes,only:tinkerdebug
+   use inform,only:deb_Path
    use tinMemory
    use bndpot
    implicit none
 #ifdef _OPENACC
 12 format(2x,'upload_device_kbond')
-   if(rank.eq.0.and.tinkerdebug) print 12
+   if(deb_Path) print 12
 #endif
 #ifdef USE_NVSHMEM_CUDA
    call shmem_update_device(bk,nbond,&

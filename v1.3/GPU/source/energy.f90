@@ -26,7 +26,7 @@ function energy ()
    use action
    use energy_inl
    use sizes
-   use domdec,only: rank
+   use domdec,only: rank,ndir
    use energi
    use group
    use inform,only: deb_Path,abort

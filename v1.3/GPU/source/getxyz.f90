@@ -15,23 +15,27 @@
 !
 !
 #include "tinker_macro.h"
-subroutine get_xyz_filename(xyzfile)
+subroutine get_xyz_filename(xyzfile, key_is_loaded)
    use files
    use iounit
    implicit none
    character*240, intent(inout) :: xyzfile
+   logical, intent(in), optional :: key_is_loaded
 
-   if(.not. keys_already_read) then
-      call init_keys
-   endif
+   if (present(key_is_loaded)) then
+      if (.not.key_is_loaded .and. .not.keys_already_read) call init_keys
+   else
+      if (.not.keys_already_read) call init_keys
+   end if
 
    xyzfile = filename
    call suffix (xyzfile,'xyz','old')
 
 end subroutine
 
-subroutine getxyz
+subroutine getxyz(key_is_loaded)
    use inform
+   use interfaces, only: get_xyz_filename
    use iounit
    use output
    use files
@@ -39,8 +43,13 @@ subroutine getxyz
    integer ixyz
    integer freeunit
    character*240 xyzfile
+   logical, intent(in), optional :: key_is_loaded
 
-   call get_xyz_filename(xyzfile)
+   if (present(key_is_loaded)) then
+      call get_xyz_filename(xyzfile,key_is_loaded)
+   else
+      call get_xyz_filename(xyzfile)
+   end if
 !
 !     first open and then read the Cartesian coordinates file
 !

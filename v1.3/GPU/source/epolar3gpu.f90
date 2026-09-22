@@ -16,14 +16,14 @@
 !
 #include "tinker_macro.h"
 module epolar3gpu_inl
-   include "erfcore_data.inc.f90"
+!   include "erfcore_data.inc.f90"
 contains
 #include "convert.inc.f90"
 #include "image.inc.f90"
 #if defined(SINGLE) | defined(MIXED)
-   include "erfcscore.inc.f90"
+!   include "erfcscore.inc.f90"
 #else
-   include "erfcdcore.inc.f90"
+!   include "erfcdcore.inc.f90"
 #endif
 #include "pair_polar.inc.f90"
 end module
@@ -31,6 +31,7 @@ end module
 subroutine epolar3gpu
    use group
    use tinheader,only: ti_p
+   use tinMemory,only: prmem_request
    use potent,only: use_lambdadyn
    implicit none
    if(use_group .and. wgrp(1,2).eq.0._ti_p) then
@@ -81,9 +82,10 @@ subroutine epolar3cgpu
    use precompute_pole,only:precompute_tmat,polar_precomp
    use mpi
    use utils
-   use utilgpu
+   use utilgpu, only: def_queue,dir_queue,rec_queue,start_dir_stream_cover
    use uprior     ,only: use_pred
    use sizes
+   use tinMemory, only: prmem_request
    use timestat
    use group
 
@@ -280,8 +282,9 @@ subroutine elambdapolar3cgpu
    use polpot
    use potent
    use tinheader,only: zerom,zeromd
+   use tinMemory, only: mipk
    use uprior
-   use utilgpu
+   use utilgpu, only: rec_queue
    use virial
    implicit none
    integer i,iipole,j,k,ierr,altopt
@@ -397,7 +400,7 @@ subroutine epreal3dgpu
    use shunt
    use mpi
    use utils
-   use utilgpu
+   use utilgpu, only: def_queue,real3,real6,rpole_elt
    use timestat
 
    implicit none
@@ -563,7 +566,7 @@ subroutine epreal3d_cu
    use cutoff  ,only: shortheal
    use deriv   ,only: dep
    use domdec  ,only: xbegproc,ybegproc,zbegproc&
-      &,nproc,rank,xendproc,yendproc,zendproc&
+      &,nproc,ndir,rank,xendproc,yendproc,zendproc&
       &,nbloc,loc
    use energi  ,only: ep=>ep_r
 #ifdef _CUDA
@@ -593,15 +596,14 @@ subroutine epreal3d_cu
    use utils   ,only: associate_ptr
 #ifdef _CUDA
    use cudafor
+   use tinMemory,only: prmem_request
    use utilcu  ,only: BLOCK_DIM,check_launch_kernel
-   use utilgpu ,only: def_queue,dir_queue,rec_queue&
-      &,real3,real6,real3_red,rpole_elt&
-      &,ered_buff=>ered_buf1,vred_buff,nred_buff&
-      &,reduce_energy_action,get_gridDim&
-      &,RED_BUFF_SIZE,zero_en_red_buffer&
-      &,trqvec=>ug_workS_r1&
-      &,pot=>ug_workS_r&
-      &,dir_stream,def_stream,nSMP
+   use utilgpu ,only: def_queue,dir_queue,rec_queue,real3,real6,real3_red,&
+      &rpole_elt,dir_stream,def_stream,nSMP,get_gridDim
+   use polar,only: trqvec=>polar_workspace
+   use cflux,only: pot=>cflux_pot
+   use reduction,only: RED_BUFF_SIZE,ered_buff=>ered_buf1,vred_buff,nred_buff,&
+      &reduce_energy_action,zero_en_red_buffer
 #endif
 
    implicit none
@@ -662,6 +664,8 @@ subroutine epreal3d_cu
    end if
 
 #ifdef _CUDA
+   call prmem_request(trqvec,3,npolelocnl)
+   if (use_chgflx) call prmem_request(pot,nbloc)
    def_stream = dir_stream
    if (first_in) then
       ! Compute through occupancy the right gridSize to launch the kernel with
@@ -689,7 +693,8 @@ subroutine epreal3d_cu
             &,npolelocnlb,nspnlb2,npolebloc,n&
             &,off2,f,alsq2,alsq2n,aewald,off,shortheal&
             &,use_polarshortreal,use_tholed&
-            &,p_xbeg,p_xend,p_ybeg,p_yend,p_zbeg,p_zend)
+            &,p_xbeg,p_xend,p_ybeg,p_yend,p_zbeg,p_zend&
+            &,ndir)
       else
          call epreal3_cu<<<gS,BLOCK_DIM,0,def_stream>>>&
             &(ipole_s,pglob_s,loc_s,plocnl_s&
@@ -699,7 +704,8 @@ subroutine epreal3d_cu
             &,npolelocnlb,npolelocnlb2_pair,npolebloc,n&
             &,off2,f,alsq2,alsq2n,aewald,off,shortheal&
             &,use_polarshortreal,use_tholed&
-            &,p_xbeg,p_xend,p_ybeg,p_yend,p_zbeg,p_zend)
+            &,p_xbeg,p_xend,p_ybeg,p_yend,p_zbeg,p_zend&
+            &,ndir)
       end if
       call check_launch_kernel(" epreal3_cu")
 
@@ -721,7 +727,7 @@ subroutine epreal3d_cu
             &,p_xbeg,p_xend,p_ybeg,p_yend,p_zbeg,p_zend&
             &,dpucorrect_ik,dpucorrect_scale,n_dpuscale,ipole,polelocnl&
             &,loc,x,y,z&
-            &)
+            &,nproc,ndir)
          call check_launch_kernel(" epreal_cpen3_kcu")
 !$acc end host_data
       else
@@ -739,7 +745,7 @@ subroutine epreal3d_cu
             &,p_xbeg,p_xend,p_ybeg,p_yend,p_zbeg,p_zend&
             &,dpucorrect_ik,dpucorrect_scale,n_dpuscale,ipole,polelocnl&
             &,loc,x,y,z&
-            &)
+            &,nproc,ndir)
          call check_launch_kernel(" epreal_cpen3_kcu")
 !$acc end host_data
       end if

@@ -6,9 +6,9 @@ module nblistcu
    use cudadevice
    use neigh     ,only: n_bl=>normal_block,i_bl=>inside_block&
                  ,d_bl=>disc_block
-   use utilcu    ,only: all_lanes,xcell,ycell,zcell&
-                 ,xcell2,ycell2,zcell2,mincell2,f_sqrt,f_abs&
+   use cellcu    ,only: xcell,ycell,zcell,xcell2,ycell2,zcell2,mincell2&
                  ,monoclinic,triclinic
+   use utilcu    ,only: all_lanes,f_sqrt,f_abs
    use utilgpu   ,only: BLOCK_SIZE,WARP_SIZE,WARP_SHFT,inf
 !  use tinheader ,only: ti_p,ti_eps
    integer,parameter::REORDER_BSIZE=64

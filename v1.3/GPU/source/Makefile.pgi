@@ -161,6 +161,10 @@ lib_dir__      := $(HOME)/local/lib
 #  -----------------  #
 MOD_SRCS  = MOD_tinheader.o
 MOD_SRCS += MOD_sizes.o
+MOD_SRCS += MOD_status.f90
+MOD_SRCS += MOD_restart.f90
+MOD_SRCS += MOD_structure.f90
+MOD_SRCS += MOD_initialization.f90
 MOD_SRCS += MOD_action.f90
 MOD_SRCS += MOD_analyz.f90
 MOD_SRCS += MOD_angang.f90
@@ -187,11 +191,14 @@ MOD_SRCS += MOD_chgpot.f90
 MOD_SRCS += MOD_chgtrn.f90
 MOD_SRCS += MOD_chunks.f90
 MOD_SRCS += MOD_colvars.f90
+MOD_SRCS += MOD_config.f90
+MOD_SRCS += MOD_parallel.f90
 MOD_SRCS += MOD_couple.f90
 MOD_SRCS += MOD_commstuffpi.f90
 MOD_SRCS += MOD_ctrpot.f90
 MOD_SRCS += MOD_cutoff.f90
 MOD_SRCS += MOD_dcdio.f90
+MOD_SRCS += MOD_mdtraj.f90
 MOD_SRCS += MOD_deconvolution.f90
 MOD_SRCS += MOD_deriv.f90
 MOD_SRCS += MOD_disp.f90
@@ -266,6 +273,7 @@ MOD_SRCS += MOD_params.f90
 MOD_SRCS += MOD_pitors.f90
 MOD_SRCS += MOD_plumed.f90
 MOD_SRCS += MOD_pme.f90
+MOD_SRCS += sm_pme.gpu.f90
 MOD_SRCS += MOD_polar.f90
 MOD_SRCS += MOD_polgrp.f90
 MOD_SRCS += MOD_polpot.f90
@@ -274,6 +282,8 @@ MOD_SRCS += MOD_precis.f90
 MOD_SRCS += MOD_ptable.f90
 MOD_SRCS += MOD_precompute_polegpu.f90
 MOD_SRCS += MOD_qtb.f90
+MOD_SRCS += MOD_reduction.f90
+MOD_SRCS += MOD_tmatxb.f90
 MOD_SRCS += MOD_random.f90
 MOD_SRCS += MOD_repel.f90 
 MOD_SRCS += MOD_replicas.f90
@@ -310,6 +320,11 @@ MOD_SRCS += MOD_vec.f90
 MOD_SRCS += MOD_vdwpot.f90
 MOD_SRCS += MOD_vdw.f90
 MOD_SRCS += MOD_virial.f90
+
+# Canonical submodules join the module-build phase.  Backend markers remain
+# part of the filename so the rule below, rather than the sm_ role marker,
+# chooses their compiler flags.
+MOD_SRCS += $(filter-out sm_%.cu.f90,$(notdir $(wildcard $(src_dir)/sm_*.f90)))
 
 ##   Fortran
 ##   -------
@@ -499,7 +514,8 @@ F_SRCS   += version.f90
 
 ##   Device  Fortran
 ##   ---------------
-DEV_F_SRCS   = MOD_util.cu.f90
+DEV_F_SRCS   = MOD_cell.cu.f90
+DEV_F_SRCS  += MOD_util.cu.f90
 DEV_F_SRCS  += echarge.cu.f90
 DEV_F_SRCS  += echglj.cu.f90
 DEV_F_SRCS  += echgtrn.cu.f90
@@ -515,6 +531,7 @@ DEV_F_SRCS  += nblist.cu.f90
 DEV_F_SRCS  += pmestuff.cu.f90
 DEV_F_SRCS  += tmatxb_pme.cu.f90
 DEV_F_SRCS  += tmatxb_pme_cpen.cu.f90
+DEV_F_SRCS  += $(notdir $(wildcard $(src_dir)/sm_*.cu.f90))
 
 
 ##   C++
@@ -794,6 +811,13 @@ cu.%.o: $(src_dir)/%.cu
 # Fortran Objects (OpenACC, etc...)
 cuf.%.o: $(src_dir)/%.cu.f90
 	$(RunCUFC) $(CUFFLAGS) -I$(src_dir) -c $< -o $@
+## Canonical submodules: backend suffixes select compiler mode before sm_ role.
+cuf.sm_%.o: $(src_dir)/sm_%.cu.f90
+	$(RunCUFC) $(CUFFLAGS) -I$(src_dir) -c $< -o $@
+sm_%.gpu.o: $(src_dir)/sm_%.gpu.f90
+	$(RunF77) $(GPUFLAGS) -I$(src_dir) -c $< -o $@
+sm_%.o: $(src_dir)/sm_%.f90
+	$(RunF77) $(GPUFLAGS) -I$(src_dir) -c $< -o $@
 %gpu.o: $(src_dir)/%gpu.f90
 	$(RunF77) $(GPUFLAGS) -I$(src_dir) -c $<
 e%.o: $(src_dir)/e%.f90
@@ -939,4 +963,3 @@ debug:
 	cat *.f > xxx.f
 	ftnchek xxx.f
 	rm xxx.f
-

@@ -17,10 +17,12 @@ attributes(global) subroutine __Cat(emreal_cpen,__sufx__)&
    &, p_xbeg,p_xend,p_ybeg,p_yend,p_zbeg,p_zend&
    &, mcorrect_ik,mcorrect_scale,ipole_,loc_,x_,y_,z_&
    &, n_mscale&
+   &, nproc,ngrp&
    &)
 implicit none
 integer  ,value :: nab,nbloc,n&
    &,nabp,n_mscale,pentyp
+integer  ,value :: nproc,ngrp
 logical  ,value :: ugrp,ulamdyn,ucflx
 real(t_p),value,intent(in):: p_xbeg,p_xend,p_ybeg,p_yend&
    &,p_zbeg,p_zend,loff2,shortheal,elambda&
@@ -57,7 +59,6 @@ type(mdyn3_r)   frc_i
 type(mdyn3_r)  ,shared:: frc_k(BLOCK_DIM)
 type(rpole_elt) ip
 type(rpole_elt),shared:: kp(BLOCK_DIM)
-
 parameter(ver=__tver__, fea=__tfea__&
    &,deb=.false.)
 !

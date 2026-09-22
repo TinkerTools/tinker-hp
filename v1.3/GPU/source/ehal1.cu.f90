@@ -23,14 +23,13 @@ module ehal1cu
       &,d_bl=>disc_block
    use sizes    ,only: maxvalue,maxclass,maxgrp
    use tinheader,only: ti_p
-   use utilcu   ,only: nproc,ngrp,all_lanes,VDW_BLOCK_DIM&
-      &,skipvdw12,cu_update_skipvdw12,use_virial&
-      &,vcouple,xcell2,ycell2,zcell2,f_abs
+   use utilcu   ,only: all_lanes,VDW_BLOCK_DIM,f_abs
+   use cellcu   ,only: xcell2,ycell2,zcell2
 #if TINKER_SINGLE_PREC + TINKER_MIXED_PREC
    use utilcu   ,only: f_sqrt
 #endif
-   use utilgpu  ,only: BLOCK_SIZE,RED_BUFF_SIZE
-   use vdw      ,only: vdw_skipvdw12=>skipvdw12
+   use utilgpu  ,only: BLOCK_SIZE
+   use reduction,only: RED_BUFF_SIZE
    use vdwpot   ,only: ARITHMETIC_RL,GEOMETRIC_RL,CUBIC_MEAN_RL&
       &,HARMONIC_RL,HHG_RL
 
@@ -155,6 +154,7 @@ attributes(global)&
 #ifdef TINKER_DEBUG
    &,inter&
 #endif
+   &,nproc_,ngrp_,use_virial_,skipvdw12_,vcouple_&
    &)
 
 implicit none
@@ -180,6 +180,10 @@ real(t_p),device,intent(in):: xred(nvdwlocnlb)&
 mdyn_rtyp,device,intent(inout)::dev(3,nbloc)
 logical  ,value,intent(in)::use_short
 logical, value, intent(in) :: use_group
+integer,value,intent(in):: nproc_,ngrp_
+integer :: nproc,ngrp
+logical,value,intent(in):: use_virial_,skipvdw12_,vcouple_
+logical :: use_virial,skipvdw12,vcouple
 integer, device, intent(in) :: grplist(*)
 real(t_p), device, intent(in) :: wgrp(ngrp+1,ngrp+1)
 #ifdef TINKER_DEBUG
@@ -205,6 +209,12 @@ real(t_p) vxx_,vxy_,vxz_,vyy_,vyz_,vzz_
 logical do_pair,same_block,accept_mid,ik12
 integer(1) muti,mutik
 integer(1),shared::mutk(VDW_BLOCK_DIM)
+
+nproc = nproc_
+ngrp = ngrp_
+use_virial = use_virial_
+skipvdw12 = skipvdw12_
+vcouple = vcouple_
 
 ithread = threadIdx%x + (blockIdx%x-1)*blockDim%x
 iwarp   = (ithread-1) / warpsize

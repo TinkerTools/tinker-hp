@@ -37,6 +37,11 @@ re_module = re.compile(
     re.IGNORECASE
 )
 
+re_submodule = re.compile(
+    r'^\s*submodule\s*\(\s*(\w+)',
+    re.IGNORECASE
+)
+
 re_use = re.compile(
     r'^\s*use\s*(?:,\s*intrinsic\s*::)?\s*(\w+)',
     re.IGNORECASE
@@ -162,6 +167,13 @@ for obj, file in obj_source.items():
                 mod = m.group(1).lower()
                 if mod in dep_dict and dep_dict[mod] != obj:
                     obj_deps[obj].add(dep_dict[mod])
+
+            # Parent module required before a Fortran submodule.
+            m = re_submodule.match(line)
+            if m:
+                parent = m.group(1).lower()
+                if parent in dep_dict and dep_dict[parent] != obj:
+                    obj_deps[obj].add(dep_dict[parent])
 
             # includes
             for inc in re_include.findall(line):

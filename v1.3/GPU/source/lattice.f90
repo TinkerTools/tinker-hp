@@ -22,7 +22,7 @@ subroutine lattice
    use math
 #ifdef _OPENACC
    use interfaces ,only: C_get_cell
-   use utilcu     ,only: copy_cell_cu
+   use cellcu     ,only: copy_cell_cu
    use pmestuffcu ,only: copy_recip_cu
 #endif
    use tinheader
@@ -139,9 +139,7 @@ subroutine lattice
 !$acc    ,beta_sin,beta_cos,beta_term,gamma_sin,gamma_cos,gamma_term&
 !$acc    ,i_xcell,i_ycell,i_zcell,eps_cell,box34 )
 #ifdef _OPENACC
-   call copy_cell_cu(xcell,ycell,zcell,xcell2,ycell2,zcell2,eps_cell&
-            ,beta_sin,beta_cos,beta_term,gamma_sin,gamma_cos,gamma_term&
-            ,monoclinic,triclinic,octahedron,box34)
+   call copy_cell_cu
    call C_get_cell(xcell,ycell,zcell,eps_cell&
          ,beta_sin,beta_cos,beta_term,gamma_sin,gamma_cos,gamma_term&
          ,mono,tric,octa,box34)

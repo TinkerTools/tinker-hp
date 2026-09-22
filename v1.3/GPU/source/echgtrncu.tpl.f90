@@ -14,24 +14,25 @@ attributes(global) subroutine __Cat(echgtrn,__sufx__)&
     , p_xbeg,p_xend,p_ybeg,p_yend,p_zbeg,p_zend&
     , ctscal_ik, ctscal_val, ipole_, loc_, x_, y_, z_&
     , n_ctscale&
+    , nproc,ngrp&
     )
 implicit none
-integer  ,intent(in),value:: na,nb,nab,nbap,ctrntyp,n_ctscale
+integer  ,intent(in),value:: na,nb,nab,nbap,ctrntyp,n_ctscale,nproc,ngrp
 logical  ,intent(in),value:: ugrp,ulamdyn
 integer(1),device,intent(in):: mut(*)
 real(t_p),intent(in),value:: f,elambda,ctrnscut,loff2,off2,off,cut2,sheal&
-   &,rinv,p_xbeg,p_xend,p_ybeg,p_yend,p_zbeg,p_zend
+         ,rinv,p_xbeg,p_xend,p_ybeg,p_yend,p_zbeg,p_zend
 integer  ,intent(in),device:: ipole(*),pglob(*),loc(*),bapl(*)&
-   &,abpl(*),grplist(*),ctscal_ik(2,*),ipole_(*)&
-   &,loc_(*)
+         ,abpl(*),grplist(*),ctscal_ik(2,*),ipole_(*)&
+         ,loc_(*)
 real(t_p),intent(in),device:: x(*),y(*),z(*),chgct(*),dmpct(*)&
-   &,wgrp(maxgrp+1,*),x_(*),y_(*),z_(*),ctscal_val(*)
+         ,wgrp(maxgrp+1,*),x_(*),y_(*),z_(*),ctscal_val(*)
 integer  ,device:: n_buff(*)
 ener_rtyp,device:: e_buff(RED_BUFF_SIZE)
 mdyn_rtyp,device:: dect(3,*)
 real(t_p),device:: v_buff(*)
 real(r_p),device:: l_buff(*)
-!
+
 integer   ithread,iwarp,nwarp,ilane,klane,srclane,lot
 integer   ii,j,i,kbis,iblock,idx,kdx,ver,fea
 integer   iipole,iglob,iploc,kpole,kglob,kploc,nect_

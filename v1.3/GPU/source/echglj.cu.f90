@@ -20,11 +20,12 @@ module eChgLjcu
    use tinheader,only: ti_p,oner
    use tintypes ,only: real3
    use sizes    ,only: maxclass,maxvalue
-   use utilcu   ,only: ndir,VDW_BLOCK_DIM,ALL_LANES,use_virial,skipvdw12
+   use utilcu   ,only: VDW_BLOCK_DIM,ALL_LANES
 #if TINKER_SINGLE_PREC + TINKER_MIXED_PREC
    use utilcu   ,only:f_sqrt
 #endif
-   use utilgpu  ,only: inf,BLOCK_SIZE,RED_BUFF_SIZE
+   use utilgpu  ,only: inf,BLOCK_SIZE
+   use reduction,only: RED_BUFF_SIZE
    use vdw      ,only: vdw_lcut2,vdweAbsurd
    use vdwpot   ,only: ARITHMETIC_RL,GEOMETRIC_RL
 

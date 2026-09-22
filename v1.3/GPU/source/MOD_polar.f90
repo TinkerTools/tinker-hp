@@ -39,11 +39,17 @@ module polar
    logical   npolar_ne_npole,use_mpolar_ker
    real(t_p),parameter :: tinypol = 1d-5
    real(t_p),allocatable,target :: uind(:,:),uinp(:,:)
+   real(t_p),allocatable,target :: polar_workspace(:,:)
    real(t_p),pointer :: polarity(:),polarity_orig(:),thole(:),tholed(:)&
             ,pdamp(:),uind_p(:,:),uinp_p(:,:),thlval(:,:),thdval(:,:)
    integer  ,pointer :: jpolar(:)
    integer ::winpolarity,winpolarity_orig,winjpolar&
             ,winthole,winpdamp,wintholed
+   interface
+      module subroutine release_polar_workspace(queue)
+         integer,intent(in):: queue
+      end subroutine
+   end interface
 end
 
  ! Temporary Data allocated by polarisation

@@ -65,9 +65,9 @@ subroutine AssociateThetai_p
 
    tsize = size(thetai1,dim=3)
    if (use_charge) then
-      thetai1_p(1:2,1:bsorder,1:2*tsize)=> thetai1(:,:,:)
-      thetai2_p(1:2,1:bsorder,1:2*tsize)=> thetai2(:,:,:)
-      thetai3_p(1:2,1:bsorder,1:2*tsize)=> thetai3(:,:,:)
+      thetai1_p(1:2,1:bsorder,1:tsize)=> thetai1(:,:,:)
+      thetai2_p(1:2,1:bsorder,1:tsize)=> thetai2(:,:,:)
+      thetai3_p(1:2,1:bsorder,1:tsize)=> thetai3(:,:,:)
    else
       thetai1_p(1:4,1:bsorder,1:1*tsize)=> thetai1(:,:,:)
       thetai2_p(1:4,1:bsorder,1:1*tsize)=> thetai2(:,:,:)
@@ -1029,29 +1029,34 @@ end
 !
 subroutine cart_to_fracgpu
    use boxes
-   use pme
+   use pme,only:pme_ctf,pme_ctf_ready,qi1=>pme_qi1,qi2=>pme_qi2,nfft1,nfft2,nfft3
    use tinheader
-   use utilgpu,only:rec_queue,ctf,qi1,qi2
+   use mdevice,only:channel_t,reciprocal_channel
    implicit none
    integer i,j,k,m
    integer i1,i2
+   integer rec_queue
+   type(channel_t) rec_channel
    real(t_p) a(3,3)
+
+   rec_channel=reciprocal_channel()
+   rec_queue=rec_channel%queue
 !
 !     set the reciprocal vector transformation matrix
 !
 
-!$acc kernels async(rec_queue) present(ctf)
+!$acc kernels async(rec_queue) present(pme_ctf)
 !$acc loop collapse(2)
    do i = 1, 10
       do j = 1, 10
-         ctf(j,i) = 0.0_ti_p
+         pme_ctf(j,i) = 0.0_ti_p
       end do
    end do
-   ctf(1,1) = 1.0_ti_p
+   pme_ctf(1,1) = 1.0_ti_p
 !$acc end kernels
 
 !$acc kernels async(rec_queue) &
-!$acc        create(a) present(ctf,recip)
+!$acc        create(a) present(pme_ctf,recip)
 !$acc loop
    do i = 1, 3
       a(1,i) = real(nfft1,t_p) * recip(i,1)
@@ -1064,7 +1069,7 @@ subroutine cart_to_fracgpu
 !$acc loop collapse(2)
    do i = 2, 4
       do j = 2, 4
-         ctf(i,j) = a(i-1,j-1)
+         pme_ctf(i,j) = a(i-1,j-1)
       end do
    end do
 !$acc loop collapse(2)
@@ -1073,7 +1078,7 @@ subroutine cart_to_fracgpu
          k = qi1(i1)
          i = qi1(i2)
          j = qi2(i2)
-         ctf(i1+4,i2+4) = a(k,i) * a(k,j)
+         pme_ctf(i1+4,i2+4) = a(k,i) * a(k,j)
       end do
    end do
 !$acc loop seq collapse(2)
@@ -1083,10 +1088,11 @@ subroutine cart_to_fracgpu
          m = qi2(i1)
          i = qi1(i2)
          j = qi2(i2)
-         ctf(i1+4,i2+4) = a(k,i)*a(m,j) + a(k,j)*a(m,i)
+         pme_ctf(i1+4,i2+4) = a(k,i)*a(m,j) + a(k,j)*a(m,i)
       end do
    end do
 !$acc end kernels
+   pme_ctf_ready=.true.
 end
 !
 subroutine fphi_to_cphi_site(fphi,cphi)
@@ -1208,28 +1214,33 @@ end
 subroutine frac_to_cartgpu
 !     use sizes
    use boxes
-   use pme
+   use pme,only:pme_ftc,pme_ftc_ready,qi1=>pme_qi1,qi2=>pme_qi2,nfft1,nfft2,nfft3
    use tinheader ,only: ti_p
-   use utilgpu,only:rec_queue,ftc,qi1,qi2
+   use mdevice,only:channel_t,reciprocal_channel
    implicit none
    integer i,j,k,m
    integer i1,i2
+   integer rec_queue
+   type(channel_t) rec_channel
    real(t_p) a(3,3)
+
+   rec_channel=reciprocal_channel()
+   rec_queue=rec_channel%queue
 !
 !     set the reciprocal vector transformation matrix
 !
 !$acc data create(a) &
-!$acc     present(recip,ftc) &
+!$acc     present(recip,pme_ftc) &
 !$acc     async(rec_queue)
 
 !$acc kernels async(rec_queue)
 !$acc loop collapse(2)
    do i = 1, 10
       do j = 1, 10
-         ftc(j,i) = 0.0_ti_p
+         pme_ftc(j,i) = 0.0_ti_p
       end do
    end do
-   ftc(1,1) = 1.0_ti_p
+   pme_ftc(1,1) = 1.0_ti_p
 !$acc end kernels
 !$acc kernels async(rec_queue)
 !$acc loop
@@ -1244,7 +1255,7 @@ subroutine frac_to_cartgpu
 !$acc loop collapse(2)
    do i = 2, 4
       do j = 2, 4
-         ftc(i,j) = a(i-1,j-1)
+         pme_ftc(i,j) = a(i-1,j-1)
       end do
    end do
 !$acc loop collapse(2)
@@ -1253,10 +1264,10 @@ subroutine frac_to_cartgpu
          k = qi1(i1)
          i = qi1(i2)
          if (i2.lt.4) then
-            ftc(i1+4,i2+4) = a(k,i)*a(k,i)
+            pme_ftc(i1+4,i2+4) = a(k,i)*a(k,i)
          else
             j = qi2(i2)
-            ftc(i1+4,i2+4) = 2.0_ti_p * a(k,i)*a(k,j)
+            pme_ftc(i1+4,i2+4) = 2.0_ti_p * a(k,i)*a(k,j)
          end if
       end do
    end do
@@ -1267,16 +1278,17 @@ subroutine frac_to_cartgpu
          m = qi2(i1)
          i = qi1(i2)
          if (i2.lt.4) then
-            ftc(i1+4,i2+4) = a(k,i)*a(m,i)
+            pme_ftc(i1+4,i2+4) = a(k,i)*a(m,i)
          else
             j = qi2(i2)
-            ftc(i1+4,i2+4) = a(k,i)*a(m,j) + a(m,i)*a(k,j)
+            pme_ftc(i1+4,i2+4) = a(k,i)*a(m,j) + a(m,i)*a(k,j)
          end if
       end do
    end do
 !$acc end kernels
 
 !$acc end data
+   pme_ftc_ready=.true.
    return
 end
 !
@@ -1339,7 +1351,7 @@ subroutine reassignpme(init)
    allocate (req(2*nproc))
    allocate (counttemp(nproc))
    call prmem_request(repartrectemp,n)
-   repartrec = -1
+   repartrec(:)      = -1
    if (use_mlpot_only) return
    allocate (domlentemp(nproc))
    counttemp = 0
@@ -1380,10 +1392,11 @@ subroutine reassignpme(init)
       call prmem_request(repartrec,n)
       call prmem_request(domlenrec,nproc)
 !
-      precdir_recep  = 0
-      precdir_send   = 0
-      precdir_recep1 = 0
-      precdir_send1  = 0
+      repartrec(:)      = -1
+      precdir_recep(:)  = -1
+      precdir_send(:)   = -1
+      precdir_recep1(:) = -1
+      precdir_send1(:)  = -1
 !
       if (use_pmecore) then
          nprocloc1 = nrec

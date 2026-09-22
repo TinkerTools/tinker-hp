@@ -12,9 +12,10 @@
 #include "tinker_macro.h"
 #include "tinker_cudart.h"
 module empole_cpencu
-   use utilcu   ,only: nproc,ngrp,BLOCK_DIM
-   use utilgpu  ,only: BLOCK_SIZE,RED_BUFF_SIZE,WARP_SIZE
    use tinTypes ,only: real3,real6,mdyn3_r,rpole_elt
+   use utilgpu  ,only: BLOCK_SIZE,WARP_SIZE
+   use utilcu   ,only: BLOCK_DIM
+   use reduction,only: RED_BUFF_SIZE
    use tinheader,only: zeror,oner
    use sizes    ,only: maxgrp
    implicit none

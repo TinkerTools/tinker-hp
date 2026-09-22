@@ -20,23 +20,49 @@ contains
 end module
 
 program analyze
+   use config, only: raw_cli_t, capture_raw_cli
+   use domdec, only: rank
+   use iounit, only: iout
    use mpi
+   use mdevice, only: bind_device
+   use status, only: failed, status_t
    implicit none
-   integer ierr!,nthreadsupport
+   integer ierr,world_rank
+   type(raw_cli_t) :: raw_cli
+   type(status_t) :: status_value
+   call bind_device(status_value)
+   if (failed(status_value)) stop 1
+   call capture_raw_cli(raw_cli)
    call MPI_INIT(ierr)
 !      call MPI_INIT_THREAD(MPI_THREAD_MULTIPLE,nthreadsupport,ierr)
-   call analyze_bis
+   call MPI_COMM_RANK(MPI_COMM_WORLD,world_rank,ierr)
+   iout = 6
+   rank = world_rank
+   call analyze_bis(raw_cli,status_value)
+   if (failed(status_value)) then
+      if (world_rank.eq.0) write(iout,*) trim(status_value%message)
+      call MPI_BARRIER(MPI_COMM_WORLD,ierr)
+      __TINKER_FATAL__
+   end if
    call MPI_BARRIER(MPI_COMM_WORLD,ierr)
    call MPI_FINALIZE(ierr)
 end
 !
-subroutine analyze_bis
+subroutine analyze_bis(raw_cli,status_value)
    use dcdmod
+   use config, only: max_raw_cli_args, raw_cli_length, raw_cli_t, config_t, &
+      &parse_common_cli
    use domdec
    use files
    use inform
+   use initialization, only: analyze_application, initialize
    use iounit
+   use mdevice, only: channel_t, finalize_device
    use mpi
+   use parallel, only: parallel_t, release
+   use status, only: failed, enrich_status, set_status, status_invalid_argument, &
+      &status_t
+   use structure, only: read_frame, structure_t
    implicit none
    integer i,ixyz,ierr
    integer frame
@@ -44,38 +70,38 @@ subroutine analyze_bis
    integer trimtext
    real(r_p) energy
    logical doenergy,dodipoltot,dodipolmol
-   logical exist
+   integer value_count
    character*1 letter
    character*240 string
    character*240 xyzfile
    character*240 dcdfile
+   character(len=raw_cli_length) :: xyz_path
+   character(len=raw_cli_length) :: values(max_raw_cli_args)
    type(dcdinfo_t) :: dcdinfo
+   type(raw_cli_t), intent(in) :: raw_cli
+   type(config_t) :: configuration
+   type(structure_t) :: molecular_structure
+   type(parallel_t) :: platform
+   type(channel_t) :: reciprocal_work
+   type(status_t), intent(out) :: status_value
+   type(status_t) :: cleanup_status
 !
-   ! Sign running program
-   app_id = analyze_a
-!
-!     set up the structure and mechanics calculation
-!
-   call initial
-   call initmpi
-   call getxyz
-   call unitcell
-   call cutoffs
-   call lattice
-!
-!     setup for MPI
-!
-   call drivermpi
-   call reinitnl(0)
-!
-   call mechanic
-!
-!     call nblist(0)
+   call initialize(analyze_application, raw_cli, configuration, molecular_structure, &
+      &platform, reciprocal_work, status_value)
+   if (failed(status_value)) return
+   call nblist(0)
 !
 !     get the desired types of analysis to be performed
 !
-   call nextarg (string,exist)
-   if (.not. exist) then
+   call parse_common_cli(raw_cli, xyz_path, values, value_count, status_value)
+   if (failed(status_value)) then
+      call enrich_status(status_value,'Analyze Command Line')
+      call final
+      call finalize_device(cleanup_status)
+      call release(platform, cleanup_status)
+      return
+   end if
+   if (value_count == 0) then
       if (ranktot.eq.0) write (iout,10)
 10    format (/,' The TINKER Analysis Facility can Provide :',&
               /,'   Total Potential Energy and its Components [E]',&
@@ -84,8 +110,12 @@ subroutine analyze_bis
       if (ranktot.eq.0) write (iout,30)
 30    format (/,' You Need To Enter the Desired Analysis Types',&
          &' [E,D,M] :  ')
-      call MPI_BARRIER(COMM_TINKER,ierr)
-      __TINKER_FATAL__
+      call set_status(status_value,status_invalid_argument, &
+         &'Analyze requires one or more analysis types [E,D,M]')
+      call final
+      call finalize_device(cleanup_status)
+      call release(platform, cleanup_status)
+      return
    end if
 !
 !     set option control flags based desired analysis types
@@ -93,6 +123,7 @@ subroutine analyze_bis
    doenergy   = .false.
    dodipoltot = .false.
    dodipolmol = .false.
+   string = values(1)
    call upcase (string)
    do i = 1, trimtext(string)
       letter = string(i:i)
@@ -104,12 +135,17 @@ subroutine analyze_bis
         dodipolmol = .true.
       else
         if (ranktot.eq.0) write (iout,30)
-        call MPI_BARRIER(COMM_TINKER,ierr)
-        __TINKER_FATAL__
+        call set_status(status_value,status_invalid_argument, &
+           &'Unknown Analyze type; expected E, D, or M')
+        call final
+        call finalize_device(cleanup_status)
+        call release(platform, cleanup_status)
+        return
       end if
    end do
 !
-!     reopen the coordinates file and read the first structure
+!     reopen the coordinate source and consume the initial frame already
+!     loaded by the common initialization path
 !
    frame = 0
    if (dcdio) then
@@ -122,9 +158,24 @@ subroutine analyze_bis
       ixyz = freeunit ()
       xyzfile = filename
       call suffix (xyzfile,'xyz','old')
-      open (unit=ixyz,file=xyzfile,status ='old')
+      open (unit=ixyz,file=xyzfile,status ='old',iostat=ierr)
+      if (ierr /= 0) then
+         call set_status(status_value,status_invalid_argument, &
+            &'Unable to Open the Cartesian Coordinates File')
+         call final
+         call finalize_device(cleanup_status)
+         call release(platform, cleanup_status)
+         return
+      end if
       rewind (unit=ixyz)
-      call readxyz (ixyz)
+      call read_frame(ixyz,molecular_structure,status_value)
+      if (failed(status_value)) then
+         close (unit=ixyz)
+         call final
+         call finalize_device(cleanup_status)
+         call release(platform, cleanup_status)
+         return
+      end if
    end if
 !
 !     perform analysis for each successive coordinate structure
@@ -169,7 +220,14 @@ subroutine analyze_bis
 !     attempt to read next structure from the coordinate file
 !
       if (.not.dcdio) then
-         call readxyz (ixyz)
+         call read_frame(ixyz,molecular_structure,status_value)
+         if (failed(status_value)) then
+            close (unit=ixyz)
+            call final
+            call finalize_device(cleanup_status)
+            call release(platform, cleanup_status)
+            return
+         end if
       else
          call dcdfile_read_next(dcdinfo)
          call dcdfile_skip_next(dcdinfo,0)
@@ -184,6 +242,9 @@ subroutine analyze_bis
       close (unit=ixyz)
    end if
    call final
+   call finalize_device(cleanup_status)
+   call release(platform, cleanup_status)
+   if (failed(cleanup_status)) status_value = cleanup_status
 end
 !
 !

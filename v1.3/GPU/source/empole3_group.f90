@@ -18,13 +18,13 @@
 #include "tinker_types.h"
 module empole3_group_inl
    use tintypes , only: real3,rpole_elt
-   include "erfcore_data.inc.f90"
+!   include "erfcore_data.inc.f90"
 contains
 #include "image.inc.f90"
 #if defined(SINGLE) | defined(MIXED)
-   include "erfcscore.inc.f90"
+!   include "erfcscore.inc.f90"
 #else
-   include "erfcdcore.inc.f90"
+!   include "erfcdcore.inc.f90"
 #endif
 #include "switch_respa.inc.f90"
 #include "pair_mpole1.inc.f90"
@@ -327,4 +327,3 @@ subroutine emreal3_correct_scale_group
       emgroup       = emgroup + tp2enr(e)
    end do
 end
-

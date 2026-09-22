@@ -16,14 +16,14 @@
 !
 #include "tinker_macro.h"
 module epolar1gpu_inl
-   include "erfcore_data.inc.f90"
+!   include "erfcore_data.inc.f90"
 contains
 #include "convert.inc.f90"
 #include "image.inc.f90"
 #if defined(SINGLE) | defined(MIXED)
-   include "erfcscore.inc.f90"
+!   include "erfcscore.inc.f90"
 #else
-   include "erfcdcore.inc.f90"
+!   include "erfcdcore.inc.f90"
 #endif
 #include "pair_polar.inc.f90"
 end module
@@ -95,9 +95,10 @@ subroutine epolar1cgpu
    use potent
    use precompute_pole,only:precompute_tmat,polar_precomp
    use sizes
+   use tinMemory, only: prmem_request
    use timestat
    use utils
-   use utilgpu
+   use utilgpu, only: def_queue,dir_queue,rec_queue,start_dir_stream_cover,end_dir_stream_cover
    use vec
    use virial
 
@@ -465,8 +466,10 @@ subroutine epreal1cgpu
    use tinheader
    use tinMemory
    use utils
-   use utilcomm
-   use utilgpu   ,pot=>ug_workS_r
+   use parallel, only: accumulate, extend, halo_large, halo_neighbour
+   use cflux      ,pot=>cflux_pot
+   use utilgpu    ,only: def_queue,dir_queue,rec_queue,def_stream,dir_stream,&
+      &rec_stream,mem_set
    use timestat
 
    implicit none
@@ -631,8 +634,8 @@ subroutine epreal1cgpu
    end if !( use_virial )
 
    if (use_chgflx) then
-      call commDDd_add(pot,1,ucComm+ucBig)
-      call commDDd_ext(pot,1,ucComm+ucNeig)
+      call accumulate(pot,1,halo_large)
+      call extend(pot,1,halo_neighbour)
       call dcflux2(pot,de_ws1)
       call adflux2(de_ws1,dep)
       call mem_set(pot,zeror,int(nbloc,mipk),rec_stream)
@@ -665,10 +668,11 @@ subroutine epreal1c_core1(trqvec,vxx,vxy,vxz,vyy,vyz,vzz)
    use polpot
    use potent
    use shunt
+   use tinTypes, only: mdyn3_r
    use virial
    use mpi
    use utils
-   use utilgpu
+   use utilgpu, only: def_queue,real3,real6,rpole_elt,warning,maxscaling,maxscaling1
    use timestat
 
    implicit none
@@ -975,7 +979,8 @@ subroutine epreal1c_core2(trqvec,vxx,vxy,vxz,vyy,vyz,vzz)
    use tinheader  ,only: ti_p
    use virial
    use tinTypes,only: real3,real6,rpole_elt,mdyn3_r
-   use utilgpu ,only: def_queue, pot=>ug_workS_r
+   use utilgpu ,only: def_queue
+   use cflux   ,only: pot=>cflux_pot
 
    implicit none
 
@@ -1176,7 +1181,7 @@ subroutine epreal1c_core3(trqvec,vxx,vxy,vxz,vyy,vyz,vzz)
    use chgpen    ,only: pcore,pval,palpha
    use deriv     ,only: dep
    use domdec    ,only: xbegproc,ybegproc,zbegproc&
-      &,nproc,rank,xendproc,yendproc,zendproc&
+      &,nproc,ndir,rank,xendproc,yendproc,zendproc&
       &,nbloc,loc
    use energi    ,only: ep=>ep_r
    use epolar1cu ,only: epreal1c_core_cu
@@ -1204,14 +1209,11 @@ subroutine epreal1c_core3(trqvec,vxx,vxy,vxz,vyy,vyz,vzz)
    use virial
    use cudafor
    use utilcu    ,only: BLOCK_DIM,check_launch_kernel
-   use utilgpu   ,only: def_queue&
-      &,real3,real6,real3_red,rpole_elt&
-      &,reduce_energy_virial,get_GridDim&
-      &,zero_evir_red_buffer&
-      &,maxBlock,BLOCK_SIZE,RED_BUFF_SIZE&
-      &,dir_stream,def_stream,rec_stream,nSMP&
-      &,ered_buff=>ered_buf1,vred_buff,nred_buff&
-      &,pot=>ug_workS_r
+   use utilgpu   ,only: def_queue,real3,real6,real3_red,rpole_elt,get_GridDim,&
+      &maxBlock,BLOCK_SIZE,dir_stream,def_stream,rec_stream,nSMP
+   use cflux      ,only: pot=>cflux_pot
+   use reduction  ,only: RED_BUFF_SIZE,ered_buff=>ered_buf1,vred_buff,nred_buff,&
+      &reduce_energy_virial,zero_evir_red_buffer
    implicit none
 
    real(t_p),intent(inout):: trqvec(3,npolelocnl)
@@ -1285,7 +1287,8 @@ subroutine epreal1c_core3(trqvec,vxx,vxy,vxz,vyy,vyz,vzz)
             &,pot,dep,trqvec,ered_buff,vred_buff&
             &,npolelocnlb,nspnlb2,npolebloc,n,use_chgflx,use_tholed&
             &,off2,f,alsq2,alsq2n,aewald&
-            &,p_xbeg,p_xend,p_ybeg,p_yend,p_zbeg,p_zend)
+            &,p_xbeg,p_xend,p_ybeg,p_yend,p_zbeg,p_zend&
+            &,nproc)
          call check_launch_kernel(" epreal1c_core_cu short")
 
       else
@@ -1307,7 +1310,8 @@ subroutine epreal1c_core3(trqvec,vxx,vxy,vxz,vyy,vyz,vzz)
                &,pot,dep,trqvec,ered_buff,vred_buff&
                &,npolelocnlb,sized,npolebloc,n,use_chgflx,use_tholed&
                &,off2,f,alsq2,alsq2n,aewald&
-               &,p_xbeg,p_xend,p_ybeg,p_yend,p_zbeg,p_zend)
+               &,p_xbeg,p_xend,p_ybeg,p_yend,p_zbeg,p_zend&
+               &,nproc)
             call check_launch_kernel(" epreal1c_core_cu")
          end do
 
@@ -1341,7 +1345,7 @@ subroutine epreal1c_core3(trqvec,vxx,vxy,vxz,vyy,vyz,vzz)
             &,p_xbeg,p_xend,p_ybeg,p_yend,p_zbeg,p_zend&
             &,dpucorrect_ik,dpucorrect_scale,n_dpuscale,ipole,polelocnl&
             &,loc,x,y,z&
-            &)
+            &,nproc,ndir)
          call check_launch_kernel(" epreal_cpen1_kcu short")
       else
          ! Split electrostatic kernel to ease recovering process in MPI
@@ -1360,7 +1364,7 @@ subroutine epreal1c_core3(trqvec,vxx,vxy,vxz,vyy,vyz,vzz)
                &,p_xbeg,p_xend,p_ybeg,p_yend,p_zbeg,p_zend&
                &,dpucorrect_ik,dpucorrect_scale,n_dpuscale,ipole,polelocnl&
                &,loc,x,y,z&
-               &)
+               &,nproc,ndir)
             call check_launch_kernel(" epreal_cpen1_kcu")
          end do
       end if
@@ -1410,14 +1414,11 @@ subroutine mpreal1c_core(trqvec,vxx,vxy,vxz,vyy,vyz,vzz)
    use virial
    use cudafor
    use utilcu  ,only: BLOCK_DIM,check_launch_kernel
-   use utilgpu ,only: def_queue&
-      &,real3,real6,real3_red,rpole_elt&
-      &,ered_buff=>ered_buf1,vred_buff&
-      &,pot=>ug_workS_r&
-      &,reduce_energy_virial,get_GridDim&
-      &,RED_BUFF_SIZE,zero_evir_red_buffer&
-      &,maxBlock,BLOCK_SIZE&
-      &,dir_stream,def_stream,rec_stream,nSMP
+   use utilgpu ,only: def_queue,real3,real6,real3_red,rpole_elt,get_GridDim,&
+      &maxBlock,BLOCK_SIZE,dir_stream,def_stream,rec_stream,nSMP
+   use cflux   ,only: pot=>cflux_pot
+   use reduction,only: RED_BUFF_SIZE,ered_buff=>ered_buf1,vred_buff,&
+      &reduce_energy_virial,zero_evir_red_buffer
    implicit none
 
    real(t_p),intent(inout):: trqvec(3,npolelocnl)
@@ -1490,8 +1491,9 @@ subroutine mpreal1c_core(trqvec,vxx,vxy,vxz,vyy,vyz,vzz)
          &,use_group,grplist,wgrp&
          &,dep,trqvec,ered_buff,vred_buff&
          &,npolelocnlb,nspnlb2,npolebloc,n,m_short&
-         &,off2,f,alsq2,alsq2n,aewald,r_cut,sh_cut2,shortheal&
-         &,p_xbeg,p_xend,p_ybeg,p_yend,p_zbeg,p_zend)
+            &,off2,f,alsq2,alsq2n,aewald,r_cut,sh_cut2,shortheal&
+            &,p_xbeg,p_xend,p_ybeg,p_yend,p_zbeg,p_zend&
+            &,nproc,ngrp)
       call check_launch_kernel(" mpreal1c_core_cu")
 
    else if (use_mpolelong) then
@@ -1519,7 +1521,7 @@ subroutine mpreal1c_core(trqvec,vxx,vxy,vxz,vyy,vyz,vzz)
             &,npolelocnlb,sized,npolebloc,n,m_normal&
             &,off2,f,alsq2,alsq2n,aewald,r_cut,sh_cut2,shortheal&
             &,p_xbeg,p_xend,p_ybeg,p_yend,p_zbeg,p_zend&
-            &)
+            &,nproc,ngrp)
          call check_launch_kernel(" mpreal1c_core_cu")
       end do
 
@@ -1534,7 +1536,8 @@ subroutine mpreal1c_core(trqvec,vxx,vxy,vxz,vyy,vyz,vzz)
             &, dep,trqvec,ered_buff,vred_buff&
             &, n,nbloc,n_mscale,.true.,use_group&
             &, r_cut,sh_cut2,off2&
-            &, shortheal,fem,aewald,alsq2,alsq2n )
+            &, shortheal,fem,aewald,alsq2,alsq2n&
+            &,ngrp )
          call check_launch_kernel(" emreals_scaling_cu")
       else
          call emreal_scaling_cu<<<gS1,BLOCK_DIM,0,def_stream>>>&
@@ -1543,7 +1546,8 @@ subroutine mpreal1c_core(trqvec,vxx,vxy,vxz,vyy,vyz,vzz)
             &, dep,trqvec,ered_buff,vred_buff&
             &, n,nbloc,n_mscale,.true.,use_group&
             &, r_cut,sh_cut2,off2&
-            &, shortheal,fem,aewald,alsq2,alsq2n )
+            &, shortheal,fem,aewald,alsq2,alsq2n&
+            &,ngrp )
          call check_launch_kernel(" emreal_scaling_cu")
       end if
    end if
@@ -1589,7 +1593,8 @@ subroutine epreal1c_correct_scale&
    use shunt   ,only: off2
    use tinheader ,only: ti_p
    use tinTypes,only: real3,real6,mdyn3_r,rpole_elt
-   use utilgpu ,only: def_queue, pot=>ug_workS_r
+   use utilgpu ,only: def_queue
+   use cflux   ,only: pot=>cflux_pot
    use virial
    implicit none
 
@@ -1824,10 +1829,15 @@ subroutine eprecip1gpu
    use polpot
    use potent
    use timestat
+   use tinMemory, only: mipk,prmem_request
    use tinheader ,only: zeror
    use utils
-   use utilcomm
-   use utilgpu   ,pot=>ug_workS_r,potrec=>ug_workS_r1
+   use parallel, only: accumulate, extend, halo_neighbour
+   use cflux      ,pot=>cflux_pot,potrec=>cflux_potrec
+   use mdevice    ,only: channel_t,reciprocal_channel
+   use pme        ,only: ftc=>pme_ftc
+   use utilgpu    ,only: dir_queue,def_queue,mem_set,&
+      &start_dir_stream_cover,end_dir_stream_cover
    use virial
    implicit none
    integer status(MPI_STATUS_SIZE),tag,ierr,siz
@@ -1853,6 +1863,11 @@ subroutine eprecip1gpu
    real(t_p) cphim(4),cphid(4)
    real(t_p) cphip(4)
    integer  ,dimension(nproc)::reqsend,reqrec,req2send,req2rec
+   integer rec_queue
+   type(channel_t) rec_channel
+
+   rec_channel=reciprocal_channel()
+   rec_queue=rec_channel%queue
 !
 !     return if the Ewald coefficient is zero
 !
@@ -1860,6 +1875,7 @@ subroutine eprecip1gpu
 !
    if (deb_Path) write(*,'(2x,a)') 'eprecip1gpu'
    call timer_enter( timer_eprecip )
+   if (use_chgflx) call prmem_request(pot,nbloc)
 
    if (use_pmecore) then
       nprocloc = nrec
@@ -2413,14 +2429,14 @@ subroutine eprecip1gpu
             iloc = locrec(ipole(polerecglob(i)))
             potrec(iloc) = cphirec(1,i)
          end do
-         call commDDrd   (pot,potrec,1,ucComm)
-         call commDDd_ext(pot,       1,ucNeig+ucComm)
+         call accumulate(pot,potrec,1)
+         call extend(pot,       1,halo_neighbour)
       end if
       call dcflux2( pot,de_ws1 )
       call adflux2( de_ws1,dep )
-      call mem_set(pot,zeror,int(nbloc,mipk),rec_stream)
+      call mem_set(pot,zeror,int(nbloc,mipk),rec_channel%stream)
       if (nproc.ne.1) call mem_set&
-         &(potrec,zeror,int(nlocrec,mipk),rec_stream)
+         &(potrec,zeror,int(nlocrec,mipk),rec_channel%stream)
    end if
 !
 !     get contribution of the reciprocal permanent electric field to delambdae

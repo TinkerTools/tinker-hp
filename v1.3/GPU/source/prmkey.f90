@@ -704,12 +704,9 @@ subroutine prmkey (text)
    else if (keyword(1:10) .eq. 'MOD-GANGS ')       then
       read (string,*,err=10,end=10)   mod_gangs
    else if (keyword(1:11) .eq. 'NDIR-BLOCK ')       then
-      read (string,*,err=10,end=10)   Ndir_block
-      Ndir_block = max(1,Ndir_block)
+      read (string,*,err=10,end=10)   ivalue
    else if (keyword(1:16) .eq. 'NDIR-ASYNC-BLOCK ')       then
-      read (string,*,err=10,end=10)   Ndir_async_block
-      Ndir_async_block = max(0,min(3*Ndir_async_block/4,&
-         &Ndir_async_block))
+      read (string,*,err=10,end=10)   ivalue
    else if (keyword(1:12) .eq. 'GPU-WORKERS ')     then
       read (string,*,err=10,end=10)   gpu_workers
 !$acc update device(gpu_workers)

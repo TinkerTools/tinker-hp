@@ -1,0 +1,28 @@
+  
+ ***** Using the CUFFT engine *****
+  
+
+ Particle Mesh Ewald Parameters :
+
+     Type                Ewald Alpha    Grid Dimensions    Spline Order
+
+   Electrostatics           0.5446        96   60   40           5
+   Polarization             0.5446        96   60   40           5
+   Dispersion               0.5446        96   60   40           5
+
+ Random Number Generator Initialized with SEED :      354570674
+
+ Limited Memory BFGS Quasi-Newton Optimization :
+
+ QN Iter     F Value      G RMS     F Move    X Move   Angle  FG Call  Comment
+
+     0   -25098.9489    68.6787                                   1
+    75   -40578.5965     0.0050     0.0005    0.0000   58.01     78   SmallGrad
+
+ LBFGS  --  Normal Termination due to SmallGrad
+
+ Final Function Value :       -40578.59728740
+ Final RMS Gradient :              0.00290642
+ Final Gradient Norm :             0.46792540
+
+ TINKER-HP is Exiting following Normal Termination

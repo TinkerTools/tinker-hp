@@ -24,7 +24,6 @@ subroutine drivermpi
    use potent
    use mpi
 #ifdef _OPENACC
-   use utilcu,only: copy_data_to_cuda_env
 #endif
    use utilcomm
    use tinMemory
@@ -44,6 +43,7 @@ subroutine drivermpi
    call prmem_request(globrec,n)
    call prmem_request(locrec,n)
    call prmem_request(repart,n)
+   !call prmem_request(repartrec,n)
    call prmem_request(domlen,nproc,config=mhostonly)
    call prmem_request(domlenpole,nproc,config=mhostonly)
    call prmem_request(domlenpolerec,nproc,config=mhostonly)
@@ -135,6 +135,9 @@ subroutine drivermpi
          &rec_group,ierr)
       call MPI_Comm_create(COMM_TINKER,direct_group,comm_dir,ierr)
       call MPI_Comm_create(COMM_TINKER,rec_group,comm_rec,ierr)
+      call MPI_Group_free(direct_group,ierr)
+      call MPI_Group_free(rec_group,ierr)
+      call MPI_Group_free(total_group,ierr)
       if (rank.le.ndir-1) then
          call MPI_COMM_RANK(comm_dir,rank_bis,ierr)
       else
@@ -144,7 +147,6 @@ subroutine drivermpi
       deallocate (direct_rank)
    end if
 #ifdef _OPENACC
-   call copy_data_to_cuda_env(ndir,0)
 #endif
 !
 !     call the dd load balancing routine

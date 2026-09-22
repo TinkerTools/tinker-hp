@@ -1,0 +1,231 @@
+{
+  "version": 6,
+  "cmakeMinimumRequired": {
+    "major": 3,
+    "minor": 31,
+    "patch": 0
+  },
+  "configurePresets": [
+    {
+      "name": "gpu-double",
+      "displayName": "GPU Double",
+      "description": "NVHPC + MPI wrapper + nvcc baseline CMake preset for the maintained GPU path.",
+      "generator": "Ninja",
+      "binaryDir": "${sourceDir}/build/gpu-double",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Release",
+        "CMAKE_C_COMPILER": "mpicc",
+        "CMAKE_CXX_COMPILER": "mpic++",
+        "CMAKE_Fortran_COMPILER": "mpif90",
+        "CMAKE_CUDA_COMPILER": "nvcc",
+        "TINKERHP_BACKEND": "GPU",
+        "TINKERHP_PRECISION": "DOUBLE",
+        "TINKERHP_LINK_MODE": "STATIC",
+        "TINKERHP_FFT_BACKEND": "GENERIC",
+        "TINKERHP_ENABLE_PLUMED": "OFF",
+        "TINKERHP_ENABLE_COLVARS": "OFF",
+        "TINKERHP_ENABLE_ORTHO_BOX_ONLY": "OFF",
+        "TINKERHP_ENABLE_FPA": "ON",
+        "TINKERHP_ENABLE_NN": "OFF",
+        "TINKERHP_ENABLE_NVTX": "OFF",
+        "TINKERHP_ENABLE_OPENMP": "OFF",
+        "TINKERHP_ENABLE_HIP": "OFF",
+        "TINKERHP_ENABLE_NO_MUTATION": "OFF",
+        "TINKERHP_ENABLE_NVSHMEM": "OFF",
+        "TINKERHP_GPU_ARCHITECTURES": "native"
+      }
+    },
+    {
+      "name": "gpu-fpa",
+      "displayName": "GPU Mixed FPA",
+      "description": "GPU mixed-precision build with Fixed Precision Arithmetic enabled.",
+      "inherits": "gpu-double",
+      "binaryDir": "${sourceDir}/build/gpu-fpa",
+      "cacheVariables": {
+        "TINKERHP_PRECISION": "MIXED",
+        "TINKERHP_ENABLE_FPA": "ON"
+      }
+    },
+    {
+      "name": "gpu-fpa-colvars",
+      "displayName": "GPU Mixed FPA Colvars",
+      "description": "GPU mixed-precision FPA build with the external Colvars integration enabled.",
+      "inherits": "gpu-fpa",
+      "binaryDir": "${sourceDir}/build/gpu-fpa-colvars",
+      "cacheVariables": {
+        "TINKERHP_ENABLE_COLVARS": "ON"
+      }
+    },
+    {
+      "name": "gpu-fpa-shared",
+      "displayName": "GPU Mixed FPA Shared Core",
+      "description": "GPU mixed-precision FPA build with the aggregate Tinker-HP core shared.",
+      "inherits": "gpu-fpa",
+      "binaryDir": "${sourceDir}/build/gpu-fpa-shared",
+      "cacheVariables": {
+        "TINKERHP_LINK_MODE": "SHARED"
+      }
+    },
+    {
+      "name": "gpu-fpa-shared-colvars",
+      "displayName": "GPU Mixed FPA Shared Core Colvars",
+      "description": "GPU mixed-precision FPA shared-core build with the static Colvars archive enabled.",
+      "inherits": "gpu-fpa-shared",
+      "binaryDir": "${sourceDir}/build/gpu-fpa-shared-colvars",
+      "cacheVariables": {
+        "TINKERHP_ENABLE_COLVARS": "ON"
+      }
+    },
+    {
+      "name": "gpu-fpa-nn",
+      "displayName": "GPU Mixed FPA Deep-HP",
+      "description": "GPU mixed-precision FPA build with the managed Deep-HP CFFI interface enabled.",
+      "inherits": "gpu-fpa",
+      "binaryDir": "${sourceDir}/build/gpu-fpa-nn",
+      "cacheVariables": {
+        "TINKERHP_ENABLE_NN": "ON"
+      }
+    },
+    {
+      "name": "gpu-fpa-nn-make",
+      "displayName": "GPU Mixed FPA Deep-HP",
+      "description": "GPU mixed-precision FPA build with the managed Deep-HP CFFI interface enabled.",
+      "inherits": "gpu-fpa",
+      "generator": "Unix Makefiles",
+      "binaryDir": "${sourceDir}/build/gpu-fpa-nn-make",
+      "cacheVariables": {
+        "TINKERHP_ENABLE_NN": "ON"
+      }
+    },
+    {
+      "name": "gpu-fpa-nn-colvars",
+      "displayName": "GPU Mixed FPA Deep-HP Colvars",
+      "description": "GPU mixed-precision FPA Deep-HP build with the external Colvars integration enabled.",
+      "inherits": "gpu-fpa-nn",
+      "binaryDir": "${sourceDir}/build/gpu-fpa-nn-colvars",
+      "cacheVariables": {
+        "TINKERHP_ENABLE_COLVARS": "ON"
+      }
+    },
+    {
+      "name": "gpu-double-colvars",
+      "displayName": "GPU Double Colvars",
+      "description": "GPU double precision build with the external Colvars integration enabled.",
+      "inherits": "gpu-double",
+      "binaryDir": "${sourceDir}/build/gpu-double-colvars",
+      "cacheVariables": {
+        "TINKERHP_ENABLE_COLVARS": "ON"
+      }
+    },
+    {
+      "name": "gpu-double-plumed",
+      "displayName": "GPU Double PLUMED",
+      "description": "GPU double precision build that configures, installs, and links the external PLUMED package.",
+      "inherits": "gpu-double",
+      "binaryDir": "${sourceDir}/build/gpu-double-plumed",
+      "cacheVariables": {
+        "TINKERHP_ENABLE_PLUMED": "ON"
+      }
+    }
+  ],
+  "buildPresets": [
+    {
+      "name": "gpu-double",
+      "configurePreset": "gpu-double"
+    },
+    {
+      "name": "gpu-fpa",
+      "configurePreset": "gpu-fpa"
+    },
+    {
+      "name": "gpu-fpa-colvars",
+      "configurePreset": "gpu-fpa-colvars"
+    },
+    {
+      "name": "gpu-fpa-shared",
+      "configurePreset": "gpu-fpa-shared"
+    },
+    {
+      "name": "gpu-fpa-shared-colvars",
+      "configurePreset": "gpu-fpa-shared-colvars"
+    },
+    {
+      "name": "gpu-fpa-nn",
+      "configurePreset": "gpu-fpa-nn"
+    },
+    {
+      "name": "gpu-fpa-nn-make",
+      "configurePreset": "gpu-fpa-nn-make"
+    },
+    {
+      "name": "gpu-fpa-nn-colvars",
+      "configurePreset": "gpu-fpa-nn-colvars"
+    },
+    {
+      "name": "gpu-double-colvars",
+      "configurePreset": "gpu-double-colvars"
+    },
+    {
+      "name": "gpu-double-plumed",
+      "configurePreset": "gpu-double-plumed"
+    }
+  ],
+  "testPresets": [
+    {
+      "name": "gpu-double",
+      "configurePreset": "gpu-double",
+      "output": {
+        "outputOnFailure": true
+      }
+    },
+    {
+      "name": "gpu-fpa",
+      "configurePreset": "gpu-fpa",
+      "output": {
+        "outputOnFailure": true
+      }
+    },
+    {
+      "name": "gpu-fpa-colvars",
+      "configurePreset": "gpu-fpa-colvars",
+      "output": {
+        "outputOnFailure": true
+      }
+    },
+    {
+      "name": "gpu-fpa-nn",
+      "configurePreset": "gpu-fpa-nn",
+      "output": {
+        "outputOnFailure": true
+      }
+    },
+    {
+      "name": "gpu-fpa-nn-make",
+      "configurePreset": "gpu-fpa-nn-make",
+      "output": {
+        "outputOnFailure": true
+      }
+    },
+    {
+      "name": "gpu-fpa-nn-colvars",
+      "configurePreset": "gpu-fpa-nn-colvars",
+      "output": {
+        "outputOnFailure": true
+      }
+    },
+    {
+      "name": "gpu-double-colvars",
+      "configurePreset": "gpu-double-colvars",
+      "output": {
+        "outputOnFailure": true
+      }
+    },
+    {
+      "name": "gpu-double-plumed",
+      "configurePreset": "gpu-double-plumed",
+      "output": {
+        "outputOnFailure": true
+      }
+    }
+  ]
+}

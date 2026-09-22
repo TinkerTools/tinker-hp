@@ -13,7 +13,7 @@
 #include "tinker_cudart.h"
 module echargecu
    use sizes   ,only: maxgrp
-   use utilcu  ,only: nproc,ndir,ngrp,BLOCK_DIM,ALL_LANES,use_virial
+   use utilcu  ,only: BLOCK_DIM,ALL_LANES
    use utilgpu ,only: real3,real6,mdyn3_r,rpole_elt&
       &,BLOCK_SIZE,RED_BUFF_SIZE,WARP_SIZE
 

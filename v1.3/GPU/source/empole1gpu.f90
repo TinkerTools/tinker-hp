@@ -13,15 +13,15 @@ module empole1gpu_inl
    use tinTypes , only: real3,real3_red,rpole_elt
    logical:: em1c_fi=.true.
    ener_rtyp emself
-   include "erfcore_data.inc.f90"
+!   include "erfcore_data.inc.f90"
 #include "atomicOp.h.f90"
 contains
 #include "convert.inc.f90"
 #include "image.inc.f90"
 #if defined(SINGLE) | defined(MIXED)
-   include "erfcscore.inc.f90"
+!   include "erfcscore.inc.f90"
 #else
-   include "erfcdcore.inc.f90"
+!   include "erfcdcore.inc.f90"
 #endif
 #include "groups.inc.f90"
 #include "atomicOp.inc.f90"
@@ -67,7 +67,7 @@ subroutine elec_calc_reset
    use neigh
    use potent
    use shunt   ,only: off2
-   use utilgpu
+   use utilgpu, only: dir_queue,rec_queue,start_dir_stream_cover,end_dir_stream_cover
    use timestat
    implicit none
    integer i
@@ -172,9 +172,11 @@ subroutine empole1cgpu
    use shunt
    use tinheader  ,only: zeror
    use timestat
-   use tinMemory  ,only: prmem_request
-   use utilcomm
-   use utilgpu    ,pot=>ug_workS_r
+   use tinMemory  ,only: prmem_request,mipk
+   use parallel, only: extend, halo_neighbour
+   use cflux      ,pot=>cflux_pot
+   use utilgpu    ,only: dir_queue,rec_queue,def_queue,def_stream,mem_set,&
+      &start_dir_stream_cover,end_dir_stream_cover
    use virial
    implicit none
    integer i,j,ii
@@ -225,6 +227,7 @@ subroutine empole1cgpu
 !     Reset global data for electrostatic
 !
    call elec_calc_reset
+   if (use_chgflx) call prmem_request(pot,nbloc)
 !
 !     compute the reciprocal space part of the Ewald summation
 !
@@ -281,7 +284,7 @@ subroutine empole1cgpu
 !     modify gradient and virial for charge flux self-energy
 !
          if (use_chgflx) then
-            call commDDd_ext(pot,1,ucComm+ucNeig)
+            call extend(pot,1,halo_neighbour)
             call dcflux2(pot,de_ws1)
             call adflux2(de_ws1,dem)
             call mem_set(pot,zeror,int(nbloc,mipk),def_stream)
@@ -460,10 +463,10 @@ subroutine emreal1c_
    use tinheader  ,only: ti_p,zeror
    use tinmemory  ,only: prmem_request,mipk
    use utils      ,only: set_to_zero1
-   use utilcomm
-   use utilgpu    ,only: dir_queue,def_queue,rec_queue,mem_set&
-      &,rec_stream,dir_stream,def_stream&
-      &,pot=>ug_workS_r
+   use parallel, only: accumulate, extend, halo_large, halo_neighbour
+   use utilgpu    ,only: dir_queue,rec_queue,def_queue,dir_stream,rec_stream,&
+      &def_stream,mem_set
+   use cflux      ,pot=>cflux_pot
 #ifdef _OPENACC
    use utilgpu    ,only: rec_event,stream_wait_async
 #endif
@@ -514,8 +517,8 @@ subroutine emreal1c_
    if (use_virial) call torque_on_vir(fix,fiy,fiz)
 !
    if (use_chgflx) then
-      call commDDd_add(pot,1,ucComm+ucBig)
-      call commDDd_ext(pot,1,ucComm+ucNeig)
+      call accumulate(pot,1,halo_large)
+      call extend(pot,1,halo_neighbour)
       call dcflux2(pot,de_ws1)
       call adflux2(de_ws1,dem)
       call mem_set(pot,zeror,int(nbloc,mipk),def_stream)
@@ -640,7 +643,8 @@ subroutine emreal1ca_ac(tem,vxx,vxy,vxz,vyy,vyz,vzz)
    use tinheader   ,only:ti_p,zeror
    use tinMemory   ,only:prmem_request
    use utilgpu,only:dir_queue,rec_queue,def_queue,warning&
-      &,maxscaling,pot=>ug_workS_r
+      &,maxscaling
+   use cflux      ,pot=>cflux_pot
    use tinTypes
    use virial
    implicit none
@@ -933,7 +937,7 @@ subroutine emreal1ca_cu(tem,vxx,vxy,vxz,vyy,vyz,vzz)
    use empole_cpencu
    use energi ,only:em=>em_r
    use ewald  ,only:aewald
-   use group  ,only:use_group,grplist,wgrp
+   use group  ,only:use_group,grplist,wgrp,ngrp
    use inform ,only: deb_Path,minmaxone
    use math   ,only:sqrtpi
    !use mpi
@@ -953,13 +957,11 @@ subroutine emreal1ca_cu(tem,vxx,vxy,vxz,vyy,vyz,vzz)
    use tinheader,only: ti_p
    use tinMemory,only: prmem_request,mipk
    use utilcu ,only:BLOCK_DIM,check_launch_kernel
-   use utilgpu,only:dir_queue,rec_queue,def_queue,warning&
-      &,RED_BUFF_SIZE,BLOCK_SIZE&
-      &,pot=>ug_workS_r&
-      &,ered_buff=>ered_buf1,vred_buff,lam_buff,nred_buff&
-      &,reduce_energy_virial,reduce_buffer,get_GridDim&
-      &,zero_evir_red_buffer&
-      &,dir_stream,def_stream
+   use utilgpu,only:dir_queue,rec_queue,def_queue,warning,dir_stream,def_stream,&
+      &BLOCK_SIZE,get_GridDim
+   use cflux,only: pot=>cflux_pot
+   use reduction,only: RED_BUFF_SIZE,ered_buff=>ered_buf1,vred_buff,&
+      &lam_buff,nred_buff,reduce_energy_virial,reduce_buffer,zero_evir_red_buffer
    !use tinTypes
    use virial
    implicit none
@@ -1047,7 +1049,7 @@ subroutine emreal1ca_cu(tem,vxx,vxy,vxz,vyy,vyz,vzz)
             &,dem,tem,pot,ered_buff,vred_buff,lam_buff,nred_buff&
             &,p_xbeg,p_xend,p_ybeg,p_yend,p_zbeg,p_zend&
             &,mcorrect_ik,mcorrect_scale,ipole,loc,x,y,z,n_mscale&
-            &)
+            &,nproc,ngrp)
          call check_launch_kernel(" emreal_cpen1s_kcu")
       else if (use_mpolelong) then
          call emreal_cpen1l_kcu<<<gS,BLOCK_DIM,0,def_stream>>>&
@@ -1061,7 +1063,7 @@ subroutine emreal1ca_cu(tem,vxx,vxy,vxz,vyy,vyz,vzz)
             &,dem,tem,pot,ered_buff,vred_buff,lam_buff,nred_buff&
             &,p_xbeg,p_xend,p_ybeg,p_yend,p_zbeg,p_zend&
             &,mcorrect_ik,mcorrect_scale,ipole,loc,x,y,z,n_mscale&
-            &)
+            &,nproc,ngrp)
          call check_launch_kernel(" emreal_cpen1l_kcu")
       else
          call emreal_cpen1_kcu<<<gS,BLOCK_DIM,0,def_stream>>>&
@@ -1075,7 +1077,7 @@ subroutine emreal1ca_cu(tem,vxx,vxy,vxz,vyy,vyz,vzz)
             &,dem,tem,pot,ered_buff,vred_buff,lam_buff,nred_buff&
             &,p_xbeg,p_xend,p_ybeg,p_yend,p_zbeg,p_zend&
             &,mcorrect_ik,mcorrect_scale,ipole,loc,x,y,z,n_mscale&
-            &)
+            &,nproc,ngrp)
          call check_launch_kernel(" emreal_cpen1_kcu")
       end if
 !$acc end host_data
@@ -1102,7 +1104,7 @@ subroutine emreal1ca_cu(tem,vxx,vxy,vxz,vyy,vyz,vzz)
             &,dem,tem,ered_buff,vred_buff,lam_buff,nred_buff&
             &,p_xbeg,p_xend,p_ybeg,p_yend,p_zbeg,p_zend&
             &,mcorrect_ik,mcorrect_scale,ipole,loc,x,y,z,n_mscale&
-            &)
+            &,nproc,ngrp)
          call check_launch_kernel(" empole1s_kcu")
 
       else if (use_mpolelong) then
@@ -1123,7 +1125,7 @@ subroutine emreal1ca_cu(tem,vxx,vxy,vxz,vyy,vyz,vzz)
                &,dem,tem,ered_buff,vred_buff,lam_buff,nred_buff&
                &,p_xbeg,p_xend,p_ybeg,p_yend,p_zbeg,p_zend&
                &,mcorrect_ik,mcorrect_scale,ipole,loc,x,y,z,n_mscale&
-               &)
+               &,nproc,ngrp)
          end do
          call check_launch_kernel(" empole1l_kcu")
 
@@ -1144,7 +1146,7 @@ subroutine emreal1ca_cu(tem,vxx,vxy,vxz,vyy,vyz,vzz)
                &,dem,tem,ered_buff,vred_buff,lam_buff,nred_buff&
                &,p_xbeg,p_xend,p_ybeg,p_yend,p_zbeg,p_zend&
                &,mcorrect_ik,mcorrect_scale,ipole,loc,x,y,z,n_mscale&
-               &)
+               &,nproc,ngrp)
          end do
          call check_launch_kernel(" empole1_kcu")
 
@@ -1318,8 +1320,11 @@ subroutine emrecip1gpu
    use timestat
    use tinheader ,only: zeror
    use virial
-   use utilcomm
-   use utilgpu   ,pot=>ug_workS_r,potrec=>ug_workS_r1
+   use parallel, only: accumulate, extend, halo_neighbour
+   use cflux      ,pot=>cflux_pot,potrec=>cflux_potrec
+   use utilgpu    ,only: rec_queue,rec_stream,dir_queue,def_queue,mem_set,&
+      &start_dir_stream_cover,end_dir_stream_cover
+   use tinMemory  ,only: mipk,prmem_request
    use utils     ,only:set_to_zero1,rpole_scale&
       &,rpole_ind_extract,comput_norm
    use mpi
@@ -1730,8 +1735,8 @@ subroutine emrecip1gpu
             iloc = locrec(ipole(polerecglob(i)))
             potrec(iloc) = cphirec(1,i)
          end do
-         call commDDrd   (pot,potrec,1,ucComm)
-         call commDDd_ext(pot,       1,ucNeig+ucComm)
+         call accumulate(pot,potrec,1)
+         call extend(pot,       1,halo_neighbour)
       end if
       call dcflux2( pot,de_ws1 )
       call adflux2( de_ws1,dem )

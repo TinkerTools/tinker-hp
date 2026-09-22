@@ -15,10 +15,12 @@ attributes(global) subroutine __Cat(ecreal,__sufx__)&
    &, use_group, grplist, wgrp&
    &, correct_ik,correct_scale,chglist,x_,y_,z_,loc_&
    &, n_scale,siz,p_xbeg,p_xend,p_ybeg,p_yend,p_zbeg,p_zend&
+   &, ndir,ngrp&
    &)
 implicit none
 integer   ,value::nionlocnlb,nionbloc,n&
    &,nionlocnlb_pair,siz,n_scale
+integer   ,value::ndir,ngrp
 real(t_p) ,value:: p_xbeg,p_xend,p_ybeg,p_yend&
    &,p_zbeg,p_zend&
    &,off2,loff2,scut,shortheal,aewald,f,ebuffer,elambda

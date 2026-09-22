@@ -18,26 +18,41 @@
 #include "tinker_macro.h"
 program dynamic
    use mpi
-#ifdef _OPENACC
-   use utilgpu,only: bind_gpu
-#endif
+   use config, only: raw_cli_t, capture_raw_cli
+   use domdec, only: rank
+   use iounit, only: iout
+   use mdstate, only: track_mds
+   use status, only: status_t, failed
+   use mdevice, only: bind_device
    implicit none
-   integer ierr,nthreadsupport
-#ifdef _OPENACC
-   call bind_gpu
-#endif
+   integer ierr,nthreadsupport,world_rank
+   type(raw_cli_t) raw_cli
+   type(status_t) status_value
+   call bind_device(status_value)
+   if (failed(status_value)) stop 1
+   call capture_raw_cli(raw_cli)
 !      call MPI_INIT_THREAD(MPI_THREAD_MULTIPLE,nthreadsupport,ierr)
    call MPI_INIT(ierr)
-   call dynamic_bis
+   call MPI_COMM_RANK(MPI_COMM_WORLD,world_rank,ierr)
+   iout = 6
+   rank = world_rank
+   track_mds = .false.
+   call dynamic_bis(raw_cli,status_value)
+   if (failed(status_value)) then
+      if (world_rank.eq.0) write(iout,*) trim(status_value%message)
+      call MPI_BARRIER(MPI_COMM_WORLD,ierr)
+      __TINKER_FATAL__
+   end if
    call MPI_BARRIER(MPI_COMM_WORLD,ierr)
    call MPI_FINALIZE(ierr)
 end
 !
-subroutine dynamic_bis
+subroutine dynamic_bis(raw_cli,status_value)
    use mlpot
    use atoms
    use bath
    use bound
+   use config, only: raw_cli_t, config_t, parse_dynamic_cli
    use domdec
    use keys
    use inform
@@ -46,54 +61,41 @@ subroutine dynamic_bis
    use moldyn
    use mpi
    use potent  ,only: use_ml_embedding
+   use parallel, only: parallel_t, release
    use utils
-   use utilgpu ,only: rec_queue,ti_p,re_p
+   use utilgpu ,only: ti_p,re_p
+   use mdevice, only: channel_t, finalize_device
+   use initialization, only: dynamic_application, initialize
    use timestat
    use tinMemory
    use qtb, only: qtb_thermostat,adaptive_qtb
+   use structure, only: structure_t
+   use status, only: status_t, failed, enrich_status
    implicit none
    integer i,istep,nstep,ierr
    integer mode,next
    real(r_p) dt,dtdump
+   real(r_p) timestep_fs,dump_interval_ps,temperature,pressure
    real(8) time0,time1,timestep
-   logical exist,query
    character*20 keyword
    character*240 record
    character*240 string
+   type(raw_cli_t), intent(in) :: raw_cli
+   type(config_t) :: configuration
+   type(structure_t) :: molecular_structure
+   type(parallel_t) :: platform
+   type(channel_t) :: reciprocal_work
+   type(status_t), intent(out) :: status_value
+   type(status_t) :: cleanup_status
 !
 !
 1000 Format(' Time for ',I4,' Steps :',f12.4)
 1010 Format(' ns per day',10x,':',f12.4)
-   ! Sign running program
-   app_id = dynamic_a
-!
-!     set up the structure and molecular mechanics calculation
-!
-   call initial
-   call init_keys
-   call initmpi
-   call getxyz
-   call unitcell
-   call cutoffs
-   call lattice
-!
-!     setup for MPI
-!
-   call drivermpi
-   !call kewald_2  ! FIXME  Is it necessary
-   call reinitnl(0)
-!
-!     allocate some arrays
-!
-   call prmem_requestm(    v,3,n)
-   call prmem_requestm(    a,3,n)
-   call prmem_requestm( aalt,3,n)
-   call prmem_requestm(aalt2,3,n)
-!
-   call set_to_zero2m(   a,    v,3*n,rec_queue)
-   call set_to_zero2m(aalt,aalt2,3*n,rec_queue)
-!
-   call mechanic
+   call initialize(dynamic_application, raw_cli, configuration, molecular_structure, &
+      &platform, reciprocal_work, status_value)
+   if (failed(status_value)) then
+      return
+   end if
    call nblist(0)
 !
 !     initialize the temperature, pressure and coupling baths
@@ -118,101 +120,28 @@ subroutine dynamic_bis
       end if
    end do
 !
-!     initialize the simulation length as number of time steps
+!     parse Dynamic-specific command-line values without mutating raw argv
 !
-   query = .true.
-   call nextarg (string,exist)
-   if (.not.exist)  then
-     if (ranktot.eq.0) write (iout,*) 'You Need To Enter the Number of Steps'
-     call MPI_BARRIER(COMM_TINKER,ierr)
-     __TINKER_FATAL__
-   else
-!   if (exist) then
-      read (string,*,err=10,end=10)  nstep
-      query = .false.
+   call parse_dynamic_cli(raw_cli,use_bounds,nstep,timestep_fs,dump_interval_ps,&
+      &mode,temperature,pressure,status_value)
+   if (failed(status_value)) then
+      call enrich_status(status_value,'Dynamic Command Line')
+      final_message_suppressed = .true.
+      call final
+      call finalize_device(cleanup_status)
+      call release(platform, cleanup_status)
+      return
    end if
-10 continue
-!
-!     get the length of the dynamics time step in picoseconds
-!
-   dt = -1.0_re_p
-   call nextarg (string,exist)
-   if (.not.exist)  then
-     if (ranktot.eq.0) write (iout,*) 'You Need To Enter the Time Step Length in Femtoseconds'
-     call MPI_BARRIER(COMM_TINKER,ierr)
-     __TINKER_FATAL__
-   else
-     read (string,*,err=40,end=40)  dt
-   end if
-40 continue
-   dt = 0.001_re_p * dt
-!
-!     enforce bounds on thermostat and barostat coupling times
-!
+   dt = 0.001_re_p * real(timestep_fs,re_p)
+   dtdump = real(dump_interval_ps,re_p)
    tautemp = max(tautemp,dt)
    taupres = max(taupres,dt)
-!
-!     set the time between trajectory snapshot coordinate dumps
-!
-   dtdump = -1.0_re_p
-   call nextarg (string,exist)
-   if (.not.exist) then
-     if (ranktot.eq.0) write (iout,*) 'You Need To Enter the Time Between Dumps in Picoseconds'
-     call MPI_BARRIER(COMM_TINKER,ierr)
-     __TINKER_FATAL__
-   else
-     read (string,*,err=80,end=80)  dtdump
-   end if
-80 continue
    iwrite = nint(dtdump/dt)
-!
-!     get choice of statistical ensemble for periodic system
-!
+   kelvin = real(temperature,re_p)
+   atmsph = real(pressure,re_p)
    if (use_bounds) then
-      mode = -1
-      call nextarg (string,exist)
-      if (.not.exist) then
-        if (ranktot.eq.0) write (iout,*) 'You Need To Enter the Statistical Ensemble:'
-        if (ranktot.eq.0) write (iout,130)
-130      format (/,' Available Statistical Mechanical Ensembles :',&
-         &//,4x,'(1) Microcanonical (NVE)',&
-         &/ ,4x,'(2) Canonical (NVT)',&
-         &/ ,4x,'(4) Isothermal-Isobaric (NPT)')
-        call MPI_BARRIER(COMM_TINKER,ierr)
-        __TINKER_FATAL__
-      else
-        read (string,*,err=120,end=120)  mode
-      end if
-120   continue
-      if (mode.le.0)  mode= 1
-      if (mode.eq.2 .or. mode.eq.4) then
-         isothermal = .true.
-         kelvin = -1.0d0
-         call nextarg (string,exist)
-         if (.not.exist) then
-            if (ranktot.eq.0) write (iout,*) 'You Need To Enter the Temperature in Kelvin'
-            call MPI_BARRIER(COMM_TINKER,ierr)
-            __TINKER_FATAL__
-         else
-            read (string,*,err=170,end=170)  kelvin
-         end if
-170      continue
-         if (kelvin .le. 0.0d0)  kelvin = 298.0d0
-      end if
-      if (mode.eq.4) then
-         isobaric = .true.
-         atmsph = -1.0_re_p
-         call nextarg (string,exist)
-         if (.not.exist) then
-            if (ranktot.eq.0) write (iout,*) 'You Need To Enter the Pressure in Atm'
-            call MPI_BARRIER(COMM_TINKER,ierr)
-            __TINKER_FATAL__
-         else 
-            read (string,*,err=210,end=210)  atmsph
-         end if
-210      continue
-         if (atmsph .le. 0.0_re_p)  atmsph = 1.0_re_p
-      end if
+      isothermal = mode.eq.2 .or. mode.eq.4
+      isobaric = mode.eq.4
    end if
 !
 !     setup dynamics
@@ -321,4 +250,7 @@ subroutine dynamic_bis
 !     perform any final tasks before program exit
 !
    call final
+   call finalize_device(cleanup_status)
+   call release(platform, cleanup_status)
+   if (failed(cleanup_status)) status_value = cleanup_status
 end

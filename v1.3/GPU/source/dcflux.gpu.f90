@@ -27,6 +27,29 @@ contains
 #include "atomicOp.inc.f90"
 #include "convert.inc.f90"
 
+   module subroutine release_cflux_workspaces(queue)
+      use tinMemory, only: s_prmem,sd_prmem,szoTp
+      use cflux, only: cflux_pot,cflux_potrec
+      implicit none
+      integer,intent(in):: queue
+
+      if (allocated(cflux_pot).or.allocated(cflux_potrec)) then
+!$acc wait(queue)
+      end if
+      if (allocated(cflux_pot)) then
+!$acc exit data delete(cflux_pot)
+         s_prmem = s_prmem - size(cflux_pot)*szoTp
+         sd_prmem = sd_prmem - size(cflux_pot)*szoTp
+         deallocate(cflux_pot)
+      end if
+      if (allocated(cflux_potrec)) then
+!$acc exit data delete(cflux_potrec)
+         s_prmem = s_prmem - size(cflux_potrec)*szoTp
+         sd_prmem = sd_prmem - size(cflux_potrec)*szoTp
+         deallocate(cflux_potrec)
+      end if
+   end subroutine
+
    module subroutine dcflux1 (pot,dcf)
       use atmlst
       use angle

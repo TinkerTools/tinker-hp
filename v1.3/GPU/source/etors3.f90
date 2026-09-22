@@ -146,7 +146,7 @@ subroutine etors3
    use deriv   ,only: det
    use etors3_inl
    use tors
-   use utilgpu ,only: lam_buff
+   use reduction,only: lam_buff
    implicit  none
    real(r_p),pointer:: buff(:,:)
    buff(1:3,1:1) => lam_buff(1:3)

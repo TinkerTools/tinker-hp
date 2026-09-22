@@ -388,7 +388,7 @@ subroutine elj1c_cu
    use cutoff    ,only: shortheal,vdwshortcut
    use deriv     ,only: dev,devx,de_ws2,d_x,d_y,d_z,delambdav&
       &,dr_stride
-   use domdec    ,only: loc,rank,nbloc,nproc&
+   use domdec    ,only: loc,rank,nbloc,nproc,ndir&
       &,xbegproc,xendproc,ybegproc,yendproc,zbegproc&
       &,zendproc,glob
    use eljcu     ,only: lj1_kcu
@@ -396,12 +396,12 @@ subroutine elj1c_cu
    use elj1gpu_inl,only: enr2en,mdr2md
 #endif
    use energi    ,only: ev=>ev_r,calc_e
-   use group     ,only: use_group,grplist,wgrp
+   use group     ,only: use_group,grplist,wgrp,ngrp
    use inform    ,only: deb_Path,minmaxone
    use kvdws     ,only: radv,epsv
    use kvdwpr    ,only: vdwpr_l
    use mutant    ,only: mutInt,lambda,vlambda,bvlambda&
-      &,scexp,scalpha,sck,sct,scs,nmut
+      &,scexp,scalpha,sck,sct,scs,nmut,vcouple
    use neigh
    use potent    ,only: use_lambdadyn,use_vdwshort,use_vdwlong
    use tinheader ,only: ti_p
@@ -418,7 +418,7 @@ subroutine elj1c_cu
       &,epsilon_c,radmin,radmin4,epsilon,epsilon4&
       &,nvdwbloc,nvdwlocnl&
       &,nvdwlocnlb,nvdwclass&
-      &,nvdwlocnlb_pair,nvdwlocnlb2_pair
+      &,nvdwlocnlb_pair,nvdwlocnlb2_pair,skipvdw12
    use vdwpot    ,only: vcorrect_ik,vcorrect_scale,n_vscale,dhal,ghal&
       &,radrule_i,epsrule_i
    use vdw_locArray
@@ -492,7 +492,7 @@ subroutine elj1c_cu
       &,radmin,epsilon,radmin4,epsilon4,dev&
       &&! Box data
       &,xbeg,xend,ybeg,yend,zbeg,zend&
-      &)
+      &,ndir,ngrp,use_virial,skipvdw12,vcouple.ne.0)
    call check_launch_kernel(" lj1_kcu ")
 
 !$acc end host_data

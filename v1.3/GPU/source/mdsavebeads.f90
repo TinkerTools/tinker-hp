@@ -28,6 +28,7 @@ subroutine mdsavebeads (istep,dt,polymer)
    use files
    use group
    use inform
+   use interfaces, only: prtxyz
    use iounit
    use mdstuf
    use moldyn
@@ -200,10 +201,10 @@ subroutine mdsavebeads (istep,dt,polymer)
 !$acc wait
          if(save_all) then
             call dcdio_write(polymer%dcdinfo(ibead)&
-               &,istep,dt,trim(exten))
+               &,filename(1:leng)//trim(exten)//'.dcd',istep,dt,.true.,x,y,z)
          else
             call dcdio_write(polymer%dcdinfo(1)&
-               &,istep,dt,trim(exten))
+               &,filename(1:leng)//trim(exten)//'.dcd',istep,dt,.true.,x,y,z)
          endif
       else
          ixyz = freeunit ()
@@ -514,4 +515,3 @@ subroutine comm_after_boundspi(polymer,nproc_write)
    endif
  
 end subroutine comm_after_boundspi
-

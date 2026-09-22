@@ -151,7 +151,7 @@ subroutine eangtor3
    use eangtor3_inl
    use deriv
    use tors
-   use utilgpu ,only: lam_buff
+   use reduction,only: lam_buff
    implicit none
 
    call eangtor3_(iat,anat,kant,tors1,tors2,tors3,lam_buff)

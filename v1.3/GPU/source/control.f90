@@ -34,6 +34,7 @@ subroutine control
    !TODO 1.2 Return this variable to 4 before release
    digits = merge(4,8,isrel_build)
    abort = .false.
+   final_message_suppressed = .false.
    verbose = .false.
    debug = .false.
    holdup = .false.

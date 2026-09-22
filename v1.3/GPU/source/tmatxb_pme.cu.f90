@@ -9,8 +9,7 @@
 #include "tinker_cudart.h"
 
 module tmatxb_pmecu
-   use utilcu  ,only: nproc,BLOCK_DIM,ALL_LANES&
-      &,bal_comp=>balanced_comput,f_min,f_max
+   use utilcu  ,only: BLOCK_DIM,ALL_LANES,f_min,f_max
    use utilgpu ,only: BLOCK_SIZE
    use tintypes,only: rpole_elt,real3,real6,real7
    use neigh   ,only: i_bl=>inside_block,d_bl=>disc_block
@@ -32,10 +31,13 @@ contains
       &,pdamp,thole,polarity,mu,efi&
       &,npolelocnl,npolelocnlb,npolelocnlb_pair,npolebloc,n&
       &,cut2,alsq2,alsq2n,aewald&
-      &,p_xbeg,p_xend,p_ybeg,p_yend,p_zbeg,p_zend)
+      &,p_xbeg,p_xend,p_ybeg,p_yend,p_zbeg,p_zend&
+      &,nproc,bal_comp)
    implicit none
    integer  ,value,intent(in):: npolelocnl,npolelocnlb,npolebloc,n&
       &,npolelocnlb_pair
+   integer  ,value,intent(in):: nproc
+   logical  ,value,intent(in):: bal_comp
    real(t_p),value,intent(in):: p_xbeg,p_xend,p_ybeg,p_yend&
       &,p_zbeg,p_zend,cut2,alsq2,alsq2n,aewald
    integer  ,device,intent(in)::ipole(*),pglob(*),ploc(*)&
@@ -208,10 +210,12 @@ attributes(global) subroutine tmatxb_pme_core_v4_cu&
    &,mu,mu3,mu4,efi,efi3,efi4&
    &,npolelocnlb,npolelocnlb_pair,npolebloc,n&
    &,cut2,alsq2,alsq2n,aewald&
-   &,p_xbeg,p_xend,p_ybeg,p_yend,p_zbeg,p_zend )
+   &,p_xbeg,p_xend,p_ybeg,p_yend,p_zbeg,p_zend&
+   &,nproc,bal_comp )
 implicit none
 integer,value,intent(in)::npolelocnlb,npolebloc,n&
-   &,npolelocnlb_pair
+   &,npolelocnlb_pair,nproc
+logical,value,intent(in):: bal_comp
 real(t_p),value,intent(in):: p_xbeg,p_xend,p_ybeg,p_yend&
    &,p_zbeg,p_zend,cut2,alsq2,alsq2n,aewald
 integer,device,intent(in)::ipole(npolelocnlb),pglob(npolelocnlb)&
@@ -405,14 +409,16 @@ end subroutine
 
 
 attributes(global) subroutine otfdc_tmatxb_pme_core_cu&
-   &(ipole,pglob,ploc,grplst,ieblst,eblst,x,y,z&
-   &,pdamp,thole,polarity,mu,efi&
-   &,npolelocnlb,npolelocnlb_pair,npolebloc,n&
-   &,cut2,alsq2,alsq2n,aewald&
-   &,p_xbeg,p_xend,p_ybeg,p_yend,p_zbeg,p_zend )
+   (ipole,pglob,ploc,grplst,ieblst,eblst,x,y,z&
+   ,pdamp,thole,polarity,mu,efi&
+   ,npolelocnlb,npolelocnlb_pair,npolebloc,n&
+   ,cut2,alsq2,alsq2n,aewald&
+   ,p_xbeg,p_xend,p_ybeg,p_yend,p_zbeg,p_zend&
+   ,nproc,bal_comp )
 implicit none
 integer,value,intent(in)::npolelocnlb,npolebloc,n&
-   &,npolelocnlb_pair
+   &,npolelocnlb_pair,nproc
+logical,value,intent(in):: bal_comp
 real(t_p),value,intent(in):: p_xbeg,p_xend,p_ybeg,p_yend&
    &,p_zbeg,p_zend,cut2,alsq2,alsq2n,aewald
 integer,device,intent(in)::ipole(npolelocnlb),pglob(npolelocnlb)&
@@ -568,10 +574,11 @@ end subroutine
 attributes(global) subroutine efld0_direct_scaling_cu&
    &(dpcorrect_ik,dpcorrect_scale,poleloc,ipole,mut,pdamp&
    &,gamma,x,y,z,rpole,ef,defl,n_dpscale,n,npolebloc&
-   &,use_tholed,use_lam,elambda,cut2,aewald,alsq2,alsq2n)
+   &,use_tholed,use_lam,elambda,cut2,aewald,alsq2,alsq2n,bal_comp)
 implicit none
 integer  ,value,intent(in)::n,npolebloc,n_dpscale
 logical  ,value,intent(in)::use_tholed,use_lam
+logical  ,value,intent(in)::bal_comp
 real(t_p),value,intent(in)::cut2,aewald,alsq2,alsq2n,elambda
 integer  ,device,intent(in)::dpcorrect_ik(*),poleloc(n),ipole(n)
 logical  ,device,intent(in)::mut(n)
@@ -588,6 +595,7 @@ type(real3) fid,fip,fkd,fkp,pos
 type(rpole_elt) ip,kp
 parameter(tver=__use_sca__,tfea=__use_ddamp__&
    &,u_ddamp=.true.)
+
 
 ithread = threadIdx%x + (blockIdx%x-1)*blockDim%x
 

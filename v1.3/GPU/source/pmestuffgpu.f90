@@ -295,11 +295,10 @@ subroutine bspline_fill_sitegpu(config)
       end do
 
    else if (cfg.eq.c_charge.or.cfg.eq.c_disp) then
-      ! FIXME GnU thetai1_p(1,1,1) instead of thetai1_p
-
 !$acc parallel loop num_gangs(4*nSMP) &
-!$acc         present(x,y,z,recip,igrid,thetai1_p &
-!$acc                ,thetai2_p,thetai3_p,type_p,glob_p) &
+!$acc         present(x,y,z,recip,igrid,thetai1(1,1,1) &
+!$acc                ,thetai2(1,1,1),thetai3(1,1,1) &
+!$acc                ,type_p,glob_p) &
 !$acc         async(rec_queue)
       do k=1,c_n
          iichg  = type_p(k)
@@ -315,19 +314,19 @@ subroutine bspline_fill_sitegpu(config)
          ifr  = int(fr-pme_eps)
          w    = fr - real(ifr,t_p)
          igrid(1,i) = ifr - bsorder
-         call bsplgen_chg (w,k,thetai1_p)
+         call bsplgen_chg (w,k,thetai1(1,1,1))
          w    = xi*recip(1,2) + yi*recip(2,2) + zi*recip(3,2)
          fr   = real(nfft2,t_p) * (w-anint(w)+0.5_ti_p)
          ifr  = int(fr-pme_eps)
          w    = fr - real(ifr,t_p)
          igrid(2,i) = ifr - bsorder
-         call bsplgen_chg (w,k,thetai2_p)
+         call bsplgen_chg (w,k,thetai2(1,1,1))
          w    = xi*recip(1,3) + yi*recip(2,3) + zi*recip(3,3)
          fr   = real(nfft3,t_p) * (w-anint(w)+0.5_ti_p)
          ifr  = int(fr-pme_eps)
          w    = fr - real(ifr,t_p)
          igrid(3,i) = ifr - bsorder
-         call bsplgen_chg (w,k,thetai3_p)
+         call bsplgen_chg (w,k,thetai3(1,1,1))
       end do
 
    end if
@@ -550,8 +549,8 @@ subroutine grid_put_site( kind_id,atom_id,attr,nk,prm)
 !     put the permanent multipole moments onto the grid
 !
 !$acc parallel loop gang worker vector_length(32) &
-!$acc         present(kind_id,atom_id,attr,igrid,thetai1_p,thetai2_p &
-!$acc   ,thetai3_p,qgridin_2d) async(rec_queue)
+!$acc         present(kind_id,atom_id,attr,igrid,thetai1(1,1,1) &
+!$acc   ,thetai2(1,1,1),thetai3(1,1,1),qgridin_2d) async(rec_queue)
    do impi = 1,nk
       iichg   = kind_id(impi)
       isite   = atom_id(iichg)
@@ -576,9 +575,9 @@ subroutine grid_put_site( kind_id,atom_id,attr,nk,prm)
          m  = i + offsetx
          if (i .lt. 1) i = i + nfft1
 !
-         v0    = thetai3_p(1,mk,impi)
-         u0    = thetai2_p(1,mj,impi)
-         t0    = thetai1_p(1,m ,impi)
+         v0    = thetai3(1,mk,impi)
+         u0    = thetai2(1,mj,impi)
+         t0    = thetai1(1,m ,impi)
          term  = q*u0*v0*t0
 
          if (((k.ge.kstat).and.(k.le.ked)).and.&
@@ -1016,8 +1015,8 @@ subroutine fphi_chg_sitegpu
    iendi   = iend1  (rankloc+1)
 !
 !$acc parallel loop gang vector async(rec_queue) &
-!$acc         present(chgrecglob,iion,qgridin_2d,igrid,thetai1_p, &
-!$acc  thetai2_p,thetai3_p,kstart1,kend1,jstart1,jend1,kstart1,kend1, &
+!$acc         present(chgrecglob,iion,qgridin_2d,igrid,thetai1(1,1,1), &
+!$acc  thetai2(1,1,1),thetai3(1,1,1),kstart1,kend1,jstart1,jend1,kstart1,kend1, &
 !$acc  fphirec)
    do impi = 1,nionrecloc
       iichg = chgrecglob(impi)
@@ -1035,8 +1034,8 @@ subroutine fphi_chg_sitegpu
          k0   = k0 + 1
 !           k   = k0 + 1 + (nfft3-isign(nfft3,k0))/2
          k   = k0 + 1 + ishft(nfft3-isign(nfft3,k0),-1)
-         v0   = thetai3_p(1,it3,impi)
-         v1   = thetai3_p(2,it3,impi)
+         v0   = thetai3(1,it3,impi)
+         v1   = thetai3(2,it3,impi)
          tu00 = 0.0_ti_p
          tu10 = 0.0_ti_p
          tu01 = 0.0_ti_p
@@ -1046,8 +1045,8 @@ subroutine fphi_chg_sitegpu
             j0 = j0 + 1
 !              j  = j0 + 1 + (nfft2-isign(nfft2,j0))/2
             j  = j0 + 1 + ishft(nfft2-isign(nfft2,j0),-1)
-            u0 = thetai2_p(1,it2,impi)
-            u1 = thetai2_p(2,it2,impi)
+            u0 = thetai2(1,it2,impi)
+            u1 = thetai2(2,it2,impi)
             t0 = 0.0_ti_p
             t1 = 0.0_ti_p
             i0 = igrd0
@@ -1085,8 +1084,8 @@ subroutine fphi_chg_sitegpu
                cycle
 !
 10             continue
-               t0 = t0 + tq*thetai1_p(1,it1,impi)
-               t1 = t1 + tq*thetai1_p(2,it1,impi)
+               t0 = t0 + tq*thetai1(1,it1,impi)
+               t1 = t1 + tq*thetai1(2,it1,impi)
             end do
             tu00 = tu00 + t0*u0
             tu10 = tu10 + t1*u0
@@ -1124,7 +1123,7 @@ subroutine grid_pchg_force
    use fft
    use inform ,only: deb_Path
    use pme    ,only: igrid,nfft1,nfft2,nfft3,bsorder&
-      &,thetai1_p,thetai2_p,thetai3_p,qgridin_2d
+      &,thetai1,thetai2,thetai3,qgridin_2d
    use potent ,only: use_pmecore
    use utilgpu,only: ngangs_rec,rec_queue
    use tinheader ,only: ti_p
@@ -1162,7 +1161,7 @@ subroutine grid_pchg_force
 
 !$acc parallel loop gang vector async(rec_queue) &
 !$acc         present(chgrecglob,iion,locrec,igrid, &
-!$acc     pchg,thetai1_p,thetai2_p,thetai3_p,qgridin_2d, &
+!$acc     pchg,thetai1(1,1,1),thetai2(1,1,1),thetai3(1,1,1),qgridin_2d, &
 !$acc     decrec)
    do isite = 1, nionrecloc
       iichg = chgrecglob(isite)
@@ -1181,22 +1180,22 @@ subroutine grid_pchg_force
       do it3 = 1, bsorder
          k0  = k0 + 1
          k   = k0 + 1 + (nfft3-sign(nfft3,k0))/2
-         t3  = thetai3_p(1,it3,isite)
-         dt3 = dn3 * thetai3_p(2,it3,isite)
+         t3  = thetai3(1,it3,isite)
+         dt3 = dn3 * thetai3(2,it3,isite)
          j0  = jgrd0
 !$acc loop seq
          do it2 = 1, bsorder
             j0  = j0 + 1
             j   = j0 + 1 + (nfft2-sign(nfft2,j0))/2
-            t2  = thetai2_p(1,it2,isite)
-            dt2 = dn2 * thetai2_p(2,it2,isite)
+            t2  = thetai2(1,it2,isite)
+            dt2 = dn2 * thetai2(2,it2,isite)
             i0  = igrd0
 !$acc loop seq
             do it1 = 1, bsorder
                i0  = i0 + 1
                i   = i0 + 1 + (nfft1-sign(nfft1,i0))/2
-               t1  = thetai1_p(1,it1,isite)
-               dt1 = dn1 * thetai1_p(2,it1,isite)
+               t1  = thetai1(1,it1,isite)
+               dt1 = dn1 * thetai1(2,it1,isite)
 !
                if (((k.ge.kstartl).and.(k.le.kendl)).and.&
                   &((j.ge.jstartl).and.(j.le.jendl)).and.&
@@ -2192,10 +2191,10 @@ subroutine grid_put_sitecu( kind_id,atom_id,entity,x,y,z,nk,prm )
 !
    if (nproc.eq.1.or.nrec.eq.1) then
 !$acc host_data use_device(kind_id,atom_id,igrid,entity &
-!$acc         ,thetai1_p,thetai2_p,thetai3_p,qgridin_2d &
+!$acc         ,thetai1,thetai2,thetai3,qgridin_2d &
 !$acc         ,x,y,z)
       call grid_put_site_kcu1<<<gS,PME_GRID_BDIM,0,rec_stream>>>&
-         &(kind_id,atom_id,igrid,entity,thetai1_p,thetai2_p,thetai3_p&
+         &(kind_id,atom_id,igrid,entity,thetai1,thetai2,thetai3&
          &,x,y,z&
          &,kstat,ked,jstat,jed,istat,ied&
          &,nfft1,nfft2,nfft3,nk&
@@ -2329,7 +2328,7 @@ subroutine grid_disp_forcecu
    use fft
    use inform ,only: deb_Path
    use pme    ,only: igrid,nfft1,nfft2,nfft3,bsorder&
-      &,thetai1_p,thetai2_p,thetai3_p,qgridin_2d
+      &,thetai1,thetai2,thetai3,qgridin_2d
    use pmestuffcu,only: grid_calc_frc_kcu,grid_calc_frc_kcu1
    use potent ,only: use_pmecore
    use utilcu ,only: PME_BLOCK_DIM,check_launch_kernel
@@ -2374,11 +2373,11 @@ subroutine grid_disp_forcecu
    call set_pme_texture
 
 !$acc host_data use_device(disprecglob,idisp,locrec,igrid,csix &
-!$acc         ,thetai1_p,thetai2_p,thetai3_p,dedsprec)
+!$acc         ,thetai1,thetai2,thetai3,dedsprec)
    if (nproc.eq.1.or.nrec.eq.1) then
       call grid_calc_frc_kcu1<<<gS1,PME_BLOCK_DIM,0,rec_stream>>>&
          &(disprecglob,idisp,locrec,igrid,csix&
-         &,thetai1_p,thetai2_p,thetai3_p&
+         &,thetai1,thetai2,thetai3&
          &,dedsprec&
          &,kstat,ked,jstat,jed,istat,ied&
          &,nrec_send,ndisprecloc,n,nfft1,nfft2,nfft3&
@@ -2387,7 +2386,7 @@ subroutine grid_disp_forcecu
    else
       call grid_calc_frc_kcu<<<gS,PME_BLOCK_DIM,0,rec_stream>>>&
          &(disprecglob,idisp,locrec,igrid,csix&
-         &,thetai1_p,thetai2_p,thetai3_p&
+         &,thetai1,thetai2,thetai3&
          &,dedsprec&
          &,kstat,ked,jstat,jed,istat,ied&
          &,nrec_send,ndisprecloc,n,nfft1,nfft2,nfft3&
@@ -2410,7 +2409,7 @@ subroutine grid_pchg_forcecu
    use fft
    use inform ,only: deb_Path
    use pme    ,only: igrid,nfft1,nfft2,nfft3,bsorder&
-      &,thetai1_p,thetai2_p,thetai3_p,qgridin_2d
+      &,thetai1,thetai2,thetai3,qgridin_2d
    use pmestuffcu,only: grid_calc_frc_kcu,grid_calc_frc_kcu1
    use potent ,only: use_pmecore
    use utilcu ,only: PME_BLOCK_DIM,check_launch_kernel
@@ -2456,11 +2455,11 @@ subroutine grid_pchg_forcecu
    call set_pme_texture
 
 !$acc host_data use_device(chgrecglob,iion,locrec,igrid,pchg &
-!$acc         ,thetai1_p,thetai2_p,thetai3_p,decrec)
+!$acc         ,thetai1,thetai2,thetai3,decrec)
    if (nproc.eq.1.or.nrec.eq.1) then
       call grid_calc_frc_kcu1<<<gS1,PME_BLOCK_DIM,0,rec_stream>>>&
          &(chgrecglob,iion,locrec,igrid,pchg&
-         &,thetai1_p,thetai2_p,thetai3_p&
+         &,thetai1,thetai2,thetai3&
          &,decrec&
          &,kstat,ked,jstat,jed,istat,ied&
          &,nrec_send,nionrecloc,n,nfft1,nfft2,nfft3&
@@ -2469,7 +2468,7 @@ subroutine grid_pchg_forcecu
    else
       call grid_calc_frc_kcu<<<gS,PME_BLOCK_DIM,0,rec_stream>>>&
          &(chgrecglob,iion,locrec,igrid,pchg&
-         &,thetai1_p,thetai2_p,thetai3_p&
+         &,thetai1,thetai2,thetai3&
          &,decrec&
          &,kstat,ked,jstat,jed,istat,ied&
          &,nrec_send,nionrecloc,n,nfft1,nfft2,nfft3&
@@ -2689,8 +2688,8 @@ subroutine pme_conv_cu(e,vxx,vxy,vxz,vyy,vyz,vzz)
    use timestat
    use tinheader ,only: ti_p
    use utilcu    ,only: check_launch_kernel
-   use utilgpu   ,only: reduce_energy_virial,ered_buff,vred_buf1&
-      &,rec_queue,rec_stream
+   use utilgpu   ,only: rec_queue,rec_stream
+   use reduction ,only: reduce_energy_virial,ered_buff,vred_buf1
    use virial    ,only: use_virial
    implicit none
    real(r_p) e,vxx,vxy,vxz,vyy,vyz,vzz
@@ -2743,7 +2742,7 @@ subroutine pme_conv_cu(e,vxx,vxy,vxz,vyy,vyz,vzz)
       &,kst2,jst2,ist2,qsz1,qsz2,qsz12,qsz&
       &,nff,nf1,nf2,nf3,nfft1,nfft2,nfft3&
       &,f,pterm,volterm,xbox_,calc_e,use_bounds&
-      &,qgridout_2d,ered_buff,vred_buf1)
+      &,qgridout_2d,ered_buff,vred_buf1,use_virial)
    call check_launch_kernel(" pme_conv_cu")
 !$acc end host_data
 
@@ -2773,8 +2772,8 @@ subroutine pme_convd_cu(e,vxx,vxy,vxz,vyy,vyz,vzz)
    use timestat
    use tinheader ,only: ti_p
    use utilcu    ,only: check_launch_kernel
-   use utilgpu   ,only: reduce_energy_virial,ered_buff,vred_buf1&
-      &,rec_queue,rec_stream
+   use utilgpu   ,only: rec_queue,rec_stream
+   use reduction ,only: reduce_energy_virial,ered_buff,vred_buf1
    use virial    ,only: use_virial
    implicit none
    real(r_p) e,vxx,vxy,vxz,vyy,vyz,vzz
@@ -2829,7 +2828,7 @@ subroutine pme_convd_cu(e,vxx,vxy,vxz,vyy,vyz,vzz)
       &,kst2,jst2,ist2,qsz1,qsz2,qsz12,qsz&
       &,nff,nf1,nf2,nf3,nfft1,nfft2,nfft3&
       &,bfac,fac1,fac2,fac3,denom0,pterm,xbox_,calc_e,use_bounds&
-      &,qgridout_2d,ered_buff,vred_buf1)
+      &,qgridout_2d,ered_buff,vred_buf1,use_virial)
    call check_launch_kernel(" pme_convd_kcu")
 !$acc end host_data
 
@@ -3047,7 +3046,7 @@ subroutine set_PME_texture
    logical,save :: first_in=.true.
 
 
-   if (first_in) then
+   if (first_in.or..not.associated(qgridin_t)) then
 !$acc host_data use_device(thetai1,thetai2,thetai3,igrid &
 !$acc  ,x,y,z,qgrid2in_2d,qgridin_2d,kstart1,kend1,jstart1,jend1 &
 !$acc  ,istart1,iend1,prec_send)
@@ -3066,7 +3065,7 @@ subroutine set_PME_texture
 !$acc end host_data
    end if
 
-   if (nproc>1.or.first_in) then
+   if (nproc>1.or.first_in.or..not.associated(thetai1_t)) then
 !$acc host_data use_device(thetai1,thetai2,thetai3)
       thetai1_t => thetai1
       thetai2_t => thetai2
@@ -3100,20 +3099,23 @@ end
 subroutine cmp_to_fmp_sitegpu(cmp,fmp)
    use mpole
    use sizes
-   use utilgpu   ,only:rec_queue,ctf
+   use mdevice   ,only:channel_t,reciprocal_channel
+   use pme       ,only:ctf=>pme_ctf,pme_ctf_ready
    use tinheader ,only:ti_p
    implicit none
    integer i,j,k
+   integer rec_queue
+   type(channel_t) rec_channel
    real(t_p),intent(in) ::cmp(10,max(npolerecloc,1))
    real(t_p),intent(out)::fmp(10,max(npolerecloc,1))
-   logical,save:: init=.true.
+   rec_channel=reciprocal_channel()
+   rec_queue=rec_channel%queue
 !     real(t_p) time0,time1
 !
 !     find the matrix to convert Cartesian to fractional
 !
-   if (init) then
+   if (.not.pme_ctf_ready) then
       call cart_to_fracgpu
-      init=.false.
    end if
 
 !$acc parallel loop collapse(2) async(rec_queue) &
@@ -3146,19 +3148,22 @@ end
 subroutine fphi_to_cphi_sitegpu(fphi,cphi)
    use mpole
    use sizes
-   use utilgpu   ,only:rec_queue,ftc
+   use mdevice   ,only:channel_t,reciprocal_channel
+   use pme       ,only:ftc=>pme_ftc,pme_ftc_ready
    use tinheader ,only:ti_p
    implicit none
    integer i,j,k
+   integer rec_queue
+   type(channel_t) rec_channel
    real(t_p),intent(in )::fphi(20,max(npolerecloc,1))
    real(t_p),intent(out)::cphi(10,max(npolerecloc,1))
-   logical,save::init=.true.
+   rec_channel=reciprocal_channel()
+   rec_queue=rec_channel%queue
 !
 !     find the matrix to convert fractional to Cartesian
 !
-   if (init) then
+   if (.not.pme_ftc_ready) then
       call frac_to_cartgpu
-      init=.false.
    end if
 
 !$acc parallel loop collapse(2) async(rec_queue) &

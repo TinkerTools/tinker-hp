@@ -562,7 +562,7 @@ subroutine ehal1c_cu
       &,zendproc,glob
    use ehal1cu
    use energi    ,only: calc_e,ev=>ev_r
-   use group     ,only: use_group,grplist,wgrp
+   use group     ,only: use_group,grplist,wgrp,ngrp
    use inform    ,only: deb_Path,minmaxone
    use kvdws     ,only: radv,epsv
    use mutant    ,only: scalpha,scexp,vlambda,mut=>mutInt,vcouple&
@@ -585,7 +585,7 @@ subroutine ehal1c_cu
    use vdw       ,only: ired,kred,jvdw,ivdw,radmin,radmin4,radmin_c&
       &,epsilon,epsilon4,epsilon_c&
       &,nvdwbloc,nvdwlocnl,nvdwlocnlb,nvdwclass&
-      &,nvdwlocnlb_pair,nvdwlocnlb_pair1,nvdwlocnlb2_pair
+      &,nvdwlocnlb_pair,nvdwlocnlb_pair1,nvdwlocnlb2_pair,skipvdw12
    use vdwpot    ,only: vcorrect_ik,vcorrect_scale,n_vscale,dhal,ghal&
       &,radrule_i,epsrule_i
    use vdw_locArray
@@ -670,7 +670,7 @@ subroutine ehal1c_cu
          &,n_vscale,sizvc,vcorrect_ik,vcorrect_scale,loc&
          &,jvdw,xredc,yredc,zredc&
          &,radmin4,epsilon4,radmin,epsilon,dev&
-         &)
+         &,nproc,ngrp,use_virial,skipvdw12,vcouple.ne.0)
       call check_launch_kernel(" hal1short_kcu ")
    else if (use_vdwlong) then
       call hal1long_kcu<<<hal_Gs,VDW_BLOCK_DIM,0,def_stream>>>&
@@ -689,7 +689,7 @@ subroutine ehal1c_cu
          &,n_vscale,sizvc,vcorrect_ik,vcorrect_scale,loc&
          &,jvdw,xredc,yredc,zredc&
          &,radmin4,epsilon4,radmin,epsilon,dev&
-         &)
+         &,nproc,ngrp,use_virial,skipvdw12,vcouple.ne.0)
       call check_launch_kernel(" hal1long_kcu ")
    else
       v0 = nproc.eq.1.and.vcouple.eq.0.and.nmut.eq.0&
@@ -713,7 +713,7 @@ subroutine ehal1c_cu
             &,n_vscale,sizvc,vcorrect_ik,vcorrect_scale,loc&
             &,jvdw,xredc,yredc,zredc&
             &,radmin4,epsilon4,radmin,epsilon,dev&
-            &)
+            &,nproc,ngrp,use_virial,skipvdw12,vcouple.ne.0)
          call check_launch_kernel(" hal1_v0_kcu ")
       else
          call hal1_kcu<<<hal_Gs,VDW_BLOCK_DIM,0,def_stream>>>&
@@ -732,7 +732,7 @@ subroutine ehal1c_cu
             &,n_vscale,sizvc,vcorrect_ik,vcorrect_scale,loc&
             &,jvdw,xredc,yredc,zredc&
             &,radmin4,epsilon4,radmin,epsilon,dev&
-            &)
+            &,nproc,ngrp,use_virial,skipvdw12,vcouple.ne.0)
          call check_launch_kernel(" hal1_kcu ")
       end if
    end if
@@ -801,9 +801,10 @@ subroutine searchpair(nlst,lst,maxlst,int1,int2)
    use vdw       ,only: ired,kred,jvdw,ivdw,radmin,radmin_c&
       &,epsilon_c,epsilon,nvdwbloc,nvdwlocnl&
       &,nvdwclass,nvdwlocnlb,nvdwlocnlb_pair&
-      &,nvdwlocnlb2_pair,nshortvdwlocnlb2_pair
+      &,nvdwlocnlb2_pair,nshortvdwlocnlb2_pair,skipvdw12
    use vdwpot    ,only: vcorrect_ik,vcorrect_scale,n_vscale,dhal,ghal
    use vdw_locArray
+   use virial    ,only: use_virial
    use utilgpu   ,only: def_queue,dir_queue,rec_queue&
       &,ered_buff=>ered_buf1,vred_buff,reduce_energy_virial&
       &,zero_evir_red_buffer,prmem_request,inf
@@ -1115,6 +1116,7 @@ subroutine searchpair(nlst,lst,maxlst,int1,int2)
 #ifdef TINKER_DEBUG
          &,inter&
 #endif
+         &,nproc,ngrp,use_virial,skipvdw12,vcouple.ne.0&
          &)
       call check_launch_kernel(" ehal1short_cu_deb ")
 

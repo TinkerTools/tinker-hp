@@ -18,10 +18,11 @@
 subroutine mdinit(dt)
    use atmtyp
    use atoms      ,only: pbcunwrap
-   use atomsMirror
+   use atomsMirror   ,only:n,x,y,z,reCast_position,download_position
    use bath
    use beads, only: path_integral_md
    use bound
+   use boxes      ,only:xbox,ybox,zbox,alpha,beta,gamma
    use colvars
    use couple
    use cutoff
@@ -53,9 +54,10 @@ subroutine mdinit(dt)
    use units
    use uprior
    use utils
+   use restart     ,only:read_restart
+   use status      ,only:failed,status_t
    use qtb
 #ifdef _OPENACC
-   use utilcu  ,only: cu_update_vir_switch
 #endif
    use utilgpu ,only: prmem_requestm,rec_queue,rec_stream,mem_set
    use usage
@@ -65,7 +67,7 @@ subroutine mdinit(dt)
    implicit none
    integer i,j,idyn,iglob
    integer next
-   integer lext,freeunit, ios
+   integer lext, ios
    integer correc
    integer(mipk) siz_
    real(r_p) e
@@ -76,7 +78,8 @@ subroutine mdinit(dt)
    real(r_p), allocatable :: speedvec(:)
    real(r_p) eps,zero,oe6
    mdyn_rtyp zero_md
-   logical exist,s_colvars
+   logical exist,s_colvars,aalt2_present
+   type(status_t) restart_status
    character*7 ext
    character*20 keyword
    character*240 dynfile
@@ -541,7 +544,6 @@ subroutine mdinit(dt)
    if (isobaric.and.barostat.eq.'BERENDSEN'.or.use_piston)&
       &use_virial=.true.
 #ifdef _OPENACC
-   call cu_update_vir_switch(use_virial)
    if (use_virial.and.use_polar.and.&
       &(integrate.eq.'RESPA1'.or.integrate.eq.'BAOABRESPA1' ) )&
       &then
@@ -640,11 +642,17 @@ subroutine mdinit(dt)
             write(*,32) filename(1:leng)
          end if
       end if
-      idyn = freeunit ()
-      open (unit=idyn,file=dynfile,status='old')
-      rewind (unit=idyn)
-      call readdyn (idyn)
-      close (unit=idyn)
+      call read_restart(trim(dynfile),n,xbox,ybox,zbox,alpha,beta,gamma,&
+         &x,y,z,v,a,aalt,aalt2,aalt2_present,restart_status)
+      if (failed(restart_status)) then
+         write (iout,'(/,a)') trim(restart_status%message)
+         call fatal
+      end if
+      call lattice
+!$acc update device(x(:),y(:),z(:),v,a,aalt,aalt2)
+      call reCast_position
+!$acc wait
+      call download_position
 !
 !     Do the domain decomposition
 !

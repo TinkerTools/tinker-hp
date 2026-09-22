@@ -15,12 +15,13 @@
 !
 !
 #include "tinker_macro.h"
-subroutine initial
+subroutine initial(raw_cli)
    use atoms
    use beads
    use bath
    use bound
    use cell
+   use config, only: raw_cli_t, publish_legacy_cli
    use deriv
    use domdec
    use energi
@@ -51,6 +52,7 @@ subroutine initial
    integer ::cuda_success=0
    real(t_p) precise
    integer :: status,hostnm,getpid,device_type,i=0
+   type(raw_cli_t), intent(in), optional :: raw_cli
 
 !
 !     cores, thread count and options for OpenMP
@@ -69,7 +71,11 @@ subroutine initial
 !
 !     command line arguments to the program
 !
-   call command
+   if (present(raw_cli)) then
+      call publish_legacy_cli(raw_cli)
+   else
+      call command
+   end if
 !
 !     Number of MPI processes and rank of the current MPI process
 !
@@ -336,7 +342,7 @@ end
 !
 !     Initialize GPU
 !
-subroutine initDevice
+subroutine initDevice(platform_ready)
    use deriv  ,only: delambdae,delambdav,delambdaesave,&
       &delambdavsave
    use domdec ,only: rank,ranktot,hostcomm
@@ -344,11 +350,13 @@ subroutine initDevice
    use inter  ,only: einter
    use inform
    use mamd   ,only: aMDwattype
+   use mdevice,only: channel_t,reciprocal_channel
    use nvshmem
+   use pme, only: initialize_pme_device
+   use reduction, only: create_reduction_buffers
    use utilgpu
 #ifdef _OPENACC
    use interfaces,only:C_init_env
-   use utilcu    ,only: copy_data_to_cuda_env
 #endif
    use sizes  ,only: tinkerdebug
    use virial
@@ -356,21 +364,25 @@ subroutine initDevice
    !use utils
    implicit none
    integer,volatile:: ierr,i
+   type(channel_t) :: reciprocal_work
+   logical, intent(in), optional :: platform_ready
+   logical :: platform_is_ready
+   platform_is_ready = .false.
+   if (present(platform_ready)) platform_is_ready = platform_ready
 !
 !     Inititialize gpu stuff
 !
-   ngpus         = 0
-   nSMP          = 1
-   nSPcores      = 1
-   cores_SMP     = 1
-
+   if (.not.platform_is_ready) then
+      ngpus         = 0
+      nSMP          = 1
+      nSPcores      = 1
+      cores_SMP     = 1
 #ifdef _OPENACC
-   call selectDevice
+      call selectDevice
+      call initDevice_stream
 #endif
+   end if
    call init_nvshmem(hostcomm)
-#ifdef _OPENACC
-   call initDevice_stream
-#endif
    !call mHalte
 !
 !     For Mpi debug purpose
@@ -391,8 +403,6 @@ subroutine initDevice
 !
 !     For blocking computation of direct space
 !
-   Ndir_block        = 1
-   Ndir_async_block  = 0
 !$acc enter data create(aMDwattype)
 !
 !     create virial component on device
@@ -407,15 +417,14 @@ subroutine initDevice
 !
 !     set to zero reductions buffers for (action,energy and virial)
 !
-!$acc enter data create(ered_buff,ered_buf1,lam_buff &
-!$acc          ,vred_buff,vred_buf1,nred_buff)
-   call zero_mdred_buffers
+   call create_reduction_buffers(dir_queue)
+   reciprocal_work = reciprocal_channel()
+   call initialize_pme_device(reciprocal_work%queue)
 !
 !     mapping parallelism for gpu execution
 !
 #ifdef _OPENACC
    call C_init_env(devicenum,nproc,rank,tinkerdebug)
-   call copy_data_to_cuda_env(nproc)
 #endif
 
    ngangs_rec  = 20
@@ -427,4 +436,3 @@ subroutine initDevice
 !$acc update device(rank,ngpus,devicenum,gpu_gangs &
 !$acc  ,gpu_workers,gpu_vector)
 end subroutine
-

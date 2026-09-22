@@ -27,6 +27,7 @@ subroutine baoab (istep,dt)
    use bath
    use cutoff
    use domdec
+   use parallel, only: migrate_atoms
    use deriv    ,only:info_forces,cDef,ftot_l,comm_forces
    use energi   ,only: info_energy,calc_e,chk_energy_fluct
    use freeze
@@ -107,7 +108,7 @@ subroutine baoab (istep,dt)
 !     Reassign the particules that have changed of domain
 !
 !     -> real space
-   call reassign
+   call migrate_atoms
 !
 !     -> reciprocal space
    call reassignpme(.false.)

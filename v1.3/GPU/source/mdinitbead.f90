@@ -21,6 +21,7 @@ subroutine mdinitbead(dt,polymer)
    use bath
    use beads
    use bound
+   use boxes, only: xbox,ybox,zbox,alpha,beta,gamma
    use couple
    use domdec
    use files
@@ -41,14 +42,16 @@ subroutine mdinitbead(dt,polymer)
    use usage
    use random_mod
    use commstuffpi, only: comm_for_normal_modes
+   use restart, only: read_restart
+   use status, only: failed, status_t
 
    implicit none
    integer :: ibead
    real(r_p), intent(in) :: dt
    type(POLYMER_COMM_TYPE), intent(inout) :: polymer
-   integer i,j,k,idyn,iglob,nh
+   integer i,j,k,iglob,nh
    integer next
-   integer lext,freeunit
+   integer lext
    integer ierr
    real(r_p) :: e
    real(r_p) :: maxwell,speed
@@ -57,42 +60,58 @@ subroutine mdinitbead(dt,polymer)
    real(t_p) :: vec(3)
    real(r_p), allocatable :: speedvec(:)
    real(r_p) :: wt
-   logical exist,restart
+   logical exist,restart,missing_restart,aalt2_present
    character*7 ext
    character*20 keyword
-   character*120 dynfile
+   character*240 dynfile
    character*120 record
    character*120 string
    character*3 numberbeads
+   type(status_t) :: restart_status
 
 !
 !     try to restart using prior velocities and accelerations
 !
    restart = .false.
+   missing_restart = .false.
    do ibead = 1,nbeads
       write(numberbeads, '(i3.3)') ibead
       dynfile = filename(1:leng)//'_beads'//numberbeads//'.dyn'
       call version (dynfile,'old')
       inquire (file=dynfile,exist=exist)
 
-      if((.NOT.exist) .and. restart) then
-         if(ranktot==0) then
-            write(0,*) "Error: not all beads can been restarted!"
-            call fatal
-         endif
-      endif
-      restart = exist
+      restart = restart .or. exist
+      missing_restart = missing_restart .or. .not.exist
+   enddo
 
-      if (exist) then
+   if (restart .and. missing_restart) then
+      if(ranktot==0) then
+         write(0,*) "Error: not all beads can be restarted!"
+      endif
+      call fatal
+   endif
+
+   do ibead = 1,nbeads
+      write(numberbeads, '(i3.3)') ibead
+      dynfile = filename(1:leng)//'_beads'//numberbeads//'.dyn'
+      call version (dynfile,'old')
+
+      if (restart) then
          if(ranktot==0) then
             write(*,*) " --- Tinker-HP loading Restart file "&
                &//trim(dynfile)//"  ---"
          endif
-         idyn = freeunit ()
-         open (unit=idyn,file=dynfile,status='old')
-         rewind (unit=idyn)
-         call readdyn (idyn)
-         close (unit=idyn)
+         call read_restart(trim(dynfile),n,xbox,ybox,zbox,alpha,beta,gamma,&
+            &x,y,z,v,a,aalt,aalt2,aalt2_present,restart_status)
+         if (failed(restart_status)) then
+            if (ranktot == 0) write (iout,'(/,a)') trim(restart_status%message)
+            call fatal
+         endif
+         call lattice
+!$acc update device(x(:),y(:),z(:),v,a,aalt,aalt2)
+         call reCast_position
+!$acc wait
+         call download_position
 
       else
 !

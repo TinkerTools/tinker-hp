@@ -21,9 +21,6 @@
 !     maxscaling   maximum number of scaling factor of an atom among interactions 1-2 to 1-5
 !     maxscaling1  maximum number of scaling factor of an atom among p_interactions
 !     warning      warning message to print in case of trouble
-!     ftc          a transformation matrix to convert a multipole object in fraction coordinates to Cartesian
-!     ctf          a transformation matrix to convert a multipole object in Cartesian coordinates to fractional
-!     qi1 and qi2  are useful to compute ftc and ctf
 !     devProp      Properties of the device
 !     nSMP         number of streaming Multi-processor on the device
 !     nSPcores     number of cores od the device
@@ -44,6 +41,11 @@ module utilgpu
    use sizes
    use tinMemory
    use tinTypes
+   ! Legacy adapter: reduction storage now belongs to the reduction owner.
+   use reduction, only: RED_BUFF_SIZE,nred_buff,vred_buff,vred_buf1,ered_buff,&
+      &ered_buf1,lam_buff,reduce_buffer,reduce_energy_virial,&
+      &reduce_energy_action,zero_mdred_buffers,zero_evir_red_buffer,&
+      &zero_en_red_buffer
    use iso_c_binding,only:c_ptr
 #ifdef _OPENACC
    use openacc
@@ -72,7 +74,6 @@ module utilgpu
       &,dir_event=0,rec_event=0,def_event=0)
 #endif
    integer nSMP,nSPcores,cores_SMP
-   integer Ndir_block,Ndir_async_block,count_block
    real(t_p),parameter:: inf  =4*huge(0.0_ti_p)
    real(r_p),parameter:: inf_r=4*huge(0.0_re_p)
 
@@ -82,31 +83,6 @@ module utilgpu
    integer,parameter:: BLOCK_SIZE=32
    integer,parameter::  WARP_SIZE=32
    integer,parameter::  WARP_SHFT=5
-   integer,parameter::RED_BUFF_SIZE=ishft(1,15)
-
-   integer,parameter,dimension(6)::qi1=(/ 1, 2, 3, 1, 1, 2 /)
-   integer,parameter,dimension(6)::qi2=(/ 1, 2, 3, 2, 3, 3 /)
-
-   integer   nred_buff(  RED_BUFF_SIZE)
-   real(t_p) vred_buff(6*RED_BUFF_SIZE)
-   real(t_p) vred_buf1(6*RED_BUFF_SIZE)
-   real(r_p) ered_buff(  RED_BUFF_SIZE)
-   real(r_p),target::  lam_buff(  RED_BUFF_SIZE)
-   ener_rtyp ered_buf1(  RED_BUFF_SIZE)
-   real(t_p),dimension(10,10)::ftc,ctf
-
-   ! WorkSpace buffer to be used across the code
-   integer  ,allocatable:: ug_workS_i(:),ug_workS_i1(:)
-   real(t_p),allocatable:: ug_workS_r(:),ug_workS_r1(:)
-   real(r_p),allocatable:: ug_workS_m(:),ug_workS_m1(:)
-   ! -----------------------------------
-   ! ug_workS_r   is used within
-   !              - tmatxb_pme_core3
-   !              - empole1cgpu, epreal1cgpu, emreal3d_cu, epreal3d_cu, emrecip1gpu, eprecip1gpu
-   ! -----------------------------------
-   ! ug_workS_r1  is used within
-   !              - emrecip1gpu, eprecip1gpu
-   !
 
    character*128 warning,sugest_vdw
 
@@ -171,21 +147,6 @@ module utilgpu
       module procedure mem_set_r8_5d
    end interface
 
-   interface reduce_buffer
-      module procedure reduce_buffer_m
-   end interface
-
-   interface reduce_energy_virial
-      module procedure reduce_energy_virial0
-      module procedure reduce_energy_virial1
-      module procedure reduce_energy_virial2
-   end interface
-
-   interface reduce_energy_action
-      module procedure reduce_energy_action0
-      module procedure reduce_energy_action1
-   end interface
-
    interface transpose_az3
       module procedure transpose_az_l3
       module procedure transpose_az_f3
@@ -193,58 +154,10 @@ module utilgpu
    end interface
 !
 !$acc declare create(gpu_gangs,gpu_workers,gpu_vector,devicenum, &
-!$acc ngpus,warning,sugest_vdw,ftc,ctf)
-!
-!$acc declare copyin(qi1,qi2)
+!$acc ngpus,warning,sugest_vdw)
 
 contains
 
-!     ########################################################################
-!     ##                                                                    ##
-!     ##  subroutine imagevec_acc  --  compute the minimum image distance  ##
-!     ##                                                                    ##
-!     ########################################################################
-!
-!     "imagevec3" takes the components of pairwise distances between
-!     two points in a periodic box and converts to the components
-!     of the minimum image distances. Indice i designs x, y or z
-!     direction on a graphics card
-!
-!     xcell    length of the a-axis of the complete replicated cell
-!     ycell    length of the b-axis of the complete replicated cell
-!     zcell    length of the c-axis of the complete replicated cell
-!     xcell2   half the length of the a-axis of the replicated cell
-!     ycell2   half the length of the b-axis of the replicated cell
-!     zcell2   half the length of the c-axis of the replicated cell
-   pure subroutine imagevec_acc(xpos2,ypos2,zpos2,n,sizepos2)
-!$acc routine vector
-      implicit none
-      integer,intent(in):: n,sizepos2
-      real(t_p), intent(inout):: xpos2(sizepos2)
-      real(t_p), intent(inout):: ypos2(sizepos2)
-      real(t_p), intent(inout):: zpos2(sizepos2)
-      integer j
-      real(t_p) cel
-
-!$acc loop vector
-      do j=1,n
-         if (abs(xpos2(j)) .gt. xcell2) then
-            cel      = sign(xcell,xpos2(j))
-            xpos2(j) = xpos2(j)&
-               &- cel*floor((abs(xpos2(j))+xcell2)/xcell)
-         end if
-         if (abs(ypos2(j)) .gt. ycell2) then
-            cel      = sign(ycell,ypos2(j))
-            ypos2(j) = ypos2(j)&
-               &- cel*floor((abs(ypos2(j))+ycell2)/ycell)
-         end if
-         if (abs(zpos2(j)) .gt. zcell2) then
-            cel      = sign(zcell,zpos2(j))
-            zpos2(j) = zpos2(j)&
-               &- cel*floor((abs(zpos2(j))+zcell2)/zcell)
-         end if
-      end do
-   end
 !
 !
 !
@@ -730,40 +643,6 @@ contains
 !
 !
 !
-   subroutine switch_queue
-      implicit none
-
-      if (def_queue.eq.rec_queue) then
-         def_queue = dir_queue
-      else
-         def_queue = rec_queue
-      end if
-   end
-!
-!
-   subroutine reset_def_to_dir
-      implicit none
-
-      def_queue = dir_queue
-      count_block = 0
-   end subroutine
-!
-!
-   subroutine switch_dir_queue
-      implicit none
-
-      if (count_block.lt.Ndir_async_block) then
-         if (def_queue.eq.dir_queue) then
-            def_queue = rec_queue
-         else
-            def_queue = dir_queue
-            count_block = count_block+1
-         end if
-      else
-         def_queue = dir_queue
-      end if
-   end
-
    subroutine openacc_abort(message)
       use mpi
       character(*) :: message
@@ -803,15 +682,24 @@ contains
       !Initialisation OpenAcc
       call get_environment_variable(name="PGI_ACC_DEVICE_NUM",&
          &value=local_rank_env, status=local_rank_env_status)
-      if (local_rank_env_status == 0) return
+      if (local_rank_env_status == 0) then
+         call capture_bound_device
+         return
+      end if
 
       call get_environment_variable(name="ACC_DEVICE_NUM",&
          &value=local_rank_env, status=local_rank_env_status)
-      if (local_rank_env_status == 0) return
+      if (local_rank_env_status == 0) then
+         call capture_bound_device
+         return
+      end if
 
       call get_environment_variable(name="ACC_DEVICE_HOST_RANK",&
          &value=local_rank_env, status=local_rank_env_status)
-      if (local_rank_env_status == 0) return
+      if (local_rank_env_status == 0) then
+         call capture_bound_device
+         return
+      end if
 
       ! Look for CUDA environment
       call get_environment_variable(name="CUDA_VISIBLE_DEVICE",&
@@ -869,6 +757,14 @@ contains
       call acc_set_device_num( local_rank,device_type )
       devicenum=local_rank
    end subroutine bind_gpu
+
+   subroutine capture_bound_device
+      integer :: device_type
+
+      device_type = acc_get_device_type()
+      ngpus = acc_get_num_devices(device_type)
+      devicenum = acc_get_device_num(device_type)
+   end subroutine capture_bound_device
 !
 !     Initiate device parameters
 !
@@ -934,13 +830,16 @@ contains
 !
 !     Initiate Device streams
 !
-   subroutine initDevice_stream
+   subroutine initDevice_stream(status_code)
       implicit none
+      integer, intent(out), optional :: status_code
       integer ::i,cuda_success=0
       character*64 value
       integer int_val
       integer length,status,device_type
       integer high_priority,low_priority
+
+      if (present(status_code)) status_code = 0
 
       rec_queue  = acc_async_noval
       dir_queue  = acc_async_noval
@@ -962,7 +861,6 @@ contains
          return
       end if
 
-      dir_queue = acc_async_noval + 1
 13    format(' ***** Asynchronous Computation Overlapping enable'&
          &,I5,/)
       if (rank.eq.0) write(*,13) acc_async_noval
@@ -971,6 +869,11 @@ contains
 !
       cuda_success = cudaDeviceGetStreamPriorityRange(low_priority,&
          &high_priority)
+      if (cuda_success.ne.0) then
+         if (present(status_code)) status_code = cuda_success
+         return
+      end if
+      dir_queue = acc_async_noval + 1
 
       ! Create main stream for TINKER
       cuda_success = cuda_success +&
@@ -987,8 +890,11 @@ contains
          def_stream = rec_stream
       end if
 
-      if (cuda_success.ne.0)&
-         &print*,'error creating cuda async queue >',cuda_success
+      if (cuda_success.ne.0) then
+         if (present(status_code)) status_code = cuda_success
+         print*,'error creating cuda async queue >',cuda_success
+         return
+      end if
 !
 !     Creating Event for stream syncrhonisation
 !
@@ -999,14 +905,17 @@ contains
       cuda_success = cuda_success +&
          &cudaEventCreateWithFlags(def_event,cudaEventDisableTiming)
 
-      if (cuda_success.ne.0)&
-         &print*,'error creating cuda Events  >', cuda_success
+      if (cuda_success.ne.0) then
+         if (present(status_code)) status_code = cuda_success
+         print*,'error creating cuda Events  >', cuda_success
+      end if
 
    end
 
    subroutine syncWithStream(stream)
-      integer,optional::stream
-      integer stream_,istat
+      integer(cuda_stream_kind),optional::stream
+      integer(cuda_stream_kind) stream_
+      integer istat
 
       if (present(stream)) then
          stream_= stream
@@ -1660,208 +1569,6 @@ contains
       end do
    end subroutine
 
-   subroutine reduce_buffer_m(r_buff,sz_buff,redVal,queue)
-      implicit none
-      integer  ,intent(in ):: sz_buff, queue
-      real(r_p)            :: r_buff(*)
-      real(r_p),intent(out):: redVal
-      integer i
-!$acc parallel loop present(redVal,r_buff) async(queue)
-      do i = 1,sz_buff
-         redVal    = redVal + r_buff(i)
-         r_buff(i) = 0
-      end do
-   end subroutine
-
-   subroutine reduce_energy_virial0(energy,vxx,vxy,vxz,vyy,vyz,vzz&
-      &,queue)
-      implicit none
-      integer,intent(in):: queue
-      real(r_p) energy
-      real(r_p) vxx,vxy,vxz,vyy,vyz,vzz
-      integer i
-      !Make sure data are set zero before calling this routine
-
-!$acc parallel loop async(queue) present(energy,vxx,vxy,vxz, &
-!$acc    vyy,vyz,vzz,ered_buff,vred_buff)
-      do i = 1,RED_BUFF_SIZE
-         energy = energy + ered_buff(i)
-         vxx    = vxx + real(vred_buff(i),r_p)
-         vxy    = vxy + real(vred_buff(  RED_BUFF_SIZE+i),r_p)
-         vxz    = vxz + real(vred_buff(2*RED_BUFF_SIZE+i),r_p)
-         vyy    = vyy + real(vred_buff(3*RED_BUFF_SIZE+i),r_p)
-         vyz    = vyz + real(vred_buff(4*RED_BUFF_SIZE+i),r_p)
-         vzz    = vzz + real(vred_buff(5*RED_BUFF_SIZE+i),r_p)
-
-         ered_buff(i)                 = 0
-         vred_buff(i)                 = 0
-         vred_buff(  RED_BUFF_SIZE+i) = 0
-         vred_buff(2*RED_BUFF_SIZE+i) = 0
-         vred_buff(3*RED_BUFF_SIZE+i) = 0
-         vred_buff(4*RED_BUFF_SIZE+i) = 0
-         vred_buff(5*RED_BUFF_SIZE+i) = 0
-      end do
-   end subroutine
-
-   subroutine reduce_energy_virial1(energy,vxx,vxy,vxz,vyy,vyz,vzz&
-      &,ered_b,queue)
-      implicit none
-      integer,intent(in):: queue
-      ener_rtyp,intent(inout):: ered_b(RED_BUFF_SIZE)
-      ener_rtyp energy
-      real(r_p) vxx,vxy,vxz,vyy,vyz,vzz
-      integer i
-      !Make sure data are set zero before calling this routine
-
-!$acc parallel loop async(queue) present(energy,vxx,vxy,vxz, &
-!$acc    vyy,vyz,vzz,ered_b,vred_buff)
-      do i = 1,RED_BUFF_SIZE
-         energy = energy + ered_b(i)
-         vxx    = vxx + real(vred_buff(0*RED_BUFF_SIZE+i),r_p)
-         vxy    = vxy + real(vred_buff(1*RED_BUFF_SIZE+i),r_p)
-         vxz    = vxz + real(vred_buff(2*RED_BUFF_SIZE+i),r_p)
-         vyy    = vyy + real(vred_buff(3*RED_BUFF_SIZE+i),r_p)
-         vyz    = vyz + real(vred_buff(4*RED_BUFF_SIZE+i),r_p)
-         vzz    = vzz + real(vred_buff(5*RED_BUFF_SIZE+i),r_p)
-
-         ered_b   (i)                 = 0
-         vred_buff(i)                 = 0
-         vred_buff(  RED_BUFF_SIZE+i) = 0
-         vred_buff(2*RED_BUFF_SIZE+i) = 0
-         vred_buff(3*RED_BUFF_SIZE+i) = 0
-         vred_buff(4*RED_BUFF_SIZE+i) = 0
-         vred_buff(5*RED_BUFF_SIZE+i) = 0
-      end do
-   end subroutine
-
-   subroutine reduce_energy_virial2(energy,vxx,vxy,vxz,vyy,vyz,vzz&
-      &,ered_b,vred_b,queue)
-      implicit none
-      integer,intent(in):: queue
-      real(r_p),intent(inout):: ered_b(  RED_BUFF_SIZE)
-      real(t_p),intent(inout):: vred_b(6*RED_BUFF_SIZE)
-      real(r_p) energy
-      real(r_p) vxx,vxy,vxz,vyy,vyz,vzz
-      integer i
-      !Make sure data are set zero before calling this routine
-
-!$acc parallel loop async(queue) present(energy,vxx,vxy,vxz, &
-!$acc    vyy,vyz,vzz,ered_b,vred_buff)
-      do i = 1,RED_BUFF_SIZE
-         energy = energy + ered_b(i)
-         vxx    = vxx + real(vred_b(0*RED_BUFF_SIZE+i),r_p)
-         vxy    = vxy + real(vred_b(1*RED_BUFF_SIZE+i),r_p)
-         vxz    = vxz + real(vred_b(2*RED_BUFF_SIZE+i),r_p)
-         vyy    = vyy + real(vred_b(3*RED_BUFF_SIZE+i),r_p)
-         vyz    = vyz + real(vred_b(4*RED_BUFF_SIZE+i),r_p)
-         vzz    = vzz + real(vred_b(5*RED_BUFF_SIZE+i),r_p)
-
-         ered_b(i)                 = 0
-         vred_b(i)                 = 0
-         vred_b(  RED_BUFF_SIZE+i) = 0
-         vred_b(2*RED_BUFF_SIZE+i) = 0
-         vred_b(3*RED_BUFF_SIZE+i) = 0
-         vred_b(4*RED_BUFF_SIZE+i) = 0
-         vred_b(5*RED_BUFF_SIZE+i) = 0
-      end do
-   end subroutine
-
-   subroutine reduce_energy_action0(energy,n,queue)
-      implicit none
-      integer,intent(in):: queue
-      real(r_p) energy
-      integer   n
-      integer i
-      !Make sure data are set zero before calling this routine
-
-!$acc parallel loop async(queue) present(energy,n, &
-!$acc    ered_buff,vred_buff)
-      do i = 1,RED_BUFF_SIZE
-         energy = energy + ered_buff(i)
-         n      = n + nred_buff(i)
-         ered_buff(i) = 0
-         nred_buff(i) = 0
-      end do
-   end subroutine
-
-   subroutine reduce_energy_action1(energy,n,ered_b,queue)
-      implicit none
-      integer,intent(in):: queue
-      ener_rtyp ered_b(RED_BUFF_SIZE)
-      ener_rtyp energy
-      integer   n
-      integer i
-      !Make sure data are set zero before calling this routine
-
-!$acc parallel loop async(queue) present(energy,n, &
-!$acc    ered_buff,vred_buff)
-      do i = 1,RED_BUFF_SIZE
-         energy = energy + ered_b(i)
-         n      = n      + nred_buff(i)
-         ered_b (i)   = 0
-         nred_buff(i) = 0
-      end do
-   end subroutine
-
-   subroutine zero_mdred_buffers(queue_)
-      implicit none
-      integer,optional::queue_
-      integer i,queue
-
-      queue = dir_queue
-      if (present(queue_)) queue=queue_
-
-!$acc parallel loop async(queue) &
-!$acc         default(present)
-      do i = 1,6*RED_BUFF_SIZE
-         if (i<RED_BUFF_SIZE+1) then
-            ered_buff(i)=0
-            ered_buf1(i)=0
-            nred_buff(i)=0
-         end if
-         vred_buff(i)=0
-         vred_buf1(i)=0
-      end do
-   end subroutine
-
-   subroutine zero_evir_red_buffer(queue_)
-      implicit none
-      integer,optional::queue_
-      integer i,queue
-
-      queue = dir_queue
-      if (present(queue_)) queue=queue_
-
-!$acc parallel loop async(queue) &
-!$acc         present(ered_buff,ered_buf1,vred_buff)
-      do i = 1,6*RED_BUFF_SIZE
-         if (i<RED_BUFF_SIZE+1) then
-            ered_buff(i)=0
-            ered_buf1(i)=0
-         end if
-         vred_buff(i) = 0
-      end do
-   end subroutine
-
-   subroutine zero_en_red_buffer(queue_)
-      implicit none
-      integer,optional::queue_
-      integer i,queue
-
-      if   (present(queue_)) then
-         queue = queue_
-      else;  queue = dir_queue; end if
-
-!$acc parallel loop async(queue) &
-!$acc         present(ered_buff,ered_buf1,nred_buff)
-      do i = 1,RED_BUFF_SIZE
-         ered_buff(i)=0
-         ered_buf1(i)=0
-         nred_buff(i)=0
-      end do
-
-   end subroutine
-
    subroutine transposez_r6(src,dst,loc,sloc,siz,queue)
       implicit none
       integer  ,intent(in)   :: siz,queue,sloc,loc(sloc)
@@ -1934,4 +1641,3 @@ contains
    end subroutine
 
 end module utilgpu
-

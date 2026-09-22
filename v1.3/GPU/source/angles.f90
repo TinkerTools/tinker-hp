@@ -151,6 +151,7 @@ subroutine upload_device_angles
    use atmlst
    use atoms
    use domdec
+   use inform
    use nvshmem
    use sizes
    use tinMemory
@@ -159,7 +160,7 @@ subroutine upload_device_angles
 
 #ifdef _OPENACC
 12 format(2x,'upload_device_angles')
-   if(rank.eq.0.and.tinkerdebug) print 12
+   if(deb_Path) print 12
 #endif
 #ifdef USE_NVSHMEM_CUDA
    if (n.ne.0) then

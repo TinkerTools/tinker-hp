@@ -71,8 +71,4 @@
 #endif
 
 
-#ifdef RELEASE_BUILD
-#  define TINKERHP_REL_BUILD 1
-#else
-#  define TINKERHP_REL_BUILD 1
-#endif
+# define TINKERHP_REL_BUILD 1

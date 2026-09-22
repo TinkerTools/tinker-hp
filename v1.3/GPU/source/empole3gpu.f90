@@ -18,14 +18,14 @@
 #include "tinker_macro.h"
 module empole3gpu_inl
    use tintypes , only: real3,rpole_elt
-   include "erfcore_data.inc.f90"
+!   include "erfcore_data.inc.f90"
 #include "atomicOp.h.f90"
 contains
 #include "image.inc.f90"
 #if defined(SINGLE) | defined(MIXED)
-   include "erfcscore.inc.f90"
+!   include "erfcscore.inc.f90"
 #else
-   include "erfcdcore.inc.f90"
+!   include "erfcdcore.inc.f90"
 #endif
 #include "switch_respa.inc.f90"
 #include "groups.inc.f90"
@@ -39,6 +39,7 @@ subroutine empole3gpu
    use mpi
    use group
    use tinheader,only: ti_p
+   use tinMemory,only: prmem_request
    implicit none
    if(use_group .and. wgrp(1,2).eq.0._ti_p) then
       return
@@ -87,7 +88,7 @@ subroutine empole3cgpu
    use neigh
    use potent
    use shunt
-   use utilgpu
+   use utilgpu, only: def_queue,dir_queue,rec_queue,end_dir_stream_cover
    use timestat
    implicit none
    integer k,i,ii,ierr
@@ -274,7 +275,7 @@ subroutine elambdampole3cgpu
    use neigh
    use potent
    use shunt
-   use utilgpu
+   use utilgpu, only: def_queue,dir_queue,rec_queue,start_dir_stream_cover,end_dir_stream_cover
    use timestat
    implicit none
    integer k,i,ii,ierr
@@ -532,9 +533,11 @@ subroutine emreal3d_ac
       &,use_chgpen,use_chgflx
    use shunt  ,only:off,off2
    use timestat
+   use tinMemory,only:prmem_request
    use tinheader ,only:ti_p,zeror,oner
    use tinTypes
    use utilgpu,only:dir_queue,rec_queue,def_queue,warning
+   use cflux,only:pot=>cflux_pot
    implicit none
 
    integer i,j,k,iglob,kglob,kbis,ver,ver1,fea
@@ -561,6 +564,7 @@ subroutine emreal3d_ac
       __TINKER_FATAL__
    end if
    call timer_enter( timer_emreal )
+   if (use_chgflx) call prmem_request(pot,nbloc)
    if (deb_Path) then
       rtami = ' emreal3d_ac'//merge(' CHGPEN','       ',use_chgpen)
       if (use_mpoleshortreal) then
@@ -758,7 +762,7 @@ subroutine emreal3d_cu
    use empole_cpencu
    use energi ,only:em=>em_r
    use ewald  ,only:aewald
-   use group  ,only:use_group,grplist,wgrp
+   use group  ,only:use_group,grplist,wgrp,ngrp
    use inform ,only: deb_Path,minmaxone
    use math   ,only:sqrtpi
    use mplpot ,only:n_mscale,mcorrect_ik,mcorrect_scale
@@ -777,14 +781,13 @@ subroutine emreal3d_cu
    use shunt  ,only:off,off2
    use timestat
    use tinheader,only: ti_p
+   use tinMemory,only: prmem_request
    use utilcu ,only:BLOCK_DIM,check_launch_kernel
-   use utilgpu,only:dir_queue,rec_queue,def_queue,warning&
-      &,RED_BUFF_SIZE,BLOCK_SIZE&
-      &,ered_buff=>ered_buf1,vred_buff,lam_buff,nred_buff&
-      &,reduce_energy_action&
-      &,zero_en_red_buffer&
-      &,pot=>ug_workS_r&
-      &,dir_stream,def_stream
+   use utilgpu,only:dir_queue,rec_queue,def_queue,warning,dir_stream,def_stream,&
+      &BLOCK_SIZE,get_GridDim
+   use cflux,only: pot=>cflux_pot
+   use reduction,only: RED_BUFF_SIZE,ered_buff=>ered_buf1,vred_buff,&
+      &lam_buff,nred_buff,reduce_energy_action,zero_en_red_buffer
    !use tinTypes
    use virial
    implicit none
@@ -803,6 +806,7 @@ subroutine emreal3d_cu
    parameter(use_chgflx_=.false.)
 
    call timer_enter( timer_emreal )
+   if (use_chgflx) call prmem_request(pot,nbloc)
    if (deb_Path) then
       rtami = ' emreal3d_cu'//merge(' CHGPEN','',use_chgpen)
       if (use_mpoleshortreal) then
@@ -877,7 +881,7 @@ subroutine emreal3d_cu
          &,dem,tem,pot,ered_buff,vred_buff,lam_buff,nred_buff&
          &,p_xbeg,p_xend,p_ybeg,p_yend,p_zbeg,p_zend&
          &,mcorrect_ik,mcorrect_scale,ipole,loc,x,y,z,n_mscale&
-         &)
+         &,nproc,ngrp)
       call check_launch_kernel("emreal3_cpen_kcu")
 
    else
@@ -894,7 +898,7 @@ subroutine emreal3d_cu
             &,pot,dem,tem,ered_buff,vred_buff,lam_buff,nred_buff&
             &,p_xbeg,p_xend,p_ybeg,p_yend,p_zbeg,p_zend&
             &,mcorrect_ik,mcorrect_scale,ipole,loc,x,y,z,n_mscale&
-            &)
+            &,nproc,ngrp)
          call check_launch_kernel("emreal3s_kcu")
       elseif(use_mpolelong) then
          call emreal3l_kcu<<<gS,BLOCK_DIM,0,def_stream>>>&
@@ -908,7 +912,7 @@ subroutine emreal3d_cu
             &,pot,dem,tem,ered_buff,vred_buff,lam_buff,nred_buff&
             &,p_xbeg,p_xend,p_ybeg,p_yend,p_zbeg,p_zend&
             &,mcorrect_ik,mcorrect_scale,ipole,loc,x,y,z,n_mscale&
-            &)
+            &,nproc,ngrp)
          call check_launch_kernel("emreal3l_kcu")
       else
          call emreal3_kcu<<<gS,BLOCK_DIM,0,def_stream>>>&
@@ -922,7 +926,7 @@ subroutine emreal3d_cu
             &,pot,dem,tem,ered_buff,vred_buff,lam_buff,nred_buff&
             &,p_xbeg,p_xend,p_ybeg,p_yend,p_zbeg,p_zend&
             &,mcorrect_ik,mcorrect_scale,ipole,loc,x,y,z,n_mscale&
-            &)
+            &,nproc,ngrp)
          call check_launch_kernel("emreal3_kcu")
       endif
 

@@ -161,7 +161,7 @@ subroutine update_device_torsions
 
 #ifdef _OPENACC
 12 format(2x,'upload_device_torsions')
-   if(rank.eq.0.and.tinkerdebug) print 12
+   if(rank.eq.0.and.tinkerdebug.gt.0) print 12
    call MPI_BARRIER(hostcomm,ierr)
 #endif
 

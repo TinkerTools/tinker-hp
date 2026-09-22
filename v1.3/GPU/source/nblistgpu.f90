@@ -290,7 +290,7 @@ subroutine initmpipmegpu
    use domdec
    use mpole
    use pme
-   use potent  ,only: use_mlpot_only
+   use potent  ,only: use_mlpot_only,use_charge
    use mpi
    use tinMemory
    use utilgpu ,only: rec_queue
@@ -299,6 +299,7 @@ subroutine initmpipmegpu
    integer i,k,j,iproc,tag,iglob
    integer ipre_rec1,ipre_rec2
    integer irepart,sbuf1
+   integer theta_levels,theta_sites
    integer count1,count_cap
    integer status(MPI_STATUS_SIZE)
    integer, allocatable :: req(:),req2(:),count(:)
@@ -459,9 +460,11 @@ subroutine initmpipmegpu
 !$acc end data
 
    !TODO Remove declare directive on thetai
-   call prmem_request(thetai1,4,bsorder,nlocrec,async=.false.)
-   call prmem_request(thetai2,4,bsorder,nlocrec,async=.false.)
-   call prmem_request(thetai3,4,bsorder,nlocrec,async=.false.)
+   theta_levels = merge(2,4,use_charge)
+   theta_sites  = nlocrec
+   call prmem_request(thetai1,theta_levels,bsorder,theta_sites,async=.false.)
+   call prmem_request(thetai2,theta_levels,bsorder,theta_sites,async=.false.)
+   call prmem_request(thetai3,theta_levels,bsorder,theta_sites,async=.false.)
 
    if (.not.associated(thetai1_p)) then
 !        sbuf1 = merge(nlocrec+int(real(nlocrec,t_p)*mem_inc),nlocrec
@@ -478,14 +481,14 @@ subroutine initmpipmegpu
 !$acc parallel loop collapse(3) async default(present)
       do k = 1,nlocrec
          do j = 1,bsorder
-            do i =1,4
+            do i =1,theta_levels
                thetai1(i,j,k) =0
                thetai2(i,j,k) =0
                thetai3(i,j,k) =0
             end do
          end do
       end do
-   else if (nlocrec>size(thetai1,dim=3)) then
+   else if (theta_sites>size(thetai1,dim=3)) then
 !        sbuf1 = merge(nlocrec+int(real(nlocrec,t_p)*mem_inc),nlocrec
 !    &                ,extra_alloc)
 !        tag = size(thetai1,dim=3)

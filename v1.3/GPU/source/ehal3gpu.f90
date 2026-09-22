@@ -379,10 +379,10 @@ subroutine ehal3c_cu
       &,zendproc,glob
    use ehal1cu
    use energi    ,only: calc_e,ev=>ev_r
-   use group     ,only: use_group,grplist,wgrp
+   use group     ,only: use_group,grplist,wgrp,ngrp
    use inform    ,only: deb_Path,minmaxone
    use kvdws     ,only: radv,epsv
-   use mutant    ,only: scalpha,scexp,vlambda,mut=>mutInt
+   use mutant    ,only: scalpha,scexp,vlambda,mut=>mutInt,vcouple
    use neigh     ,only: sgl_id,slc_id,cellv_jvdw&
       &,na,nab,nb2p,nb2p_1,nbap,nbap_1&
       &,vdw_nbl,b2pl,b2pl_1,bapl,bapl_1,abpl,abpl_1&
@@ -401,10 +401,11 @@ subroutine ehal3c_cu
    use vdw       ,only: ired,kred,jvdw,ivdw,radmin,radmin4,radmin_c&
       &,epsilon,epsilon4,epsilon_c&
       &,nvdwbloc,nvdwlocnl,nvdwlocnlb,nvdwclass&
-      &,nvdwlocnlb_pair,nvdwlocnlb_pair1,nvdwlocnlb2_pair
+      &,nvdwlocnlb_pair,nvdwlocnlb_pair1,nvdwlocnlb2_pair,skipvdw12
    use vdwpot    ,only: vcorrect_ik,vcorrect_scale,n_vscale,dhal,ghal&
       &,radrule_i,epsrule_i
    use vdw_locArray
+   use virial    ,only: use_virial
    implicit none
    integer i,k
    integer iglob,iivdw,iv,hal_Gs,sizvc
@@ -471,7 +472,7 @@ subroutine ehal3c_cu
          &,n_vscale,sizvc,vcorrect_ik,vcorrect_scale,loc&
          &,jvdw,xredc,yredc,zredc&
          &,radmin4,epsilon4,radmin,epsilon,dev&
-         &)
+         &,nproc,ngrp,use_virial,skipvdw12,vcouple.ne.0)
 !$acc end host_data
       call check_launch_kernel(" hal3s_kcu ")
    else if (use_vdwlong) then
@@ -491,7 +492,7 @@ subroutine ehal3c_cu
          &,n_vscale,sizvc,vcorrect_ik,vcorrect_scale,loc&
          &,jvdw,xredc,yredc,zredc&
          &,radmin4,epsilon4,radmin,epsilon,dev&
-         &)
+         &,nproc,ngrp,use_virial,skipvdw12,vcouple.ne.0)
       call check_launch_kernel(" hal3l_kcu ")
    else
       call hal3_kcu<<<hal_Gs,VDW_BLOCK_DIM,0,def_stream>>>&
@@ -510,7 +511,7 @@ subroutine ehal3c_cu
          &,n_vscale,sizvc,vcorrect_ik,vcorrect_scale,loc&
          &,jvdw,xredc,yredc,zredc&
          &,radmin4,epsilon4,radmin,epsilon,dev&
-         &)
+         &,nproc,ngrp,use_virial,skipvdw12,vcouple.ne.0)
       call check_launch_kernel(" hal3_kcu ")
    endif
 !$acc end host_data

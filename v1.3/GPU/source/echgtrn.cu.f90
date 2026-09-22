@@ -16,11 +16,12 @@ module echgtrncu
    use sizes    ,only: maxgrp
    use tinheader,only: zeror,oner
    use tinTypes ,only: real3,mdyn3_r
-   use utilcu   ,only: BLOCK_DIM,use_virial,nproc,f_abs,ngrp  
+   use utilcu   ,only: BLOCK_DIM,f_abs
 #if TINKER_SINGLE_PREC + TINKER_MIXED_PREC
    use utilcu   ,only: f_sqrt,f_exp
 #endif
-   use utilgpu  ,only: RED_BUFF_SIZE,WARP_SIZE
+   use utilgpu  ,only: WARP_SIZE
+   use reduction,only: RED_BUFF_SIZE
    private
    public :: echgtrn1_kcu
 contains

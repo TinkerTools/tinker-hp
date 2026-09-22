@@ -207,7 +207,7 @@ subroutine eangle3gpu
    use atoms
    use deriv
    use eangle3gpu_inl,only: eangle3gpu_
-   use utilgpu       ,only: lam_buff
+   use reduction     ,only: lam_buff
    implicit none
    ! lam_buff acts as an unsued but allocated variable to this call
    call eangle3gpu_(lam_buff,lam_buff,type,afld)

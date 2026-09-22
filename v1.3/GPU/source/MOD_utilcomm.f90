@@ -84,20 +84,6 @@ module utilcomm
       &,'DirRec']&
       &)
 
-   interface commDDd_ext
-      module subroutine commDDd_ext_c(extb,dim,opt)
-         implicit  none
-         real(t_p),intent(inout):: extb(*)
-         integer  ,optional     :: dim,opt
-      end subroutine
-   end interface
-   interface commDDd_add
-      module subroutine commDDd_add_c(addb,dim,opt)
-         implicit  none
-         real(t_p),intent(inout):: addb(*)
-         integer  ,optional     :: dim,opt
-      end subroutine
-   end interface
    interface commDDrd
       module subroutine commDDrd_add_c(dirb,recb,dim,opt)
          implicit  none

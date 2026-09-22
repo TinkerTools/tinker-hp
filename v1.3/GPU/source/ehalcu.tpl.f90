@@ -22,12 +22,14 @@ attributes(global)&
    &,n_vscale,sizvc,vcorrect_ik,vcorrect_scale,loc&
    &,jvdw_,xred_,yred_,zred_&
    &,radmin4,epsilon4,radmin_,epsilon_,dev&
+   &,nproc,ngrp,use_virial,skipvdw12,vcouple&
    &)
 
 implicit none
 integer  ,value:: nb2p,nbap,rank,n,nbloc,nvdwlocnl,nab&
    &,nvdwclass,radrule,epsrule,n_vscale,sizvc
-logical  ,value:: ulamdyn,ugrp
+integer  ,value:: nproc,ngrp
+logical  ,value:: ulamdyn,ugrp,use_virial,skipvdw12,vcouple
 real(t_p),value:: c0,c1,c2,c3,c4,c5,rinv,shortheal&
    &,ghal,dhal,cut2,cut,lowOff2,lowOff,off2,off&
    &,scexp,vlambda,scalpha,dt1lam,dt2lam&
@@ -518,4 +520,3 @@ do ii = iwarp, nb2p+nbap-1, nwarp
    end block
 end do
 end subroutine
-

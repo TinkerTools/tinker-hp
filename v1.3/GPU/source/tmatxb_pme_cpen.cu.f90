@@ -4,8 +4,7 @@
 #include "tinker_cudart.h"
 
 module tmatxb_pme_cpencu
-   use utilcu  ,only: nproc,BLOCK_DIM,ALL_LANES&
-      &,bal_comp=>balanced_comput
+   use utilcu  ,only: BLOCK_DIM,ALL_LANES
    use utilgpu ,only: BLOCK_SIZE
    use tintypes,only: rpole_elt,real3,real6,real7
    use neigh   ,only: i_bl=>inside_block,d_bl=>disc_block
@@ -26,10 +25,11 @@ contains
       &,cut2,alsq2,alsq2n,aewald&
       &,p_xbeg,p_xend,p_ybeg,p_yend,p_zbeg,p_zend&
       &,scal_ik,scal_val,poleloc,ipole_,x_,y_,z_,n_scale,efi_&
-      &)
+      &,nproc,bal_comp)
    implicit none
    integer,value,intent(in):: na,nab,nabloc,n&
-      &,nbap,pentyp,icall,n_scale
+      &,nbap,pentyp,icall,n_scale,nproc
+   logical,value,intent(in):: bal_comp
    real(t_p),value,intent(in):: p_xbeg,p_xend,p_ybeg,p_yend&
       &,p_zbeg,p_zend,cut2,alsq2,alsq2n,aewald
    integer,device,intent(in)::ipole(nab),pglob(nab)&

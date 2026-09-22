@@ -798,6 +798,35 @@ subroutine colvars_init(dt)
 #endif
 end subroutine
 
+subroutine colvars_finalize()
+   use colvars
+   use domdec
+   use inform
+   use tinheader, only: re_p
+   implicit none
+   logical colvars_root
+
+!$acc wait
+   if (app_id == pimd_a) then
+      colvars_root = ranktot == 0
+   else
+      colvars_root = rank == 0
+   end if
+#ifdef COLVARS
+   if (colvars_root) call delete_colvars
+#endif
+   use_colvars = .false.
+   ncvatoms = 0
+   ncvatomsmol = 0
+   if (allocated(cvatoms_ids)) deallocate (cvatoms_ids)
+   if (allocated(cvatomsmol))  deallocate (cvatomsmol)
+   if (allocated(cv_pos))      deallocate (cv_pos)
+   if (allocated(decv))        deallocate (decv)
+   if (allocated(decv_tot))    deallocate (decv_tot)
+   dt_sim = 0.0_re_p
+   temp_rand = 0.0_re_p
+end subroutine
+
 subroutine colvars_run(derivs)
    use colvars
    use domdec

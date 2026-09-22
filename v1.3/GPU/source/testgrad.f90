@@ -24,6 +24,7 @@ program testgrad
    use energi
    use sizes
    use inform
+   use interfaces, only: getxyz, initial, mechanic
    use iounit
    use mpole
    use tinheader ,only: ti_p,re_p

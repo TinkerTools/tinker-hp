@@ -11,6 +11,7 @@ M_subroutine  ctf_inl(xr,yr,zr)
 !$acc routine seq
 use tinheader,only:ti_p,prec_eps
 #ifdef TINKER_CUF
+use cellcu
 use utilcu
 #else
 use boxes
@@ -27,6 +28,7 @@ M_subroutine  ftc_inl(xr,yr,zr)
 !$acc routine seq
 use tinheader,only:ti_p,prec_eps
 #ifdef TINKER_CUF
+use cellcu
 use utilcu
 #else
 use boxes
@@ -43,6 +45,7 @@ M_subroutine image_orth_inl(xr,yr,zr)
 !$acc routine seq
 use tinheader,only:ti_p
 #ifdef TINKER_CUF
+use cellcu
 use utilcu
 #else
 use cell
@@ -60,6 +63,7 @@ M_subroutine image_inl(xr,yr,zr)
 !$acc routine seq
 use tinheader,only:ti_p,prec_eps
 #ifdef TINKER_CUF
+use cellcu
 use utilcu
 #else
 use boxes
@@ -102,6 +106,7 @@ M_subroutine image1_inl(xr,yr,zr,info)
 !$acc routine seq
 use tinheader,only:ti_p,prec_eps
 #ifdef TINKER_CUF
+use cellcu
 use utilcu
 #else
 use boxes
@@ -158,6 +163,7 @@ M_subroutine&
 !$acc routine seq
 use tinheader,only:ti_p,re_p,prec_eps
 #ifdef TINKER_CUF
+use cellcu
 use utilcu
 #else
 use boxes
@@ -220,6 +226,7 @@ M_subroutine&
 !$acc routine seq
 use tinheader,only:ti_p,prec_eps
 #ifdef TINKER_CUF
+use cellcu
 use utilcu
 #else
 use boxes

@@ -40,103 +40,11 @@ module utilcu
    integer  ,parameter :: PME_FPHI_BDIM=PME_BLOCK_DIM
    integer  ,parameter :: VDW_BLOCK_DIM=BLOCK_DIM
    integer  ,parameter :: TRP_BLOCK_DIM=64
-   integer  ,constant  :: nproc, ndir, ngrp
-   real(t_p),constant  :: xcell,ycell,zcell,xcell2,ycell2,zcell2&
-            , i_xcell,i_ycell,i_zcell,mincell2,eps_cell,box34
-   real(t_p),constant  :: alpha_cos,beta_sin,beta_cos,gamma_sin,gamma_cos &
-            , beta_term,gamma_term
-   logical  ,constant  :: octahedron,monoclinic,triclinic
-   logical  ,constant  :: use_virial
-   logical  ,constant  :: skipvdw12
-   logical  ,constant  :: vcouple
-   logical  ,constant  :: balanced_comput
-   integer,allocatable,device :: utilcu_buffer(:)
-   integer,allocatable,device :: utilcu_buffer_i(:)
-
    interface dmem_set
       module procedure dmem_set_i4
    end interface
 
 contains
-
-   attributes(global) subroutine disp_cell_cu()
-   implicit none
-   if (threadIdx%x.eq.1) then
-      print*,xcell,ycell,zcell
-      print*,xcell2,ycell2,zcell2
-   end if
-end subroutine
-
-subroutine copy_cell_cu(xcell_,ycell_,zcell_,xcell2_,ycell2_,zcell2_,eps_cell_&
-               ,beta_sin_,beta_cos_,beta_term_,gamma_sin_,gamma_cos_,gamma_term_&
-               ,mono_,tric_,octa_,box34_)
-   implicit none
-   real(t_p),intent(in),value::xcell_,ycell_,zcell_,xcell2_,ycell2_,zcell2_&
-            ,beta_sin_,beta_cos_,beta_term_,gamma_sin_,gamma_cos_,gamma_term_&
-            ,eps_cell_,box34_
-   logical  ,intent(in),value::mono_,tric_,octa_
-
-   !sets the default stream for all subsequent high-level CUDA Fortran operations
-   !ierr = sudaforSetDefaultStream(rec_stream)
-
-   xcell   = xcell_
-   ycell   = ycell_
-   zcell   = zcell_
-   xcell2  = xcell2_
-   ycell2  = ycell2_
-   zcell2  = zcell2_
-   mincell2= minval([xcell2_,ycell2_,zcell2_])
-   eps_cell= eps_cell_
-   i_xcell = 1/xcell_
-   i_ycell = 1/ycell_
-   i_zcell = 1/zcell_
-   ! Form Factor
-   beta_sin   = beta_sin_
-   beta_cos   = beta_cos_
-   beta_term  = beta_term_
-   gamma_sin  = gamma_sin_
-   gamma_cos  = gamma_cos_
-   gamma_term = gamma_term_
-   ! set Shape
-   monoclinic = mono_
-   triclinic  = tric_
-   octahedron = octa_
-   box34      = box34_
-   !call disp_cell_cu<<<1,1>>>()
-end subroutine
-
-subroutine cu_update_vir_switch(use_vir)
-   implicit none
-   logical,intent(in):: use_vir
-   use_virial = use_vir
-end subroutine
-
-subroutine htod_ngrp(ngrp_)
-   implicit none
-   integer,intent(in)::ngrp_
-   ngrp = ngrp_
-end subroutine
-
-subroutine cu_update_vcouple(vcouple_)
-   implicit none
-   integer,intent(inout)::vcouple_
-   if      (vcouple_.eq.1) then
-      vcouple = .true.
-   else if (vcouple_.eq.0) then
-      vcouple = .false.
-   else
-      write(*,*) " WARNING !! Unusual value of vcouple",vcouple_
-      write(*,*) " Disabling van der Waals coupling method"
-      vcouple  = .false.
-      vcouple_ = 0
-   end if
-end subroutine
-
-subroutine cu_update_balanced_comput(commdir_)
-   implicit none
-   logical,intent(in)::commdir_
-   balanced_comput=commdir_
-end subroutine
 
 subroutine check_launch_kernel(msg)
    implicit none
@@ -173,21 +81,6 @@ subroutine chk_cuAPI_O(i,msg)
    if (i.ne.cudaSuccess)&
       &write(0,126) msg,i,cudaGetErrorString(ierrSync)
    if (tinkerdebug.gt.0) ierrSync = cudaDeviceSynchronize()
-end subroutine
-
-subroutine cu_update_skipvdw12(skipvdw12_)
-   logical,intent(in):: skipvdw12_
-   skipvdw12 = skipvdw12_
-end subroutine
-
-subroutine copy_data_to_cuda_env(data,flag)
-   implicit none
-   integer,intent(in),value::data
-   integer,intent(in),optional::flag
-   nproc = data
-   if (present(flag)) then
-      if (flag.eq.0) ndir = data
-   end if
 end subroutine
 
 subroutine mem_download_i(dst,src,stream)

@@ -20,9 +20,10 @@
 #include "tinker_cudart.h"
 
 module epolar1cu
-   use utilcu  ,only: nproc,ndir,ngrp,BLOCK_DIM,ALL_LANES
-   use utilgpu ,only: BLOCK_SIZE,RED_BUFF_SIZE&
+   use utilcu  ,only: BLOCK_DIM,ALL_LANES
+   use utilgpu ,only: BLOCK_SIZE&
       &,WARP_SIZE
+   use reduction,only: RED_BUFF_SIZE
    use tinTypes,only: real3,real6,mdyn3_r,rpole_elt
 
 contains
@@ -38,10 +39,13 @@ contains
       &, pot, dep, trq, ep_buff, vir_buff&
       &, npolelocnlb, npolelocnlb_pair, npolebloc, n, u_cflx&
       &, u_ddamp, off2, f, alsq2, alsq2n, aewald&
-      &,p_xbeg,p_xend,p_ybeg,p_yend,p_zbeg,p_zend )
+      &,p_xbeg,p_xend,p_ybeg,p_yend,p_zbeg,p_zend&
+      &,nproc_ )
    implicit none
    integer  ,value,intent(in)::npolelocnlb,npolebloc,n&
       &,npolelocnlb_pair
+   integer  ,value,intent(in):: nproc_
+   integer :: nproc
    logical  ,value,intent(in):: u_cflx, u_ddamp
    real(t_p),value:: p_xbeg,p_xend,p_ybeg,p_yend&
       &,p_zbeg,p_zend&
@@ -78,6 +82,8 @@ contains
    type(rpole_elt),shared:: kp(BLOCK_DIM)
    type(rpole_elt) ip,kp_
    logical do_pair,same_block,accept_mid
+
+   nproc = nproc_
 
    ithread = threadIdx%x + (blockIdx%x-1)*blockDim%x
    iwarp   = ((ithread-1) / warpsize) + 1
@@ -278,10 +284,13 @@ attributes(global) subroutine mpreal1c_core_cu&
    &, dep, trq, ep_buff, vir_buff&
    &, npolelocnlb, npolelocnlb_pair,npolebloc,n,mode&
    &, off2,f,alsq2,alsq2n,aewald,r_cut,s_cut2,shortheal&
-   &, p_xbeg,p_xend,p_ybeg,p_yend,p_zbeg,p_zend)
+   &, p_xbeg,p_xend,p_ybeg,p_yend,p_zbeg,p_zend&
+   &,nproc_,ngrp_)
 implicit none
 integer,value,intent(in)::npolelocnlb,npolebloc,n&
    &,npolelocnlb_pair,mode
+integer,value,intent(in)::nproc_,ngrp_
+integer :: nproc,ngrp
 logical,value,intent(in)::use_group
 real(t_p),value:: p_xbeg,p_xend,p_ybeg,p_yend,p_zbeg,p_zend&
    &,off2,alsq2,alsq2n,aewald,f,shortheal,r_cut,s_cut2
@@ -320,6 +329,8 @@ real(t_p) vir_(6)
 type(rpole_elt),shared:: kp(BLOCK_DIM)
 type(rpole_elt) ip
 logical do_pair,same_block,accept_mid
+nproc = nproc_
+ngrp = ngrp_
 
 ithread = threadIdx%x + (blockIdx%x-1)*blockDim%x
 iwarp   = ((ithread-1) / warpsize) + 1
@@ -509,10 +520,13 @@ attributes(global) subroutine epreal3_cu&
    &, npolelocnlb, npolelocnlb_pair, npolebloc, n&
    &, off2, f, alsq2, alsq2n, aewald, off, shortheal&
    &, use_short, use_tholed&
-   &,p_xbeg,p_xend,p_ybeg,p_yend,p_zbeg,p_zend )
+   &,p_xbeg,p_xend,p_ybeg,p_yend,p_zbeg,p_zend&
+   &,ndir_ )
 implicit none
 integer,value,intent(in)::npolelocnlb,npolebloc,n&
    &,npolelocnlb_pair
+integer,value,intent(in):: ndir_
+integer :: ndir
 logical,value,intent(in)::use_short,use_tholed
 real(t_p),value:: p_xbeg,p_xend,p_ybeg,p_yend&
    &,p_zbeg,p_zend&
@@ -541,6 +555,7 @@ real(t_p)  ,shared:: kpdp(BLOCK_DIM),kpgm(BLOCK_DIM)
 type(real6),shared:: dpuk(BLOCK_DIM)
 type(rpole_elt) ip,kp,kp_
 logical do_pair,same_block,accept_mid
+ndir = ndir_
 
 ithread = threadIdx%x + (blockIdx%x-1)*blockDim%x
 iwarp   = ((ithread-1) / warpsize) + 1

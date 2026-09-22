@@ -22,10 +22,22 @@ What can I do? Here's a few examples:
 * For more check-out [TinkerTools](https://tinkertools.org/), [Tinker-HP](https://tinker-hp.org/)
 
 
-# Dependencies
+# Configure, build, and runtime environment
 
-Deep-HP relies on the FeNNol library to execute ML models. Follow instructions on FeNNol's github repo (https://github.com/thomasple/FeNNol) to install it before compiling Tinker-HP. <br /> 
-**Make sure to install `cffi` and `pycuda` and that the correct python environment is loaded when compiling Tinker-HP with Deep-HP**
+Use the maintained CMake Deep-HP path rather than the old manual/Conda build
+instructions:
+
+```bash
+cmake --preset gpu-fpa-nn
+cmake --build --preset gpu-fpa-nn
+```
+
+For Colvars, use `gpu-fpa-nn-colvars`. CMake uses the local locked
+[`deep-hp`](../../deep-hp/README.md) environment when it exists, can use an
+explicit development interpreter, or creates the managed Python 3.11
+environment with `uv`. Before running `dynamic_nn.fpa`, activate or otherwise
+make that selected environment available. CMake installs the native plugin but
+does not install Python packages or models.
 
 
 # Run Deep-HP
@@ -47,7 +59,7 @@ Deep-HP has only three main **KEYWORDS**: `MLPOT`, `ML-MODEL` and `MLPOT-CUTOFF`
 We provide an example located in the `examples` directory of Tinker-HP. This example can be run with the command:
 ```bash
 cd examples
-mpirun -n 1 ../bin/dynamic Deep-HP_example 1000 0.5 100 2 300
+mpirun -n 1 ../bin/dynamic_nn.fpa Deep-HP_example 1000 0.5 100 2 300
 ```
 This will run a short MD simulation of a box of water using the ANI2x model stored in the `ml_models` directory.
 

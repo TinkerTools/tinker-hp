@@ -48,48 +48,81 @@
 #include "tinker_types.h"
 
 program pibar
+   use config, only: raw_cli_t, capture_raw_cli
    use mpi
+   use mdevice, only: bind_device
+   use status, only: failed, status_t
    implicit none
-   integer ierr,nthreadsupport
+   integer ierr,nthreadsupport,world_rank
+   type(raw_cli_t) :: raw_cli
+   type(status_t) :: status_value
+   call bind_device(status_value)
+   if (failed(status_value)) stop 1
+   call capture_raw_cli(raw_cli)
 !      call MPI_INIT_THREAD(MPI_THREAD_MULTIPLE,nthreadsupport,ierr)
    call MPI_INIT(ierr)
-   call pibar_bis
+   call MPI_Comm_rank(MPI_COMM_WORLD,world_rank,ierr)
+   call pibar_bis(raw_cli,status_value)
+   if (failed(status_value)) then
+      if (world_rank.eq.0) write (6,*) trim(status_value%message)
+      call MPI_BARRIER(MPI_COMM_WORLD,ierr)
+      error stop 1
+   end if
    call MPI_BARRIER(MPI_COMM_WORLD,ierr)
    call MPI_FINALIZE(ierr)
 end
 !
-subroutine pibar_bis
+subroutine pibar_bis(raw_cli,status_value)
+   use config, only: config_t, raw_cli_t, parse_positional_cli, select_positional_cli
    use iounit
    use inform
+   use mpi
    use domdec
    use beads
    use files
+   use initialization, only: energy_generation, initialize, pibar_application, platform_bootstrap
+   use mdevice, only: channel_t, finalize_device
+   use parallel, only: parallel_t, release
+   use status, only: failed, set_status, status_invalid_argument, status_t, enrich_status
+   use structure, only: structure_t
    implicit none
    integer mode
-   logical exist,query
-   character*240 record
-   character*240 string
-   character*20 keyword
+   integer ierr,world_rank
+   logical query
+   character*240 positional(20)
+   integer positional_count
+   type(raw_cli_t), intent(in) :: raw_cli
+   type(status_t), intent(out) :: status_value
+   type(raw_cli_t) :: state_cli
+   type(config_t) :: configuration
+   type(structure_t) :: molecular_structure
+   type(parallel_t) :: platform
+   type(channel_t) :: reciprocal_work
+   type(status_t) :: cleanup_status
 !
-   ! Sign running program
-   app_id = pibar_a
-
-   call initial
-   nproc=nproctot
-   call initmpi
+   call initialize(pibar_application,raw_cli,configuration,molecular_structure,platform, &
+      &reciprocal_work,status_value,mode=platform_bootstrap)
+   if (failed(status_value)) return
+   call MPI_Comm_rank(MPI_COMM_WORLD,world_rank,ierr)
+   call parse_positional_cli(raw_cli,positional,positional_count,status_value)
+   if (failed(status_value)) then
+      call final
+      call finalize_device(cleanup_status)
+      call release(platform, cleanup_status)
+      return
+   end if
 !
 !     find thermodynamic perturbation procedure to perform
 !
    mode  = 0
    query = .true.
-   call nextarg (string,exist)
-   if (exist) then
-      read (string,*,err=10,end=10)  mode
+   if (positional_count > 0) then
+      read (positional(1),*,err=10,end=10) mode
       query = .false.
    end if
 10 continue
    if (query) then
-      if (ranktot.eq.0) write (iout,20)
+      if (world_rank.eq.0) write (iout,20)
 20    format (/,' The TINKER Thermodynamic Perturbation Utility'&
          &,' Can :'&
          &,//,4x,'(1) Create BAR File with Perturbed Potential'&
@@ -99,19 +132,47 @@ subroutine pibar_bis
          &)
       do while (mode.lt.1 .or. mode.gt.2)
          mode = 0
-         if (ranktot.eq.0) write (iout,'(a,$)')&
+         if (world_rank.eq.0) write (iout,'(a,$)')&
             &' Enter the Number of the Desired Choice :  '
          read (input,40,err=50,end=50) mode
 40       format (i10)
 50       continue
       end do
    end if
+   if (mode /= 1 .and. mode /= 2) then
+      call set_status(status_value,status_invalid_argument,'PIBAR mode must be 1 or 2')
+      call final
+      call finalize_device(cleanup_status)
+      call release(platform, cleanup_status)
+      return
+   end if
 !
 !     create TINKER BAR file or compute thermodynamic values
 !
-   if (mode .eq. 1)  call makebarpi
-   if (mode .eq. 2)  call barcalcpi
+   if (mode == 1) then
+      call select_positional_cli(raw_cli,2,2,state_cli,status_value)
+      if (.not.failed(status_value)) then
+         call initialize(pibar_application,state_cli,configuration,molecular_structure,platform, &
+            &reciprocal_work,status_value,mode=energy_generation)
+      end if
+      if (.not.failed(status_value)) call makebarpi(raw_cli,configuration,molecular_structure,platform,status_value)
+   else if (mode == 2) then
+      call barcalcpi(raw_cli,status_value)
+   end if
+   if (failed(status_value)) then
+      call enrich_status(status_value,'PIBAR')
+      call final
+      call finalize_device(cleanup_status)
+      call release(platform, cleanup_status)
+      return
+   end if
    call final
+   call finalize_device(cleanup_status)
+   call release(platform, cleanup_status)
+   if (failed(cleanup_status)) then
+      status_value = cleanup_status
+      call enrich_status(status_value,'PIBAR')
+   end if
 end
 !
 !
@@ -122,7 +183,13 @@ end
 !     #################################################################
 !
 !
-subroutine makebarpi
+subroutine makebarpi(raw_cli,configuration,molecular_structure,platform,status_value)
+   use config, only: config_t, max_raw_cli_args, parse_positional_cli, raw_cli_t, &
+      &select_positional_cli
+   use initialization, only: initialize_state, pibar_application
+   use parallel, only: parallel_t
+   use status, only: clear_status, failed, status_t
+   use structure, only: read_frame, structure_t
    use atoms
    use boxes
    use dcdmod
@@ -145,7 +212,6 @@ subroutine makebarpi
    integer i,j,iarc,ibar,ierr,ibead
    integer lenga,lengb
    integer ltitlea,ltitleb
-   integer nkey0,nkey1
    integer nfrma,nfrmb
    integer maxframe
    integer freeunit
@@ -173,44 +239,40 @@ subroutine makebarpi
    character*240 arcfile
    character*240 dcdfile
    character*240 barfile
-   character*240, allocatable :: keys0(:)
-   character*240, allocatable :: keys1(:)
    logical :: contract_a, contract_b
    type(dcdinfo_t) :: dcdinfo,dcdinfoB
    character*3 numberbeads
    integer :: nbeads_old,nbeads_ctr_old
+   type(raw_cli_t), intent(in) :: raw_cli
+   type(config_t), intent(inout) :: configuration
+   type(structure_t), intent(inout) :: molecular_structure
+   type(parallel_t), intent(inout) :: platform
+   type(status_t), intent(out) :: status_value
+   character*240 positional(max_raw_cli_args)
+   integer positional_count
+   type(raw_cli_t) :: state_cli
 
    calc_e = .true.
    use_virial = .false.
+   call clear_status(status_value)
+   call parse_positional_cli(raw_cli,positional,positional_count,status_value)
+   if (failed(status_value)) return
 !
 !
 !     get trajectory A archive and setup mechanics calculation
 !
-!      call initial
-   call init_keys
-   call read_bead_config
-
-   call getxyz
-   call cutoffs
-   call unitcell
-   call lattice
-!
-!     setup for MPI
-!
-   call drivermpi
+!     The first classical platform and molecular state were initialized by
+!     the common BAR/PIBAR lifecycle.
 
    call reset_observables(.true.)
    !call allocpi()
 !     call reinitnl(0)
 
-!     call mechanic
-!     call nblist(0)
 !
 !     find the original temperature value for trajectory A
 !
    tempa = En_p(-1.0)
-   call nextarg (string,exist)
-   if (exist)  read (string,*,err=10,end=10)  tempa
+   if (positional_count >= 3) read (positional(3),*,err=10,end=10) tempa
 10 continue
    do while (tempa .lt. En_p(0.0))
       if (ranktot.eq.0) write (iout,'(a)', advance='no')&
@@ -223,8 +285,6 @@ subroutine makebarpi
 !
 !     perform dynamic allocation of some local arrays
 !
-   allocate (keys0(maxkey))
-   allocate (keys1(maxkey))
 !
 !     store filename and keywords for trajectory A and state 0
 !
@@ -232,30 +292,26 @@ subroutine makebarpi
    lenga   = leng
    titlea  = title
    ltitlea = ltitle
-   nkey0   = nkey
-   do i = 1, nkey0
-      keys0(i) = keyline(i)
-   end do
    contract_a = contract .or. centroid_longrange
 !
 !     get trajectory B archive and setup mechanics calculation
 !
-   keys_already_read=.false.
-   call getxyz
-   call read_bead_config
+   call select_positional_cli(raw_cli,4,4,state_cli,status_value)
+   if (failed(status_value)) return
+   call initialize_state(pibar_application,state_cli,configuration,molecular_structure,platform, &
+      &status_value,2)
+   if (failed(status_value)) return
 
    !call ddpme3d
 !     call AllDirAssign
 !     call reassignpme(.true.)
 !     call reinitnl(0)
-!     call mechanic
    silent = .true.
 !
 !     find the original temperature value for trajectory B
 !
    tempb = En_p(-1.0)
-   call nextarg (string,exist)
-   if (exist)  read (string,*,err=50,end=50)  tempb
+   if (positional_count >= 5) read (positional(5),*,err=50,end=50) tempb
 50 continue
    do while (tempb .lt. En_p(0.0))
       if (ranktot.eq.0) write (iout,'(a)',advance='no')&
@@ -272,10 +328,6 @@ subroutine makebarpi
    lengb   = leng
    titleb  = title
    ltitleb = ltitle
-   nkey1   = nkey
-   do i = 1, nkey1
-      keys1(i) = keyline(i)
-   end do
    contract_b = contract .or. centroid_longrange
 !
 !     perform dynamic allocation of some local arrays
@@ -294,14 +346,16 @@ subroutine makebarpi
    allocate (vola(maxframe))
    allocate (volb(maxframe))
 !
+!     initialize state 0 before reading trajectory A
+!
+   call select_positional_cli(raw_cli,2,2,state_cli,status_value)
+   if (failed(status_value)) return
+   call initialize_state(pibar_application,state_cli,configuration,molecular_structure,platform,status_value,2)
+   if (failed(status_value)) return
+
 !     reopen trajectory A using the parameters for state 0
 !
-   nkey = nkey0
-   do i = 1, nkey
-      keyline(i) = keys0(i)
-   end do
    !set polymer for trajectory A
-   call read_bead_config
    call allocpi
 
    if(.not. allocated(polymer_main%dcdinfo)) then
@@ -329,7 +383,8 @@ subroutine makebarpi
          call suffix (arcfile,'arc','old')
          open (unit=iarc,file=arcfile,status ='old')
          rewind (unit=iarc)
-         call readxyz (iarc)
+         call read_frame (iarc,molecular_structure,status_value)
+         if (failed(status_value)) return
       end if
 !$acc wait
 !$acc parallel loop default(present)
@@ -352,7 +407,6 @@ subroutine makebarpi
    call lattice
    call AllDirAssign
    call reinitnl(0)
-   call mechanic
    call nblist(0)
    if (abort) then
       if (ranktot.eq.0) write (iout,90)
@@ -452,7 +506,8 @@ subroutine makebarpi
             call dcdfile_skip_next(polymer_main%dcdinfo(ibead),0)
             if (abort) cycle maina1
          else
-            call readxyz (polymer_main%dcdinfo(ibead)%idcd)
+            call read_frame (polymer_main%dcdinfo(ibead)%idcd,molecular_structure,status_value)
+            if (failed(status_value)) return
          end if
 !$acc wait
 !$acc parallel loop default(present)
@@ -488,6 +543,13 @@ subroutine makebarpi
       end if
    end do maina1
 !
+!     initialize state 1 before rereading trajectory A
+!
+   call select_positional_cli(raw_cli,2,4,state_cli,status_value)
+   if (failed(status_value)) return
+   call initialize_state(pibar_application,state_cli,configuration,molecular_structure,platform,status_value,3)
+   if (failed(status_value)) return
+
 !     reset trajectory A using the parameters for state 1
 !
 !$acc parallel loop async default(present) collapse(2)
@@ -509,7 +571,8 @@ subroutine makebarpi
          abort = .false.
       else
          rewind (unit=polymer_main%dcdinfo(ibead)%idcd)
-         call readxyz (polymer_main%dcdinfo(ibead)%idcd)
+         call read_frame (polymer_main%dcdinfo(ibead)%idcd,molecular_structure,status_value)
+         if (failed(status_value)) return
       end if
 !$acc wait
 !$acc parallel loop default(present)
@@ -522,10 +585,6 @@ subroutine makebarpi
          polymer_main%eigpos(3,i,1)=polymer_main%eigpos(3,i,1)+z(i)/nbeads
       ENDDO
    enddo
-   nkey = nkey1
-   do i = 1, nkey
-      keyline(i) = keys1(i)
-   end do
 !
 !     the box shape can change between frames
 !
@@ -533,7 +592,6 @@ subroutine makebarpi
    call lattice
    call AllDirAssign
    call reinitnl(0)
-   call mechanic
    call nblist(0)
 !
 !     find potential energies for trajectory A in state 1
@@ -634,7 +692,8 @@ subroutine makebarpi
             call dcdfile_skip_next(polymer_main%dcdinfo(ibead),0)
             if (abort) cycle maina2
          else
-            call readxyz (polymer_main%dcdinfo(ibead)%idcd)
+            call read_frame (polymer_main%dcdinfo(ibead)%idcd,molecular_structure,status_value)
+            if (failed(status_value)) return
          end if
 !$acc wait
 !$acc parallel loop default(present)
@@ -674,16 +733,18 @@ subroutine makebarpi
    enddo
    !deallocate(polymer_main%dcdinfo)
 !
-!     reopen trajectory B using the parameters for state 0
+!     initialize state 0 before reading trajectory B
 !
-   nkey = nkey1
-   do i = 1, nkey
-      keyline(i) = keys1(i)
-   end do
-   !set polymer for trajectory B
    nbeads_old=nbeads
    nbeads_ctr_old=nbeads_ctr
-   call read_bead_config
+   call select_positional_cli(raw_cli,4,2,state_cli,status_value)
+   if (failed(status_value)) return
+   call initialize_state(pibar_application,state_cli,configuration,molecular_structure,platform,status_value,4)
+   if (failed(status_value)) return
+
+!     reopen trajectory B using the parameters for state 0
+!
+   !set polymer for trajectory B
    if(nbeads_old.ne.nbeads) then
       write(iout,*) "ERROR: number of beads in trajectory"&
          &," A and B must be the same"
@@ -720,7 +781,8 @@ subroutine makebarpi
          call suffix (arcfile,'arc','old')
          open (unit=iarc,file=arcfile,status ='old')
          rewind (unit=iarc)
-         call readxyz (iarc)
+         call read_frame (iarc,molecular_structure,status_value)
+         if (failed(status_value)) return
       end if
 !$acc wait
 !$acc parallel loop default(present)
@@ -742,15 +804,10 @@ subroutine makebarpi
    end if
 
    ! Reset State 0 parameters
-   nkey = nkey0
-   do i = 1, nkey
-      keyline(i) = keys0(i)
-   end do
    call load_bead(polymer_main, 0,.true.)
    call lattice
    call AllDirAssign
    call reinitnl(0)
-   call mechanic
    call nblist(0)
 
 !
@@ -845,7 +902,8 @@ subroutine makebarpi
             call dcdfile_skip_next(polymer_main%dcdinfo(ibead),0)
             if (abort) cycle mainb1
          else
-            call readxyz (polymer_main%dcdinfo(ibead)%idcd)
+            call read_frame (polymer_main%dcdinfo(ibead)%idcd,molecular_structure,status_value)
+            if (failed(status_value)) return
          end if
          if (n.eq.0) cycle mainb1
 !$acc wait
@@ -881,6 +939,14 @@ subroutine makebarpi
 
    end do mainb1
 !
+!     initialize state 1 before rereading trajectory B
+!
+   call select_positional_cli(raw_cli,4,4,state_cli,status_value)
+   if (failed(status_value)) return
+
+   call initialize_state(pibar_application,state_cli,configuration,molecular_structure,platform,status_value,5)
+   if (failed(status_value)) return
+
 !     reset trajectory B
 !
 !$acc parallel loop async default(present) collapse(2)
@@ -902,7 +968,8 @@ subroutine makebarpi
          abort = .false.
       else
          rewind (unit=polymer_main%dcdinfo(ibead)%idcd)
-         call readxyz (polymer_main%dcdinfo(ibead)%idcd)
+         call read_frame (polymer_main%dcdinfo(ibead)%idcd,molecular_structure,status_value)
+         if (failed(status_value)) return
       end if
 !$acc wait
 !$acc parallel loop default(present)
@@ -918,16 +985,11 @@ subroutine makebarpi
 !
 !     Reset State 1 parameters
 !
-   nkey = nkey1
-   do i = 1, nkey
-      keyline(i) = keys1(i)
-   end do
    call load_bead(polymer_main, 0,.true.)
    call cutoffs
    call lattice
    call AllDirAssign
    call reinitnl(0)
-   call mechanic
    call nblist(0)
 !
 !     find potential energies for trajectory B in state 1
@@ -1028,7 +1090,8 @@ subroutine makebarpi
             call dcdfile_skip_next(polymer_main%dcdinfo(ibead),0)
             if (abort) cycle mainb2
          else
-            call readxyz (polymer_main%dcdinfo(ibead)%idcd)
+            call read_frame (polymer_main%dcdinfo(ibead)%idcd,molecular_structure,status_value)
+            if (failed(status_value)) return
          end if
 !$acc wait
 !$acc parallel loop default(present)
@@ -1068,8 +1131,6 @@ subroutine makebarpi
 !
 !     perform deallocation of some local arrays
 !
-   deallocate (keys0)
-   deallocate (keys1)
 !
 !     save potential energies and system volumes to a file
 !
@@ -1155,7 +1216,8 @@ end
 !     ################################################################
 !
 !
-subroutine barcalcpi
+subroutine barcalcpi(raw_cli,status_value)
+   use config, only: max_raw_cli_args, parse_positional_cli, raw_cli_t
    use ascii
    use files
    use inform
@@ -1164,6 +1226,7 @@ subroutine barcalcpi
    use random_mod
    use units, only: gasconst, prescon
    use domdec
+   use status, only: failed, set_status, status_invalid_argument, status_t
    implicit none
    integer i,j,k,ibar
    integer size,next
@@ -1234,30 +1297,45 @@ subroutine barcalcpi
    character*240 barfile
    character*10 use_contract_str
    logical :: use_contract
+   character*240 positional(max_raw_cli_args)
+   integer positional_count
+   type(raw_cli_t), intent(in) :: raw_cli
+   type(status_t), intent(out) :: status_value
 
 !
 !
 !     ask the user for file with potential energies and volumes
 !
-   call nextarg (barfile,exist)
+   call parse_positional_cli(raw_cli,positional,positional_count,status_value)
+   if (failed(status_value)) return
+   exist = positional_count >= 2
    if (exist) then
-      call basefile (barfile)
+      barfile = positional(2)
       call suffix (barfile,'bar','old')
       inquire (file=barfile,exist=exist)
+   end if
+   if (positional_count >= 2 .and. .not.exist) then
+      call set_status(status_value,status_invalid_argument, &
+         &'BAR file not found: '//trim(barfile))
+      return
    end if
    do while (.not. exist)
       if (ranktot.eq.0) write (iout,10)
 10    format (/,' Enter Potential Energy BAR File Name :  ',$)
       read (input,20)  barfile
 20    format (a240)
-      call basefile (barfile)
       call suffix (barfile,'bar','old')
       inquire (file=barfile,exist=exist)
    end do
 
    inquire(file=trim(barfile)//".ctr",exist=exist)
    if(exist) then
-      call nextarg (use_contract_str,exist)
+      if (positional_count >= 3) then
+         use_contract_str = positional(3)
+         exist = .true.
+      else
+         exist = .false.
+      end if
       exist = exist .and. str_to_bool(use_contract_str)/="U"
       if(.not. exist) then
          use_contract_str=""
@@ -1292,15 +1370,12 @@ subroutine barcalcpi
    stopa  = 0
    stepa  = 0
    query  = .true.
-   call nextarg (string,exist)
-   if (exist) then
-      read (string,*,err=30,end=30)  starta
+   if (positional_count >= 4) then
+      read (positional(4),*,err=30,end=30) starta
       query = .false.
    end if
-   call nextarg (string,exist)
-   if (exist)  read (string,*,err=30,end=30)  stopa
-   call nextarg (string,exist)
-   if (exist)  read (string,*,err=30,end=30)  stepa
+   if (positional_count >= 5) read (positional(5),*,err=30,end=30) stopa
+   if (positional_count >= 6) read (positional(6),*,err=30,end=30) stepa
 30 continue
    if (query) then
       if (ranktot.eq.0) write (iout,40)
@@ -1321,15 +1396,12 @@ subroutine barcalcpi
    stopb  = 0
    stepb  = 0
    query  = .true.
-   call nextarg (string,exist)
-   if (exist) then
-      read (string,*,err=70,end=70)  startb
+   if (positional_count >= 7) then
+      read (positional(7),*,err=70,end=70) startb
       query = .false.
    end if
-   call nextarg (string,exist)
-   if (exist)  read (string,*,err=70,end=70)  stopb
-   call nextarg (string,exist)
-   if (exist)  read (string,*,err=70,end=70)  stepb
+   if (positional_count >= 8) read (positional(8),*,err=70,end=70) stopb
+   if (positional_count >= 9) read (positional(9),*,err=70,end=70) stepb
 70 continue
    if (query) then
       if (ranktot.eq.0) write (iout,80)
@@ -1438,6 +1510,12 @@ subroutine barcalcpi
 250 continue
    nfrmb = j
    close (unit=ibar)
+   if (nfrma < 1 .or. nfrmb < 1) then
+      call set_status(status_value,status_invalid_argument, &
+         &'Invalid BAR file: '//trim(barfile))
+      deallocate (ua0,ua1,ub0,ub1,vola,volb,vloga,vlogb)
+      return
+   end if
 !
 !     provide info about trajectories and number of frames
 !

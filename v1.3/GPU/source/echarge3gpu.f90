@@ -19,15 +19,15 @@ module echarge3gpu_inl
    use tinTypes , only: real3,real3_red,rpole_elt
    implicit none
 #include "atomicOp.h.f90"
-   include "erfcore_data.inc.f90"
+!   include "erfcore_data.inc.f90"
 contains
 #include "convert.inc.f90"
 #include "image.inc.f90"
 #include "atomicOp.inc.f90"
 #if defined(SINGLE) | defined(MIXED)
-   include "erfcscore.inc.f90"
+!   include "erfcscore.inc.f90"
 #else
-   include "erfcdcore.inc.f90"
+!   include "erfcdcore.inc.f90"
 #endif
 #include "groups.inc.f90"
 #include "switch_respa.inc.f90"
@@ -277,7 +277,7 @@ subroutine elambdacharge3cgpu
    parameter(altopt=1)
 #endif
 
-   if(rank.eq.0.and.tinkerdebug) write (*,*) 'echarge3cgpu'
+   if(deb_Path) write (*,*) 'echarge3cgpu'
    call timer_enter(timer_echarge)
 !
 !     zero out the Ewald summation energy and partitioning
@@ -677,7 +677,7 @@ subroutine ecreal3d_cu
       &, use_group, grplist, wgrp&
       &, ccorrect_ik,ccorrect_scale,chglist,x,y,z,loc,n_cscale,szcik&
       &, p_xbeg,p_xend,p_ybeg,p_yend,p_zbeg,p_zend&
-      &)
+      &,ndir,ngrp)
    call check_launch_kernel(" ecreal1d_core_cu")
 
 !$acc end host_data

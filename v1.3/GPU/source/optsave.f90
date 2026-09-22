@@ -20,6 +20,7 @@ subroutine optsave (ncycle,xx)
    use atomsMirror
    use domdec
    use files
+   use interfaces, only: prtxyz
    use iounit
    use math
    use output

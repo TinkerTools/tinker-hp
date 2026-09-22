@@ -30,6 +30,7 @@ module cflux
    real(t_p), pointer :: bflx(:)
    real(t_p), pointer :: aflx(:,:)
    real(t_p), pointer :: abflx(:,:)
+   real(t_p), allocatable, target :: cflux_pot(:),cflux_potrec(:)
    integer winbflx,winaflx,winabflx
 
    interface
@@ -52,4 +53,9 @@ module cflux
       end subroutine
    end interface
 
+   interface
+      module subroutine release_cflux_workspaces(queue)
+         integer,intent(in):: queue
+      end subroutine
+   end interface
 end

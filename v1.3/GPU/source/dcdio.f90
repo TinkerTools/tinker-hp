@@ -13,28 +13,28 @@ submodule(dcdmod) subdcdmod
 
 contains
 
-   subroutine unwrap_dcd_pos(pos,wrapIdx,na,wdim)
-      use atomsMirror
+   subroutine unwrap_dcd_pos(pos,wrapIdx,na,wdim,coordinates)
       use cell
       implicit none
       integer(1) wrapIdx(*)
       integer   ,intent(in):: na, wdim
-      real(4)   ,intent(inout):: pos(n)
+      real(r_p), intent(in) :: coordinates(*)
+      real(4)   ,intent(inout):: pos(*)
       integer    kk,i
 
 66    format(" Unknown option for unwrap_dcd_pos ",I0)
       select case (wdim)
        case (1)
          do i=1,na
-            pos(i)= real(x(i)+ int(wrapIdx(4*(i-1)+wdim))*xcell,4)
+            pos(i)= real(coordinates(i)+ int(wrapIdx(4*(i-1)+wdim))*xcell,4)
          end do
        case (2)
          do i=1,na
-            pos(i)= real(y(i)+ int(wrapIdx(4*(i-1)+wdim))*ycell,4)
+            pos(i)= real(coordinates(i)+ int(wrapIdx(4*(i-1)+wdim))*ycell,4)
          end do
        case (3)
          do i=1,na
-            pos(i)= real(z(i)+ int(wrapIdx(4*(i-1)+wdim))*zcell,4)
+            pos(i)= real(coordinates(i)+ int(wrapIdx(4*(i-1)+wdim))*zcell,4)
          end do
        case default
          print 66, wdim
@@ -43,20 +43,21 @@ contains
 
    end subroutine
 
-   module subroutine dcdio_write(dcdinfo,istep,dt,suffix)
+   module subroutine dcdio_write(dcdinfo,trajectory_file,istep,dt,append,&
+      &x_frame,y_frame,z_frame)
       use atmtyp
       use atoms      ,only: pbcunwrap,pbcWrapIdx
-      use atomsMirror
       use boxes
-      use files
       use inform
       use replicas
       use iso_c_binding, only: C_NULL_CHAR
       implicit none
       type(dcdinfo_t), intent(inout) :: dcdinfo
-      character(*), intent(in) :: suffix
+      character(*), intent(in) :: trajectory_file
       integer, intent(in) :: istep
       real(r_p), intent(in) :: dt
+      logical, intent(in) :: append
+      real(r_p), intent(in) :: x_frame(:),y_frame(:),z_frame(:)
       integer i,j,k,idcd
       integer freeunit
       integer(kind=4) :: coord_size
@@ -68,12 +69,12 @@ contains
       character (len=8) :: date
       character (len=10) :: time
 
-      dcdinfo%natoms     = n
+      dcdinfo%natoms     = size(x_frame)
       coord_size = 4*dcdinfo%natoms
-      dcdinfo%timestep   = istep
+      dcdinfo%timestep   = real(dt,4)
 
-      dcdinfo%filename = filename(1:leng)//trim(suffix)//'.dcd'
-      init       = (istep.eq.iwrite)
+      dcdinfo%filename = trim(trajectory_file)
+      init       = (dcdinfo%idcd.eq.0)
       idcd = dcdinfo%idcd
 !
       if (init) then
@@ -81,7 +82,7 @@ contains
 !     check if dcd trajectory file exists
 !
          inquire (file=trim(dcdinfo%filename),exist=exist)
-         if (exist) then
+         if (exist .and. append) then
             open (newunit=idcd,file=trim(dcdinfo%filename)&
                &,access="stream",status='old',position='append')
             dcdinfo%idcd=idcd
@@ -197,9 +198,9 @@ contains
       write(idcd) coord_size
 
       if (pbcunwrap) then
-         call unwrap_dcd_pos(posw,pbcWrapIdx,dcdinfo%natoms,1)
+         call unwrap_dcd_pos(posw,pbcWrapIdx,dcdinfo%natoms,1,x_frame)
       else
-         do i = 1,dcdinfo%natoms; posw(i) = real(x(i),4); end do
+         do i = 1,dcdinfo%natoms; posw(i) = real(x_frame(i),4); end do
       end if
       write(idcd) posw(:)
 
@@ -207,9 +208,9 @@ contains
       write(idcd) coord_size
 
       if (pbcunwrap) then
-         call unwrap_dcd_pos(posw,pbcWrapIdx,dcdinfo%natoms,2)
+         call unwrap_dcd_pos(posw,pbcWrapIdx,dcdinfo%natoms,2,y_frame)
       else
-         do i = 1,dcdinfo%natoms; posw(i) = real(y(i),4); end do
+         do i = 1,dcdinfo%natoms; posw(i) = real(y_frame(i),4); end do
       end if
       write(idcd) posw(:)
 
@@ -217,9 +218,9 @@ contains
       write(idcd) coord_size
 
       if (pbcunwrap) then
-         call unwrap_dcd_pos(posw,pbcWrapIdx,dcdinfo%natoms,3)
+         call unwrap_dcd_pos(posw,pbcWrapIdx,dcdinfo%natoms,3,z_frame)
       else
-         do i = 1,dcdinfo%natoms; posw(i) = real(z(i),4); end do
+         do i = 1,dcdinfo%natoms; posw(i) = real(z_frame(i),4); end do
       end if
       write(idcd) posw(:)
 
@@ -411,8 +412,13 @@ contains
    module subroutine dcdfile_close(dcdinfo)
       implicit none
       type(dcdinfo_t), intent(inout) :: dcdinfo
-      deallocate(dcdinfo%titlesdcd)
-      close(dcdinfo%idcd)
+      logical :: opened
+
+      if (allocated(dcdinfo%titlesdcd)) deallocate(dcdinfo%titlesdcd)
+      if (allocated(dcdinfo%filename)) deallocate(dcdinfo%filename)
+      inquire(unit=dcdinfo%idcd,opened=opened)
+      if (opened) close(dcdinfo%idcd)
+      dcdinfo%idcd = 0
    end subroutine dcdfile_close
 
    !> @Reads next frame into memory
@@ -551,4 +557,3 @@ contains
    end subroutine dcdfile_skip_next
 
 end submodule
-

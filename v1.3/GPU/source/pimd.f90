@@ -18,22 +18,34 @@
 #include "tinker_macro.h"
 program pimd
    use mpi
-#ifdef _OPENACC
-   use utilgpu,only: bind_gpu
-#endif
+   use config, only: raw_cli_t, capture_raw_cli
+   use domdec, only: rank
+   use iounit, only: iout
+   use mdevice, only: bind_device
+   use status, only: failed, status_t
    implicit none
-   integer ierr,nthreadsupport
-#ifdef _OPENACC
-   call bind_gpu
-#endif
+   integer ierr,nthreadsupport,world_rank
+   type(raw_cli_t) :: raw_cli
+   type(status_t) :: status_value
+   call bind_device(status_value)
+   if (failed(status_value)) stop 1
+   call capture_raw_cli(raw_cli)
    call MPI_INIT(ierr)
 !      call MPI_INIT_THREAD(MPI_THREAD_MULTIPLE,nthreadsupport,ierr)
-   call pimd_bis
+   call MPI_COMM_RANK(MPI_COMM_WORLD,world_rank,ierr)
+   iout = 6
+   rank = world_rank
+   call pimd_bis(raw_cli,status_value)
+   if (failed(status_value)) then
+      if (world_rank.eq.0) write(iout,*) trim(status_value%message)
+      call MPI_BARRIER(MPI_COMM_WORLD,ierr)
+      __TINKER_FATAL__
+   end if
    call MPI_BARRIER(MPI_COMM_WORLD,ierr)
    call MPI_FINALIZE(ierr)
 end
 !
-subroutine pimd_bis
+subroutine pimd_bis(raw_cli,status_value)
    use atomsMirror
    use bath
    use beads
@@ -43,6 +55,12 @@ subroutine pimd_bis
    use domdec
    use keys
    use inform
+   use config, only: config_t, raw_cli_t
+   use initialization, only: initialize, pimd_application
+   use mdevice, only: channel_t, finalize_device
+   use parallel, only: parallel_t, domain_size, release, replica_handle, replica_rank, replica_size
+   use status, only: failed, status_t
+   use structure, only: structure_t
    use iounit
    use mdstuf
    use moldyn
@@ -56,7 +74,8 @@ subroutine pimd_bis
    use ascii, only: int_to_str
    use utils, only: set_to_zero2m
    use units
-   use qtb, only: qtb_thermostat,adaptive_qtb,piqtb
+   use qtb, only: qtb_thermostat,adaptive_qtb,piqtb, configure_piqtb_communication, &
+      &clear_piqtb_communication
    use commstuffpi
    use virial, only: use_virial
    implicit none
@@ -72,8 +91,14 @@ subroutine pimd_bis
    integer nbeads_para,j,iloc
    logical :: pi_isobaric,only_long
    real(t_p) :: bufpi
+   type(raw_cli_t), intent(in) :: raw_cli
+   type(config_t) :: configuration
+   type(structure_t) :: molecular_structure
+   type(parallel_t) :: platform
+   type(channel_t) :: reciprocal_work
+   type(status_t) :: cleanup_status
+   type(status_t), intent(out) :: status_value
 
-   app_id = pimd_a
    path_integral_md=.TRUE.
 !
 !
@@ -83,12 +108,15 @@ subroutine pimd_bis
 !
 !     set up the structure and molecular mechanics calculation
 !
-   call initial
-   call init_keys
-   call read_bead_config
-   call initmpi
-   call MPI_BARRIER(MPI_COMM_WORLD,ierr)
-   call getxyz
+   call initialize(pimd_application, raw_cli, configuration, molecular_structure, &
+      &platform, reciprocal_work, status_value)
+   if (failed(status_value)) return
+   call configure_piqtb_communication(replica_handle(platform), replica_size(platform), &
+      &replica_rank(platform), domain_size(platform))
+
+   ! Common initialization loads the primary structure without consuming the
+   ! legacy argument slot that PIMD's remaining parser expects to skip.
+   call nextarg(string, exist)
 
    write(*,*) ranktot,'polymer',nproc_polymer,rank_polymer
    write(*,*) ranktot,'spatial',nproc,rank
@@ -99,29 +127,6 @@ subroutine pimd_bis
          &file="comm_report_rank"//int_to_str(ranktot)//".out")
    endif
 
-   call unitcell
-   call cutoffs
-   call lattice
-!
-!     setup for MPI
-!
-!
-!     get nprocforce to do correct allocation of MPI arrays
-!
-   call drivermpi
-   call reinitnl(0)
-!
-!     allocate some arrays
-!
-   call prmem_requestm(    v,3,n)
-   call prmem_requestm(    a,3,n)
-   call prmem_requestm( aalt,3,n)
-   call prmem_requestm(aalt2,3,n)
-!
-   call set_to_zero2m(   a,    v,3*n,rec_queue)
-   call set_to_zero2m(aalt,aalt2,3*n,rec_queue)
-!
-   call mechanic
    call nblist(0)
 !
 !     initialize the temperature, pressure and coupling baths
@@ -395,10 +400,10 @@ subroutine pimd_bis
 
 !     perform any final tasks before program exit
 !
+   call clear_piqtb_communication()
    call final
+   call finalize_device(cleanup_status)
+   call release(platform, cleanup_status)
+   if (failed(cleanup_status)) status_value = cleanup_status
 
 end subroutine
-
-
-
-

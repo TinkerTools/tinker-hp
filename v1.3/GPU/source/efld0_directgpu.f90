@@ -8,13 +8,13 @@ module efld0_directgpu_inl
    use tinheader, only: ti_p, zeror, zerom
    use tintypes , only: real3, rpole_elt, real7
    implicit none
-   include "erfcore_data.inc.f90"
+!   include "erfcore_data.inc.f90"
 contains
 #include "image.inc.f90"
 #if defined(SINGLE) | defined(MIXED)
-   include "erfcscore.inc.f90"
+!   include "erfcscore.inc.f90"
 #else
-   include "erfcdcore.inc.f90"
+!   include "erfcdcore.inc.f90"
 #endif
 #include "pair_efld.inc.f90"
 end module
@@ -28,7 +28,7 @@ subroutine efld0_directgpu(nrhs,ef)
    use atmlst   ,only: poleglobnl
    use atoms    ,only: x,y,z
    use couple
-   use domdec   ,only: rank,loc,nbloc
+   use domdec   ,only: rank,loc,nbloc,nproc
    use ewald    ,only: aewald
    use efld0_directgpu_inl
    use inform   ,only: deb_Path
@@ -47,6 +47,7 @@ subroutine efld0_directgpu(nrhs,ef)
       &,rec_event
 #endif
    use timestat ,only: timer_enter,timer_exit,timer_efld0_direct
+   use utilcomm ,only: no_commdir
    implicit none
 
    integer  ,intent(in)   :: nrhs
@@ -644,7 +645,7 @@ subroutine efld0_directgpu3(nrhs,ef)
          call efld0_direct_scaling_cu<<<gS,BLOCK_DIM,0,def_stream>>>&
             &(dpcorrect_ik,dpcorrect_scale,poleloc,ipole,mut,pdamp,gamma&
             &,x,y,z,rpole,ef,deflambda,n_dpscale,n,npolebloc,use_tholed&
-            &,use_lambdadyn,elambda,cut2,aewald,alsq2,alsq2n)
+            &,use_lambdadyn,elambda,cut2,aewald,alsq2,alsq2n,.not.no_commdir)
 !$acc end host_data
          call check_launch_kernel( 'efld0_direct_scaling_cu' )
       end if
@@ -663,7 +664,7 @@ subroutine efld0_directgpu3(nrhs,ef)
             &,ef&
             &,xcell,ycell,zcell,xcell2,ycell2,zcell2&
             &,dpcorrect_ik,dpcorrect_scale,poleloc,ipole,x,y,z,n_dpscale&
-            &)
+            &,nproc,.not.no_commdir)
 !$acc end host_data
       else
          gS = get_GridDim(npnlb2,BLOCK_DIM)
@@ -677,7 +678,7 @@ subroutine efld0_directgpu3(nrhs,ef)
             &,ef&
             &,xcell,ycell,zcell,xcell2,ycell2,zcell2&
             &,dpcorrect_ik,dpcorrect_scale,poleloc,ipole,x,y,z,n_dpscale&
-            &)
+            &,nproc,.not.no_commdir)
 !$acc end host_data
       end if range1
 

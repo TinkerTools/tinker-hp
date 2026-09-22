@@ -5,45 +5,48 @@
 !      version __tver__ features __tfea__
 !
 attributes(global)&
-   &subroutine __Cat( echg_lj1_kcu, __sufx__ )&
-   &(x_sp,y_sp,z_sp,glob_sp,loc_sp,ichg_&
-   &,iblst,blst,jvdw_sp,i12,epsilon,radmin,radv,epsv&
-   &,d_x,d_y,d_z,ev_buff,vir_buff&
-   &,nlocnlb_pair,n,nbloc,nlocnl,nlocnlb&
-   &,nvdwclass,radrule,epsrule&
-   &,vcut2,vscut,voff2,voff,rinv,sheal&
-   &,coff2,f,aewald,aewaldop,ebuffer,pchg&
-    ! Scaling factor
-   &,x,y,z,correct_ik,vcorrect_scale,ccorrect_scale,szc&
-   &,n_scale,loc,jvdw&
-   &,radmin1,epsilon1,radmin4,epsilon4,de&
+   subroutine __Cat( echg_lj1_kcu, __sufx__ )&
+   (x_sp,y_sp,z_sp,glob_sp,loc_sp,ichg_&
+   ,iblst,blst,jvdw_sp,i12,epsilon,radmin,radv,epsv&
+   ,d_x,d_y,d_z,ev_buff,vir_buff&
+   ,nlocnlb_pair,n,nbloc,nlocnl,nlocnlb&
+   ,nvdwclass,radrule,epsrule&
+   ,vcut2,vscut,voff2,voff,rinv,sheal&
+   ,coff2,f,aewald,aewaldop,ebuffer,pchg&
+   ! Scaling factor
+   ,x,y,z,correct_ik,vcorrect_scale,ccorrect_scale,szc&
+   ,n_scale,loc,jvdw&
+   ,radmin1,epsilon1,radmin4,epsilon4,de&
    ! Box data
-   &,p_xbeg,p_xend,p_ybeg,p_yend,p_zbeg,p_zend&
-   &)
+   ,p_xbeg,p_xend,p_ybeg,p_yend,p_zbeg,p_zend&
+   ,ndir,use_virial,skipvdw12&
+   )
 
 implicit none
 integer  ,value,intent(in):: nlocnlb_pair,n,nbloc&
    &,nlocnl,nlocnlb,nvdwclass,radrule,epsrule&
    &,szc,n_scale
+integer  ,value,intent(in):: ndir
+logical  ,value,intent(in):: use_virial,skipvdw12
 real(t_p),value,intent(in):: coff2,f,aewald,aewaldop,ebuffer&
-   &,vcut2,vscut,rinv,sheal,voff2,voff
+         ,vcut2,vscut,rinv,sheal,voff2,voff
 real(t_p),value,intent(in):: p_xbeg,p_xend,p_ybeg,p_yend&
-   &,p_zbeg,p_zend
+         ,p_zbeg,p_zend
 ener_rtyp,device :: ev_buff (  RED_BUFF_SIZE)
 real(t_p),device :: vir_buff(6*RED_BUFF_SIZE)
 integer  ,device,intent(in)::glob_sp(nlocnlb)&
-   &,iblst(nlocnlb_pair), ichg_(nlocnlb)&
-   &, blst(nlocnlb_pair*(BLOCK_SIZE))&
-   &,loc_sp(nlocnlb),i12(maxvalue,n)&
-   &,correct_ik(szc,2),loc(n),jvdw(n)
+         ,iblst(nlocnlb_pair), ichg_(nlocnlb)&
+         , blst(nlocnlb_pair*(BLOCK_SIZE))&
+         ,loc_sp(nlocnlb),i12(maxvalue,n)&
+         ,correct_ik(szc,2),loc(n),jvdw(n)
 integer  ,device,intent(in)::jvdw_sp(nlocnlb)
 real(t_p),device,intent(in)::radmin(nvdwclass,nvdwclass)&
-   &,epsilon(nvdwclass,nvdwclass),radv(*),epsv(*)&
-   &,vcorrect_scale(*),ccorrect_scale(*)&
-   &,radmin1(maxclass,*),epsilon1(maxclass,*)&
-   &,radmin4(maxclass,*),epsilon4(maxclass,*)
+         ,epsilon(nvdwclass,nvdwclass),radv(*),epsv(*)&
+         ,vcorrect_scale(*),ccorrect_scale(*)&
+         ,radmin1(maxclass,*),epsilon1(maxclass,*)&
+         ,radmin4(maxclass,*),epsilon4(maxclass,*)
 real(t_p),device,intent(in):: x_sp(nlocnlb)&
-   &,y_sp(nlocnlb),z_sp(nlocnlb),x(*),y(*),z(*),pchg(*)
+         ,y_sp(nlocnlb),z_sp(nlocnlb),x(*),y(*),z(*),pchg(*)
 mdyn_rtyp,device,intent(inout)::d_x(*),d_y(*),d_z(*),de(3,*)
 
 integer ithread,iwarp,nwarp,ilane,ver,ver1,fea
@@ -515,4 +518,3 @@ do ii = iwarp, nlocnlb_pair-1&
    end block
 end do
 end subroutine
-

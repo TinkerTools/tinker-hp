@@ -21,6 +21,9 @@ subroutine fatal
    use mpi
    use mdstate
    implicit none
+#ifdef COLVARS
+   external colvars_finalize
+#endif
    integer errorcode,ierr
 !
    if (track_mds) call mds_prt
@@ -31,6 +34,9 @@ subroutine fatal
 10 format (/,' TINKER is Unable to Continue; Terminating',&
       &' the Current Calculation',/)
    flush(iout)
+#ifdef COLVARS
+   call colvars_finalize()
+#endif
 !$acc wait
    call sleep(1)
    call MPI_ABORT(MPI_COMM_WORLD,errorcode,ierr)

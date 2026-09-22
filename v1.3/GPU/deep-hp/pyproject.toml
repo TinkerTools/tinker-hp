@@ -1,0 +1,25 @@
+[project]
+name = "deep-hp"
+version = "0.1.0"
+description = "Reproducible Python runtime environment for the Tinker-HP Deep-HP interface"
+readme = "README.md"
+requires-python = ">=3.11,<3.12"
+dependencies = [
+  "cffi",
+  "numpy",
+  "pyyaml",
+  "fennol",
+]
+
+[project.optional-dependencies]
+cuda12 = [
+  "cupy-cuda12x",
+  "jax[cuda12]",
+]
+cuda13 = [
+  "cupy-cuda13x",
+  "jax[cuda13]",
+]
+
+[tool.uv]
+default-groups = []

@@ -21,19 +21,20 @@ subroutine verlet (istep,dt)
    use atomsMirror
    use cutoff
    use domdec
-   use deriv  ,only: info_forces,prtEForces,cDef,zero_forces_rec&
-      &,ftot_l,comm_forces
-   use energi ,only: info_energy,calc_e,chk_energy_fluct
+   use deriv   ,only: info_forces,prtEForces,cDef,zero_forces_rec&
+               ,ftot_l,comm_forces
+   use energi  ,only: info_energy,calc_e,chk_energy_fluct
    use freeze
    use inform
    use mdstuf1
    use moldyn
+   use parallel,only: migrate_atoms
    use potent
    use timestat
    use units
    use usage
-   use utils  ,only:set_to_zero1m
-   use utilgpu,only:prmem_requestm,rec_queue
+   use utils    ,only:set_to_zero1m
+   use utilgpu  ,only:prmem_requestm,rec_queue
    use mpi
    use sizes
    use spectra
@@ -62,7 +63,7 @@ subroutine verlet (istep,dt)
 !     Reassign the particules that have changed of domain
 !
 !     -> real space
-   call reassign
+   call migrate_atoms
 !     -> reciprocal space
    call reassignpme(.false.)
 !

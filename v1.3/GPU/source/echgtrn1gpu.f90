@@ -125,7 +125,7 @@ subroutine echgtrn1c_cu
           , p_xbeg,p_xend,p_ybeg,p_yend,p_zbeg,p_zend&
           , mcorrect_ik, mcorrect_scale, ipole, loc, x, y, z&
           , n_mscale&
-          )
+          , nproc,ngrp)
       call check_launch_kernel("echgtrn1s_kcu")
 !$acc end host_data
    else if (use_chgtrnlong) then
@@ -143,7 +143,7 @@ subroutine echgtrn1c_cu
           , p_xbeg,p_xend,p_ybeg,p_yend,p_zbeg,p_zend&
           , mcorrect_ik, mcorrect_scale, ipole, loc, x, y, z&
           , n_mscale&
-          )
+          , nproc,ngrp)
       call check_launch_kernel("echgtrn1l_kcu")
 !$acc end host_data
    else
@@ -161,7 +161,7 @@ subroutine echgtrn1c_cu
           , p_xbeg,p_xend,p_ybeg,p_yend,p_zbeg,p_zend&
           , mcorrect_ik, mcorrect_scale, ipole, loc, x, y, z&
           , n_mscale&
-          )
+          , nproc,ngrp)
       call check_launch_kernel("echgtrn1_kcu")
 !$acc end host_data
    end if

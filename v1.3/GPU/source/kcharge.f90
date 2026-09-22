@@ -324,14 +324,14 @@ subroutine upload_device_kcharge
    use charge
    use domdec,only: rank,hostcomm
    use mpi   ,only: MPI_BARRIER
-   use sizes
+   use inform,only: deb_Path
    use potent,only: use_lambdadyn
    use tinMemory
    implicit none
    integer ierr
 #ifdef _OPENACC
 12 format(2x,'upload_device_kcharge')
-   if(rank.eq.0.and.tinkerdebug) print 12
+   if(deb_Path) print 12
    call MPI_BARRIER(hostcomm,ierr)
 #endif
 !$acc update device(iion,pchg,chglist,nbchg)

@@ -695,7 +695,6 @@ subroutine cluster
    use tinheader
    use tinMemory
 #ifdef _OPENACC
-   use utilcu ,only: htod_ngrp
 #endif
    implicit none
    integer i,j,k
@@ -860,7 +859,6 @@ subroutine cluster
       end do
    end if
 #ifdef _OPENACC
-   call htod_ngrp(ngrp)
 #endif
 !
 !     Reduce wgrpfull in wgrp

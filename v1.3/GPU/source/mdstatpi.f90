@@ -330,7 +330,7 @@ subroutine mdstatpi (istep,dt)
       Tcentroid_ave = Tcentroid_sum / real(count,d_prec)
       Tcentroid2_ave = Tcentroid2_sum / real(count,d_prec)
       Tcentroidfluct2 = Tcentroid2_ave - Tcentroid_ave**2
-      if (gyrfluct2pi .gt. 0.0_d_prec) then
+      if (Tcentroidfluct2 .gt. 0.0_d_prec) then
          Tcentroidfluct = sqrt(Tcentroidfluct2)
       else
          Tcentroidfluct = 0.0_d_prec

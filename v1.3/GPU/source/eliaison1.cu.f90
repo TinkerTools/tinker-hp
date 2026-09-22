@@ -22,11 +22,10 @@ module eliaisoncu
    use ktrtor   ,only: maxntt,maxtgrd,maxtgrd2
    use math     ,only: sqrtpi,radian
    use tinheader,only: ti_p
-   use utilcu   ,only: use_virial
 #if ~ TINKER_DOUBLE_PREC
    use utilcu   ,only: f_sqrt,f_exp
 #endif
-   use utilgpu  ,only: RED_BUFF_SIZE
+   use reduction,only: RED_BUFF_SIZE
    integer lia_Gs,lia_Bd
    parameter(lia_Bd=128)
    logical,parameter::calc_e=.false.
@@ -451,6 +450,7 @@ M_subroutine ker_tortor&
    &,i12,n12,atomic,typeAtm&
    &,x,y,z,tnx,tny,ttx,tty,tbf,tbx,tby,tbxy,ttorunit&
    &,use_polymer,use_amd_dih,useAll&
+   &,use_virial&
    &,ett,eDaMD,dettx,detty,dettz&            ! Output
    &,vxx_,vxy_,vxz_,vyy_,vyz_,vzz_&
    &)
@@ -462,7 +462,7 @@ integer  ,intent(in)::&
    &iitortor,ntortorloc,n,itt(3,*),ibitor(5,*),iuse(*)&
    &,loc(n),i12(maxvalue,n),n12(n),atomic(*)&
    &,typeAtm(*),tnx(maxntt),tny(maxntt)
-logical  ,intent(in):: use_amd_dih,use_polymer,useAll
+logical  ,intent(in):: use_amd_dih,use_polymer,useAll,use_virial
 real(t_p),intent(in)::&
    &ttorunit,x(*),y(*),z(*)&
    &,tbf(maxtgrd2,maxntt),tbxy(maxtgrd2,maxntt)&
@@ -835,48 +835,48 @@ attributes(global) subroutine __Cat(eliaison1_kcu,__sufx__)&
    &bndglob,ibnd,bl,bk,ba,typeAtm,nbondloc,bndunit,cbnd,qbnd,bndtypI&
    &,use_polymer,deb&
    &,off_bond,num_bond&
-   &&!urey
+   !urey
    &,ureyglob,nureyloc,iury,ul,uk,ureyunit,cury,qury,deub&
    &,off_urey,num_urey&
-   &&!angle
+   !angle
    &,angleglob,nangleloc,angtypI,iang,anat,ak,afld,angunit&
    &,cang,qang,pang,sang,dea&
    &,off_angl,num_angl&
-   &&!opbend
-   &,opbendglob,nopbendloc,iopb,opbk,opbunit,opbtypInt&
-   &,copb,qopb,popb,sopb,deopb&
-   &,off_opbd,num_opbd&
-   &&!strbnd
-   &,strbndglob,nstrbndloc,isb,sbk,stbnunit,deba&
-   &,off_stbd,num_stbd&
-   &&!tors
-   &,torsglob,ntorsloc,itors,tors1,tors2,tors3,tors4,tors5,tors6&
-   &,torsunit,et,det&
-   &,off_tors,num_tors&
-   &&!pitors
-   &,pitorsglob,npitorsloc,ipit,kpit,ptorunit,ept,dept&
-   &,off_pitr,num_pitr&
-   &&!tortor
-   &,tortorglob,ntortorloc,itt,ibitor,tnx,tny,ttx,tty,tbf,tbx,tby&
-   &,tbxy,i12,n12,atomic,ttorunit,ett,dett&
-   &,off_totr,num_totr&
-   &&!angtor
-   &,angtorglob,nangtorloc,iat,kant,atorunit,deat&
-   &,off_antr,num_antr&
-   &&!improp
-   &,impropglob,niproploc,iiprop,vprop,kprop,idihunit,eid,deid&
-   &,off_impr,num_impr&
-   &&!imptor
-   &,imptorglob,nitorsloc,iitors,itors1,itors2,itors3&
-   &,itorunit,eit,deit&
-   &,off_impt,num_impt&
-   &&!aMD/GaMD
-   &,aMDwattype,use_amd_wat1,use_amd_dih,eDaMD,eW1aMD,deW1aMD&
-   &&
-   &,x_,y_,z_,x,y,z,loc,iuse&
-   &,n,nbloc,grsz,useAll&
-   &,grx,gry,grz,gr_x,gr_y,gr_z,ev_buff,vir_buff&
-   &)
+   !opbend
+   ,opbendglob,nopbendloc,iopb,opbk,opbunit,opbtypInt&
+   ,copb,qopb,popb,sopb,deopb&
+   ,off_opbd,num_opbd&
+   !strbnd
+   ,strbndglob,nstrbndloc,isb,sbk,stbnunit,deba&
+   ,off_stbd,num_stbd&
+   !tors
+   ,torsglob,ntorsloc,itors,tors1,tors2,tors3,tors4,tors5,tors6&
+   ,torsunit,et,det&
+   ,off_tors,num_tors&
+   !pitors
+   ,pitorsglob,npitorsloc,ipit,kpit,ptorunit,ept,dept&
+   ,off_pitr,num_pitr&
+   !tortor
+   ,tortorglob,ntortorloc,itt,ibitor,tnx,tny,ttx,tty,tbf,tbx,tby&
+   ,tbxy,i12,n12,atomic,ttorunit,ett,dett&
+   ,off_totr,num_totr&
+   !angtor
+   ,angtorglob,nangtorloc,iat,kant,atorunit,deat&
+   ,off_antr,num_antr&
+   !improp
+   ,impropglob,niproploc,iiprop,vprop,kprop,idihunit,eid,deid&
+   ,off_impr,num_impr&
+   !imptor
+   ,imptorglob,nitorsloc,iitors,itors1,itors2,itors3&
+   ,itorunit,eit,deit&
+   ,off_impt,num_impt&
+   !aMD/GaMD
+   ,aMDwattype,use_amd_wat1,use_amd_dih,eDaMD,eW1aMD,deW1aMD&
+   ,x_,y_,z_,x,y,z,loc,iuse&
+   ,n,nbloc,grsz,useAll&
+   ,grx,gry,grz,gr_x,gr_y,gr_z,ev_buff,vir_buff&
+   ,use_virial&
+    )
 implicit none
 integer  ,value:: n,nbloc,nbondloc,nureyloc,nangleloc,nopbendloc&
    &,nstrbndloc,ntorsloc,npitorsloc,ntortorloc,nangtorloc&
@@ -887,6 +887,7 @@ integer  ,value:: n,nbloc,nbondloc,nureyloc,nangleloc,nopbendloc&
    &,off_antr,num_antr,off_impr,num_impr,off_impt,num_impt&
    &,off_opbd,num_opbd,off_stbd,num_stbd
 logical  ,value:: useAll,use_polymer,use_amd_wat1,use_amd_dih
+logical  ,value:: use_virial
 real(t_p),value:: bndunit,cbnd,qbnd,ureyunit,angunit,opbunit&
    &,stbnunit,torsunit,ptorunit,ttorunit,atorunit,idihunit&
    &,itorunit,cang,qang,pang,sang&
@@ -930,6 +931,7 @@ real(r_p) rrstat
 ener_rtyp enrgy
 real(t_p) g_vxx,g_vxy,g_vxz,g_vyy,g_vyz,g_vzz
  !real(t_p),shared:: cw(4,4,lia_Bd)
+
 
 ithread = threadIdx%x + (blockIdx%x-1)*blockDim%x
  !stride  = blockDim%x*gridDim%x
@@ -2246,6 +2248,7 @@ if(ithread.gt.off_totr) then; tortor:block
             &,i12,n12,atomic,typeAtm&
             &,x,y,z,tnx,tny,ttx,tty,tbf,tbx,tby,tbxy,ttorunit&
             &,use_polymer,use_amd_dih,useAll&
+            &,use_virial&
             &,enrgy,eDaMD,gr_x,gr_y,gr_z&            ! Output
             &,g_vxx,g_vxy,g_vxz,g_vyy,g_vyz,g_vzz&
             &)

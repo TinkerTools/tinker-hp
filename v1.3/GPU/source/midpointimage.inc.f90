@@ -9,6 +9,7 @@ M_subroutine&
 !$acc routine
 use tinheader,only : ti_p,ti_eps,prec_eps
 #ifdef TINKER_CUF
+use cellcu
 use utilcu
 #else
 use boxes
@@ -82,6 +83,7 @@ M_subroutine&
 !$acc routine
 use tinheader,only : ti_p,ti_eps,prec_eps
 #ifdef TINKER_CUF
+use cellcu
 use utilcu
 #else
 use boxes
