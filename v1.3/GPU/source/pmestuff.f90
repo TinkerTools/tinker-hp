@@ -1289,6 +1289,7 @@ end
 !     between time steps
 !
 subroutine reassignpme(init)
+   use parallel, only: get_domain_comm
    use atomsMirror
    use boxes
    use chunks
@@ -1910,7 +1911,7 @@ subroutine reassignpme(init)
          iprec   = precdir_recep1(i)
          idomlen = domlen(iprec+1)
          call MPI_IRECV(repartrectemp(bufbeg(iprec+1)),idomlen,MPI_INT&
-            &,iprec,tag,COMM_TINKER,req(i),ierr)
+            &,iprec,tag,get_domain_comm(),req(i),ierr)
       end if
    end do
 !
@@ -1919,7 +1920,7 @@ subroutine reassignpme(init)
       if (precdir_send1(i).ne.rank) then
          tag = nproc*precdir_send1(i) + rank + 1
          call MPI_ISEND(repartrectemp,nloc,MPI_INT&
-            &,precdir_send1(i),tag,COMM_TINKER,req(nproc+i),ierr)
+            &,precdir_send1(i),tag,get_domain_comm(),req(nproc+i),ierr)
       end if
    end do
 !$acc end host_data

@@ -76,6 +76,7 @@ subroutine epolar1cgpu
    use chgpot
    use deriv
    use domdec
+   use parallel, only: get_domain_comm
    use elec_wspace   ,only: trq=>r2Work4
    use energi
    use epolar1gpu_inl
@@ -279,23 +280,23 @@ subroutine epolar1cgpu
                zup    = zup + uinp(3,iipole)
             end do
             call MPI_ALLREDUCE(MPI_IN_PLACE,xd,1,MPI_TPREC,MPI_SUM,&
-               &COMM_TINKER,ierr)
+               &get_domain_comm(),ierr)
             call MPI_ALLREDUCE(MPI_IN_PLACE,yd,1,MPI_TPREC,MPI_SUM,&
-               &COMM_TINKER,ierr)
+               &get_domain_comm(),ierr)
             call MPI_ALLREDUCE(MPI_IN_PLACE,zd,1,MPI_TPREC,MPI_SUM,&
-               &COMM_TINKER,ierr)
+               &get_domain_comm(),ierr)
             call MPI_ALLREDUCE(MPI_IN_PLACE,xu,1,MPI_TPREC,MPI_SUM,&
-               &COMM_TINKER,ierr)
+               &get_domain_comm(),ierr)
             call MPI_ALLREDUCE(MPI_IN_PLACE,yu,1,MPI_TPREC,MPI_SUM,&
-               &COMM_TINKER,ierr)
+               &get_domain_comm(),ierr)
             call MPI_ALLREDUCE(MPI_IN_PLACE,zu,1,MPI_TPREC,MPI_SUM,&
-               &COMM_TINKER,ierr)
+               &get_domain_comm(),ierr)
             call MPI_ALLREDUCE(MPI_IN_PLACE,xup,1,MPI_TPREC,MPI_SUM,&
-               &COMM_TINKER,ierr)
+               &get_domain_comm(),ierr)
             call MPI_ALLREDUCE(MPI_IN_PLACE,yup,1,MPI_TPREC,MPI_SUM,&
-               &COMM_TINKER,ierr)
+               &get_domain_comm(),ierr)
             call MPI_ALLREDUCE(MPI_IN_PLACE,zup,1,MPI_TPREC,MPI_SUM,&
-               &COMM_TINKER,ierr)
+               &get_domain_comm(),ierr)
             term = (2.0_ti_p/3.0_ti_p) * f * (pi/volbox)
             if (rank.eq.0) then
                epself = epself  + tp2enr(term*(xd*xu+yd*yu+zd*zu))
@@ -342,17 +343,17 @@ subroutine epolar1cgpu
                zq     = zq + rpole(1,iipole)*z(iglob)
             end do
             call MPI_ALLREDUCE(MPI_IN_PLACE,xd,1,MPI_TPREC,MPI_SUM,&
-               &COMM_TINKER,ierr)
+               &get_domain_comm(),ierr)
             call MPI_ALLREDUCE(MPI_IN_PLACE,yd,1,MPI_TPREC,MPI_SUM,&
-               &COMM_TINKER,ierr)
+               &get_domain_comm(),ierr)
             call MPI_ALLREDUCE(MPI_IN_PLACE,zd,1,MPI_TPREC,MPI_SUM,&
-               &COMM_TINKER,ierr)
+               &get_domain_comm(),ierr)
             call MPI_ALLREDUCE(MPI_IN_PLACE,xq,1,MPI_TPREC,MPI_SUM,&
-               &COMM_TINKER,ierr)
+               &get_domain_comm(),ierr)
             call MPI_ALLREDUCE(MPI_IN_PLACE,yq,1,MPI_TPREC,MPI_SUM,&
-               &COMM_TINKER,ierr)
+               &get_domain_comm(),ierr)
             call MPI_ALLREDUCE(MPI_IN_PLACE,zq,1,MPI_TPREC,MPI_SUM,&
-               &COMM_TINKER,ierr)
+               &get_domain_comm(),ierr)
             if (rank.eq.0) then
                xv    = xq * (xu+xup)
                yv    = yq * (yu+yup)
@@ -1823,6 +1824,7 @@ subroutine eprecip1gpu
    use cflux
    use deriv
    use domdec
+   use parallel, only: get_domain_comm, get_recip_comm
    use energi    ,only: eprec
    use eprecip1gpu_mod
    use ewald
@@ -1886,11 +1888,11 @@ subroutine eprecip1gpu
 
    if (use_pmecore) then
       nprocloc = nrec
-      commloc  = comm_rec
+      commloc  = get_recip_comm()
       rankloc  = rank_bis
    else
       nprocloc = nproc
-      commloc  = COMM_TINKER
+      commloc  = get_domain_comm()
       rankloc  = rank
    end if
 !

@@ -9,9 +9,9 @@ M_subroutine&
    &fid,fip,fkd,fkp,do_correct)
 !$acc routine
 #if  defined(TINKER_CUF)
-use utilcu  ,only: f_erfc
+use libm, only: f_erfc=>TINKERHP_LIBM_ERFC
 #  if (defined(SINGLE)||defined(MIXED))
-use utilcu  ,only: f_sqrt,f_exp
+use libm, only: f_sqrt=>TINKERHP_LIBM_SQRT,f_exp=>TINKERHP_LIBM_EXP
 #  endif
 #endif
 use tinTypes,only: real3,real6
@@ -116,9 +116,9 @@ M_subroutine&
    &fid,fip,fkd,fkp,do_correct)
 !$acc routine
 #if  defined(TINKER_CUF)
-use utilcu  ,only: f_erfc
+use libm, only: f_erfc=>TINKERHP_LIBM_ERFC
 #  if (defined(SINGLE)||defined(MIXED))
-use utilcu  ,only: f_sqrt,f_exp
+use libm, only: f_sqrt=>TINKERHP_LIBM_SQRT,f_exp=>TINKERHP_LIBM_EXP
 #  endif
 #endif
 use tinTypes,only: real3,real6
@@ -222,9 +222,9 @@ M_subroutine&
    &,fid,fip,fkd,fkp,ver,fea)
 !$acc routine
 #if  defined(TINKER_CUF)
-use utilcu  ,only: f_erfc
+use libm, only: f_erfc=>TINKERHP_LIBM_ERFC
 #  if (defined(SINGLE)||defined(MIXED))
-use utilcu  ,only: f_sqrt,f_exp
+use libm, only: f_sqrt=>TINKERHP_LIBM_SQRT,f_exp=>TINKERHP_LIBM_EXP
 #  endif
 #endif
 use tinTypes,only: real3,real6
@@ -299,9 +299,9 @@ M_subroutine&
    &,fid,fip,fkd,fkp,ver,fea)
 !$acc routine
 #if  defined(TINKER_CUF)
-use utilcu  ,only: f_erfc
+use libm, only: f_erfc=>TINKERHP_LIBM_ERFC
 #  if (defined(SINGLE)||defined(MIXED))
-use utilcu  ,only: f_sqrt,f_exp
+use libm, only: f_sqrt=>TINKERHP_LIBM_SQRT,f_exp=>TINKERHP_LIBM_EXP
 #  endif
 #endif
 use tinTypes,only: real3,real6
@@ -396,9 +396,9 @@ M_subroutine&
    &,fid,fip,fkd,fkp,ver,fea)
 !$acc routine
 #if  defined(TINKER_CUF)
-use utilcu  ,only: f_erfc
+use libm, only: f_erfc=>TINKERHP_LIBM_ERFC
 #  if (defined(SINGLE)||defined(MIXED))
-use utilcu  ,only: f_sqrt,f_exp
+use libm, only: f_sqrt=>TINKERHP_LIBM_SQRT,f_exp=>TINKERHP_LIBM_EXP
 #  endif
 #endif
 use tinTypes,only: real3,real6
@@ -493,9 +493,9 @@ M_subroutine&
    &fie,fiq,fke,fkq,do_correct)
 !$acc routine
 #if  defined(TINKER_CUF)
-use utilcu  ,only: f_erfc
+use libm, only: f_erfc=>TINKERHP_LIBM_ERFC
 #  if (defined(SINGLE)||defined(MIXED))
-use utilcu  ,only: f_sqrt,f_exp
+use libm, only: f_sqrt=>TINKERHP_LIBM_SQRT,f_exp=>TINKERHP_LIBM_EXP
 #  endif
 #endif
 use tinTypes,only: real3,real6

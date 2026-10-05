@@ -1219,6 +1219,7 @@ contains
 
    ! Communicate reciprocal forces between processes
    module subroutine comm_forces_rec(de_rec,opt)
+      use parallel, only: get_domain_comm, get_recip_comm
       implicit none
       real(r_p) de_rec(3,nlocrec2)
       integer,optional:: opt
@@ -1246,7 +1247,7 @@ contains
       p_recv(1:nproc) => prec_recep(:)
       p_beg (1:nproc) => bufbegrec(:)
       d_len (1:nproc) => domlenrec(:)
-      commloc = merge(comm_rec,COMM_TINKER,use_pmecore)
+      commloc = merge(get_recip_comm(),get_domain_comm(),use_pmecore)
 !
       ! Create exchange buffer
       siz = 3*max(1,nlocrec)*nsend
@@ -1295,6 +1296,7 @@ contains
    !
    ! Communicate reciprocal forces to direct ones
    module subroutine comm_forces_recdir(derivs,de_rec,opt)
+      use parallel, only: get_domain_comm
       implicit none
       mdyn_rtyp,intent(inout):: derivs(dr_stride3)
       real(r_p),intent(in)::    de_rec(3,nlocrec2)
@@ -1327,7 +1329,7 @@ contains
          if (precdir_send1(i).ne.rank) then
             !tag = nproc*rank + precdir_send1(i) + 1
             call MPI_IRECV(buffer(1,1,i),3*nloc,MPI_RPREC&
-               &,precdir_send1(i),tag,COMM_TINKER,reqrec(i),ierr)
+               &,precdir_send1(i),tag,get_domain_comm(),reqrec(i),ierr)
          end if
       end do
 !$acc end host_data
@@ -1362,7 +1364,7 @@ contains
             !tag = nproc*precdir_recep1(i) + rank + 1
             call MPI_ISEND(buffers(1,bufbeg(precdir_recep1(i)+1))&
                &,3*domlen(precdir_recep1(i)+1),MPI_RPREC&
-               &,precdir_recep1(i),tag,COMM_TINKER,reqsend(i),ierr)
+               &,precdir_recep1(i),tag,get_domain_comm(),reqsend(i),ierr)
          end if
       end do
 !$acc end host_data
@@ -1434,6 +1436,7 @@ contains
    end subroutine comm_forces_recdir
 
    module subroutine comm_forces_recdir1(derivs,de_rec,opt)
+      use parallel, only: get_domain_comm
       implicit none
       real(r_p),intent(inout):: derivs(3,nbloc)
       real(r_p),intent(in)::    de_rec(3,nlocrec2)
@@ -1467,7 +1470,7 @@ contains
          if (precdir_send1(i).ne.rank) then
             !tag = nproc*rank + precdir_send1(i) + 1
             call MPI_IRECV(buffer(1,1,i),3*nloc,MPI_RPREC&
-               &,precdir_send1(i),tag,COMM_TINKER,reqrec(i),ierr)
+               &,precdir_send1(i),tag,get_domain_comm(),reqrec(i),ierr)
          end if
       end do
 !$acc end host_data
@@ -1502,7 +1505,7 @@ contains
             !tag = nproc*precdir_recep1(i) + rank + 1
             call MPI_ISEND(buffers(1,bufbeg(precdir_recep1(i)+1))&
                &,3*domlen(precdir_recep1(i)+1),MPI_RPREC&
-               &,precdir_recep1(i),tag,COMM_TINKER,reqsend(i),ierr)
+               &,precdir_recep1(i),tag,get_domain_comm(),reqsend(i),ierr)
          end if
       end do
 !$acc end host_data
@@ -1885,6 +1888,7 @@ end subroutine
 subroutine comm_testgrad_md(detot,de,buffer,buffers,&
    &reqrec,reqsend)
    use domdec
+   use parallel, only: get_domain_comm
    use mpi
    implicit none
    real(r_p),intent(inout)::detot(3,*)
@@ -1904,7 +1908,7 @@ subroutine comm_testgrad_md(detot,de,buffer,buffers,&
       tag = nproc*rank + pbig_send(i) + 1
 !$acc host_data use_device(buffer)
       call MPI_IRECV(buffer(1,1,i),3*nloc,&
-         &MPI_RPREC,pbig_send(i),tag,COMM_TINKER,reqrec(i),ierr)
+         &MPI_RPREC,pbig_send(i),tag,get_domain_comm(),reqrec(i),ierr)
 !$acc end host_data
    end do
 !
@@ -1922,7 +1926,7 @@ subroutine comm_testgrad_md(detot,de,buffer,buffers,&
 !$acc host_data use_device(buffers)
       call MPI_ISEND(buffers(1,bufbeg(pbig_recep(i)+1)),&
          &3*domlen(pbig_recep(i)+1),&
-         &MPI_RPREC,pbig_recep(i),tag,COMM_TINKER,&
+         &MPI_RPREC,pbig_recep(i),tag,get_domain_comm(),&
          &reqsend(i),ierr)
 !$acc end host_data
    end do
@@ -1955,6 +1959,7 @@ end subroutine
 subroutine comm_testgrad_rp(detot,de,buffer,buffers,&
    &reqrec,reqsend)
    use domdec
+   use parallel, only: get_domain_comm
    use mpi
    implicit none
    real(r_p),intent(inout)::detot(3,*)
@@ -1974,7 +1979,7 @@ subroutine comm_testgrad_rp(detot,de,buffer,buffers,&
       tag = nproc*rank + pbig_send(i) + 1
 !$acc host_data use_device(buffer)
       call MPI_IRECV(buffer(1,1,i),3*nloc,&
-         &MPI_RPREC,pbig_send(i),tag,COMM_TINKER,reqrec(i),ierr)
+         &MPI_RPREC,pbig_send(i),tag,get_domain_comm(),reqrec(i),ierr)
 !$acc end host_data
    end do
 !
@@ -1992,7 +1997,7 @@ subroutine comm_testgrad_rp(detot,de,buffer,buffers,&
 !$acc host_data use_device(buffers)
       call MPI_ISEND(buffers(1,bufbeg(pbig_recep(i)+1)),&
          &3*domlen(pbig_recep(i)+1),&
-         &MPI_RPREC,pbig_recep(i),tag,COMM_TINKER,&
+         &MPI_RPREC,pbig_recep(i),tag,get_domain_comm(),&
          &reqsend(i),ierr)
 !$acc end host_data
    end do
@@ -2027,6 +2032,7 @@ end subroutine
 !     for testgrad
 !
 module subroutine commforceststgrad(detot)
+   use parallel, only: get_domain_comm
    use domdec
    use mpi
    use tinheader
@@ -2065,7 +2071,7 @@ module subroutine commforceststgrad(detot)
 !$acc host_data use_device(buffer)
       call MPI_IRECV(buffer(1,1,i),3*nloc,&
          &MPI_RPREC,pbig_send(i),tag,&
-         &COMM_TINKER,reqrec(i),ierr)
+         &get_domain_comm(),reqrec(i),ierr)
 !$acc end host_data
    end do
 !
@@ -2083,7 +2089,7 @@ module subroutine commforceststgrad(detot)
 !$acc host_data use_device(buffers)
       call MPI_ISEND(buffers(1,bufbeg(pbig_recep(i)+1)),&
          &3*domlen(pbig_recep(i)+1),&
-         &MPI_RPREC,pbig_recep(i),tag,COMM_TINKER,&
+         &MPI_RPREC,pbig_recep(i),tag,get_domain_comm(),&
          &reqsend(i),ierr)
 !$acc end host_data
    end do
@@ -2160,6 +2166,7 @@ module subroutine commforceststgrad(detot)
    deallocate (buffers)
 end
    subroutine info_Forces_one( array,name )
+      use parallel, only: get_domain_comm
       implicit none
       character(*),intent(in) :: name
       real(r_p),intent(inout):: array(:,:)
@@ -2187,18 +2194,18 @@ end
 !$acc end data
       if (rank.eq.0) then
          call MPI_REDUCE(MPI_IN_PLACE,mini,1,MPI_RPREC,&
-            &MPI_MIN,0,COMM_TINKER,i)
+            &MPI_MIN,0,get_domain_comm(),i)
          call MPI_REDUCE(MPI_IN_PLACE,maxi,1,MPI_RPREC,&
-            &MPI_MAX,0,COMM_TINKER,i)
+            &MPI_MAX,0,get_domain_comm(),i)
          call MPI_REDUCE(MPI_IN_PLACE,norm_l1,1,MPI_RPREC,&
-            &MPI_SUM,0,COMM_TINKER,i)
+            &MPI_SUM,0,get_domain_comm(),i)
       else
          call MPI_REDUCE(mini,mini,1,MPI_RPREC,&
-            &MPI_MIN,0,COMM_TINKER,i)
+            &MPI_MIN,0,get_domain_comm(),i)
          call MPI_REDUCE(maxi,maxi,1,MPI_RPREC,&
-            &MPI_MAX,0,COMM_TINKER,i)
+            &MPI_MAX,0,get_domain_comm(),i)
          call MPI_REDUCE(norm_l1,norm_l1,1,MPI_RPREC,&
-            &MPI_SUM,0,COMM_TINKER,i)
+            &MPI_SUM,0,get_domain_comm(),i)
       end if
 
 30    format(a7,a3,3F20.8)
@@ -2254,6 +2261,7 @@ end
 
    ! Debug routine on Forces
    module subroutine info_forces(rule)
+      use parallel, only: get_domain_comm
       !use atoms
       implicit none
       integer,intent(in) :: rule
@@ -2469,18 +2477,18 @@ end
       if (nproc.gt.1) then
          if (rank.eq.0) then
             call MPI_REDUCE(MPI_IN_PLACE,mmx,nf,MPI_RPREC,&
-               &MPI_MIN,0,COMM_TINKER,i)
+               &MPI_MIN,0,get_domain_comm(),i)
             call MPI_REDUCE(MPI_IN_PLACE,mmx(nf+1),nf,MPI_RPREC,&
-               &MPI_MAX,0,COMM_TINKER,i)
+               &MPI_MAX,0,get_domain_comm(),i)
             call MPI_REDUCE(MPI_IN_PLACE,mmx(2*nf+1),nf,MPI_RPREC,&
-               &MPI_SUM,0,COMM_TINKER,i)
+               &MPI_SUM,0,get_domain_comm(),i)
          else
             call MPI_REDUCE(mmx,mmx,nf,MPI_RPREC,&
-               &MPI_MIN,0,COMM_TINKER,i)
+               &MPI_MIN,0,get_domain_comm(),i)
             call MPI_REDUCE(mmx(nf+1),mmx(nf+1),nf,MPI_RPREC,&
-               &MPI_MAX,0,COMM_TINKER,i)
+               &MPI_MAX,0,get_domain_comm(),i)
             call MPI_REDUCE(mmx(2*nf+1),mmx(2*nf+1),nf,MPI_RPREC,&
-               &MPI_SUM,0,COMM_TINKER,i)
+               &MPI_SUM,0,get_domain_comm(),i)
          end if
       end if
 
@@ -2598,6 +2606,7 @@ end
    end subroutine
 
    subroutine minmaxone1( mi,ma,on,vector,sz,name )
+      use parallel, only: get_domain_comm
       implicit none
       integer sz
       integer,parameter::lgli=10
@@ -2638,11 +2647,11 @@ end
             end do
             do i = 1, nproc
                if (rank.eq.i-1) abortall=abort
-               call MPI_BCAST(abortall,1,MPI_LOGICAL,i-1,COMM_TINKER,i1)
+               call MPI_BCAST(abortall,1,MPI_LOGICAL,i-1,get_domain_comm(),i1)
                if (abortall) then
                   abort = .true.
                   call MPI_AllGather(MPI_IN_PLACE,lgli,MPI_DATATYPE_NULL&
-                     &,gli,lgli,MPI_INT,COMM_TINKER,i1)
+                     &,gli,lgli,MPI_INT,get_domain_comm(),i1)
                   exit
                end if
             end do

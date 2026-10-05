@@ -20,9 +20,9 @@
 #include "tinker_cudart.h"
 
 module epolar1cu
-   use utilcu, only: all_lanes
    use reduction,only: RED_BUFF_SIZE
    use tinTypes ,only: real3,real6,mdyn3_r,rpole_elt
+   integer,parameter :: AllLanes=Z'ffffffff'
    integer,parameter :: BLOCK_DIM=128,BLOCK_SIZE=32,WARP_SIZE=32,WARP_SHFT=5
    integer,parameter :: maxBlock=ishft(1,16)
    public :: BLOCK_DIM,BLOCK_SIZE,WARP_SIZE,WARP_SHFT,maxBlock
@@ -153,7 +153,7 @@ contains
       dpuk(threadIdx%x)%yy = uinp ( 2, kpole)
       dpuk(threadIdx%x)%zz = uinp ( 3, kpole)
 
-      call syncwarp(ALL_LANES)
+      call syncwarp(AllLanes)
       frc_i%x = 0;
       frc_i%y = 0;
       frc_i%z = 0;
@@ -255,7 +255,7 @@ contains
       rstat = atomicAdd( trq(1,iploc),trqi%x )
       rstat = atomicAdd( trq(2,iploc),trqi%y )
       rstat = atomicAdd( trq(3,iploc),trqi%z )
-      call syncwarp(ALL_LANES)
+      call syncwarp(AllLanes)
       rstat = atomicAdd( dep(1,kbis), frc_k(threadIdx%x)%x )
       rstat = atomicAdd( dep(2,kbis), frc_k(threadIdx%x)%y )
       rstat = atomicAdd( dep(3,kbis), frc_k(threadIdx%x)%z )
@@ -404,7 +404,7 @@ do ii = iwarp, npolelocnlb_pair, nwarp
    !   igb = grplist(kglob(threadIdx%x))
    !endif
 
-   call syncwarp(ALL_LANES)
+   call syncwarp(AllLanes)
    frc_i%x = 0;
    frc_i%y = 0;
    frc_i%z = 0;
@@ -503,7 +503,7 @@ do ii = iwarp, npolelocnlb_pair, nwarp
    rstat = atomicAdd( trq(1,iploc),trqi%x )
    rstat = atomicAdd( trq(2,iploc),trqi%y )
    rstat = atomicAdd( trq(3,iploc),trqi%z )
-   call syncwarp(ALL_LANES)
+   call syncwarp(AllLanes)
    rstat = atomicAdd( dep(1,kbis), frc_k(threadIdx%x)%x )
    rstat = atomicAdd( dep(2,kbis), frc_k(threadIdx%x)%y )
    rstat = atomicAdd( dep(3,kbis), frc_k(threadIdx%x)%z )

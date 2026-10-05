@@ -16,8 +16,9 @@
 
 submodule(tinMemory) subMemory
    use atoms     ,only: natoms=>n
-   use domdec    ,only: rank,hostrank,hostcomm,nproc&
+   use domdec    ,only: rank,hostrank,nproc&
                  ,nbloc,nrec_recep
+   use parallel, only: get_host_comm
    use fft       ,only: n1mpimax,n2mpimax,n3mpimax
    use,intrinsic:: iso_c_binding
    use mpi
@@ -327,7 +328,7 @@ contains
       if (debMem.ne.0.and.hostrank.eq.0) print 14,request_size,rank
       if (btest(configure,memhost)) then
          CALL MPI_Win_allocate_shared(windowsize, disp_unit,&
-            &MPI_INFO_NULL, hostcomm, baseptr, winarray, ierr)
+            &MPI_INFO_NULL, get_host_comm(), baseptr, winarray, ierr)
 
          if (hostrank.ne.0) then
             CALL MPI_Win_shared_query(winarray, 0, windowsize,&
@@ -458,7 +459,7 @@ contains
          &,request_size,rank
       if (btest(configure,memhost)) then
          CALL MPI_Win_allocate_shared(windowsize, disp_unit,&
-            &MPI_INFO_NULL, hostcomm, baseptr, winarray, ierr)
+            &MPI_INFO_NULL, get_host_comm(), baseptr, winarray, ierr)
 
          if (hostrank.ne.0) then
             CALL MPI_Win_shared_query(winarray, 0, windowsize,&
@@ -557,7 +558,7 @@ contains
 !
       if (btest(configure,memhost)) then
          CALL MPI_Win_allocate_shared(windowsize, disp_unit,&
-            &MPI_INFO_NULL, hostcomm, baseptr, winarray, ierr)
+            &MPI_INFO_NULL, get_host_comm(), baseptr, winarray, ierr)
 
          if (hostrank.ne.0) then
             CALL MPI_Win_shared_query(winarray, 0, windowsize,&
@@ -657,7 +658,7 @@ contains
 !
       if (btest(configure,memhost)) then
          CALL MPI_Win_allocate_shared(windowsize, disp_unit,&
-            &MPI_INFO_NULL, hostcomm, baseptr, winarray, ierr)
+            &MPI_INFO_NULL, get_host_comm(), baseptr, winarray, ierr)
 
          if (hostrank.ne.0) then
             CALL MPI_Win_shared_query(winarray, 0, windowsize,&
@@ -783,7 +784,7 @@ contains
 !
       if (btest(configure,memhost)) then
          CALL MPI_Win_allocate_shared(windowsize, disp_unit,&
-            &MPI_INFO_NULL, hostcomm, baseptr, winarray, ierr)
+            &MPI_INFO_NULL, get_host_comm(), baseptr, winarray, ierr)
 
          if (hostrank.ne.0) then
             CALL MPI_Win_shared_query(winarray, 0, windowsize,&
@@ -904,7 +905,7 @@ contains
 !
       if (btest(configure,memhost)) then
          CALL MPI_Win_allocate_shared(windowsize, disp_unit,&
-            &MPI_INFO_NULL, hostcomm, baseptr, winarray, ierr)
+            &MPI_INFO_NULL, get_host_comm(), baseptr, winarray, ierr)
 
          if (hostrank.ne.0) then
             CALL MPI_Win_shared_query(winarray, 0, windowsize,&
@@ -1031,7 +1032,7 @@ contains
 !
       if (btest(configure,memhost)) then
          CALL MPI_Win_allocate_shared(windowsize, disp_unit,&
-            &MPI_INFO_NULL, hostcomm, baseptr, winarray, ierr)
+            &MPI_INFO_NULL, get_host_comm(), baseptr, winarray, ierr)
 
          if (hostrank.ne.0) then
             CALL MPI_Win_shared_query(winarray, 0, windowsize,&
@@ -1160,7 +1161,7 @@ contains
 !
       if (btest(configure,memhost)) then
          CALL MPI_Win_allocate_shared(windowsize, disp_unit,&
-            &MPI_INFO_NULL, hostcomm, baseptr, winarray, ierr)
+            &MPI_INFO_NULL, get_host_comm(), baseptr, winarray, ierr)
 
          if (hostrank.ne.0) then
             CALL MPI_Win_shared_query(winarray, 0, windowsize,&
@@ -1295,7 +1296,7 @@ contains
 !
       if (btest(configure,memhost)) then
          CALL MPI_Win_allocate_shared(windowsize, disp_unit,&
-            &MPI_INFO_NULL, hostcomm, baseptr, winarray, ierr)
+            &MPI_INFO_NULL, get_host_comm(), baseptr, winarray, ierr)
 
          if (hostrank.ne.0) then
             CALL MPI_Win_shared_query(winarray, 0, windowsize,&
@@ -1435,7 +1436,7 @@ contains
 !
       if (btest(configure,memhost)) then
          CALL MPI_Win_allocate_shared(windowsize, disp_unit,&
-            &MPI_INFO_NULL, hostcomm, baseptr, winarray, ierr)
+            &MPI_INFO_NULL, get_host_comm(), baseptr, winarray, ierr)
 
          if (hostrank.ne.0) then
             CALL MPI_Win_shared_query(winarray, 0, windowsize,&
@@ -1744,12 +1745,12 @@ module subroutine print_memory_usage()
 #endif
 
    if (rank.eq.0) write(0,13)
-   call mpi_Comm_size(hostcomm,hsize,ierr)
-   call mpi_barrier(hostcomm,ierr)
+   call mpi_Comm_size(get_host_comm(),hsize,ierr)
+   call mpi_barrier(get_host_comm(),ierr)
    do i = 0,hsize-1
       if (rank.eq.i)&
          &write(0,14) rank,sm,pm,tm,sdm+ddm,pdm,odm,tdm,wor,diff
-      call mpi_barrier(hostcomm,ierr)
+      call mpi_barrier(get_host_comm(),ierr)
    end do
    cin = cin+1
 
@@ -1836,7 +1837,7 @@ module subroutine nvshmem_int_check( sol, dat, n, npe, config )
 !$acc exit data delete(sol(1:n))
    end if
 
-   call mpi_barrier(hostcomm,i)
+   call mpi_barrier(get_host_comm(),i)
 32 format('I Pe',I4," find",I8," diff(s) [int] ",&
       &" over",I8," elements")
    write(*,32) mype,diff,npe
@@ -1886,7 +1887,7 @@ module subroutine nvshmem_real_check( sol, dat, n, npe, config )
 !$acc exit data delete(sol(1:n))
    end if
 
-   call mpi_barrier(hostcomm,i)
+   call mpi_barrier(get_host_comm(),i)
 32 format('I Pe',I4," find",I8," diff(s) [real] ",&
       &" over",I8," elements")
    write(*,32) mype,diff,npe

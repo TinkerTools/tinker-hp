@@ -22,6 +22,7 @@
 !
 #include "tinker_macro.h"
 subroutine katom
+   use parallel, only: get_host_comm
    use atmtyp
    use atoms
    use couple
@@ -136,7 +137,7 @@ subroutine katom
          heavy = .true.
       end if
    end do
-   call MPI_BARRIER(hostcomm,ierr)
+   call MPI_BARRIER(get_host_comm(),ierr)
    if (heavy.and.hostrank.eq.0) then
       hmax = 4.0_re_p
       do i = 1, n
@@ -183,7 +184,7 @@ subroutine katom
          end if
       end do
    end if
-   call MPI_BARRIER(hostcomm,ierr)
+   call MPI_BARRIER(get_host_comm(),ierr)
 !
 !     process keywords containing atom types for specific atoms
 !
@@ -273,7 +274,7 @@ subroutine katom
 120      format (' Valence',7x,i5,'-',a3,8x,i5,10x,i5,5x,i5)
       end if
    end do
-   call MPI_BARRIER(hostcomm,ierr)
+   call MPI_BARRIER(get_host_comm(),ierr)
    ! Update data on device
    call update_device_katom
    return
@@ -294,6 +295,7 @@ end subroutine
 !     parameter arrays
 !
 subroutine alloc_shared_katom
+   use parallel, only: get_host_comm
    USE, INTRINSIC :: ISO_C_BINDING, ONLY : C_PTR, C_F_POINTER
    use sizes
    use atmtyp
@@ -334,7 +336,7 @@ subroutine alloc_shared_katom
 !     allocation
 !
    call MPI_Win_allocate_shared(windowsize, disp_unit, MPI_INFO_NULL,&
-      &hostcomm, baseptr, winstory, ierr)
+      &get_host_comm(), baseptr, winstory, ierr)
    if (hostrank /= 0) then
       call MPI_Win_shared_query(winstory, 0, windowsize, disp_unit,&
          &baseptr, ierr)

@@ -22,6 +22,7 @@ submodule(plumed) PlumedImp
    use timestat
    use inform
    use domdec
+   use parallel, only: get_domain_comm, get_root_comm
    use replicas
    use virial
    implicit none
@@ -60,10 +61,10 @@ contains
       call plumed_f_gcmd("setMDTimeUnits"//char(0),timeUnits)
       if (use_reps) then
           call plumed_f_gcmd("GREX setMPIFIntercomm"//char(0),&
-          &COMM_ROOT2ROOT)
+          &get_root_comm())
         call plumed_f_gcmd("GREX init"//char(0),0)
       end if
-      call plumed_f_gcmd("setMPIFComm"//char(0),COMM_TINKER)
+      call plumed_f_gcmd("setMPIFComm"//char(0),get_domain_comm())
       call plumed_f_gcmd("setPlumedDat"//char(0),trim(pl_input)//&
          &char(0))
       call plumed_f_gcmd("setLogFile"//char(0),trim(pl_output)//char(0))

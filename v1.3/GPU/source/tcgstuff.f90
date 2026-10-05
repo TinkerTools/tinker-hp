@@ -71,6 +71,7 @@ subroutine tmatxbrecipsave(mu,murec,nrhs,dipfield,dipfieldbis,&
 !     value of the induced dipoles. Saves the potential and subsequent
 !     derivatives in a fphi(20,n) vector.
 !
+   use parallel, only: get_domain_comm, get_recip_comm
    use atmlst
    use boxes
    use domdec
@@ -103,11 +104,11 @@ subroutine tmatxbrecipsave(mu,murec,nrhs,dipfield,dipfieldbis,&
 !
    if (use_pmecore) then
       nprocloc = nrec
-      commloc  = comm_rec
+      commloc  = get_recip_comm()
       rankloc  = rank_bis
    else
       nprocloc = nproc
-      commloc  = COMM_TINKER
+      commloc  = get_domain_comm()
       rankloc  = rank
    end if
 
@@ -295,6 +296,7 @@ end
 ! fphivec.
 !===================================================
 subroutine fftthatplz2(vec,vecbis,fphivec)
+   use parallel, only: get_domain_comm, get_recip_comm
    use atmlst
    use bound
    use boxes
@@ -327,11 +329,11 @@ subroutine fftthatplz2(vec,vecbis,fphivec)
 
    if (use_pmecore) then
       nprocloc = nrec
-      commloc  = comm_rec
+      commloc  = get_recip_comm()
       rankloc  = rank_bis
    else
       nprocloc = nproc
-      commloc  = COMM_TINKER
+      commloc  = get_domain_comm()
       rankloc  = rank
    end if
 
@@ -499,6 +501,7 @@ end
 ! fphivec.
 !===================================================
 subroutine fftthatplz(vec,vecbis,fphivec)
+   use parallel, only: get_domain_comm, get_recip_comm
    use atmlst
    use bound
    use boxes
@@ -531,11 +534,11 @@ subroutine fftthatplz(vec,vecbis,fphivec)
 
    if (use_pmecore) then
       nprocloc = nrec
-      commloc  = comm_rec
+      commloc  = get_recip_comm()
       rankloc  = rank_bis
    else
       nprocloc = nproc
-      commloc  = COMM_TINKER
+      commloc  = get_domain_comm()
       rankloc  = rank
    end if
 

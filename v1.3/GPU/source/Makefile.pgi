@@ -507,7 +507,6 @@ F_SRCS   += version.f90
 ##   Device  Fortran
 ##   ---------------
 DEV_F_SRCS   = MOD_cell.cu.f90
-DEV_F_SRCS  += MOD_util.cu.f90
 DEV_F_SRCS  += echarge.cu.f90
 DEV_F_SRCS  += echglj.cu.f90
 DEV_F_SRCS  += echgtrn.cu.f90

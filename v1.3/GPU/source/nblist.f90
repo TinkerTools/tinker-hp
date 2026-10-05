@@ -557,6 +557,7 @@ end
 !
 !
 subroutine initmpipme
+   use parallel, only: get_domain_comm
    use atmlst
    use domdec
    use mpole
@@ -627,14 +628,14 @@ subroutine initmpipme
       if (precdir_send1(i).ne.rank) then
          tag = nproc*rank + precdir_send1(i) + 1
          call MPI_IRECV(buflen1(precdir_send1(i)+1),1,MPI_INT,&
-            &precdir_send1(i),tag,COMM_TINKER,req(tag),ierr)
+            &precdir_send1(i),tag,get_domain_comm(),req(tag),ierr)
       end if
    end do
    do i = 1, nrecdir_recep1
       if (precdir_recep1(i).ne.rank) then
          tag = nproc*precdir_recep1(i) + rank + 1
          call MPI_ISEND(buflen2(precdir_recep1(i)+1),1,MPI_INT,&
-            &precdir_recep1(i),tag,COMM_TINKER,req(tag),ierr)
+            &precdir_recep1(i),tag,get_domain_comm(),req(tag),ierr)
       end if
    end do
 !
@@ -670,7 +671,7 @@ subroutine initmpipme
          tag = nproc*rank + precdir_send1(i) + 1
          call MPI_IRECV(buf1(bufbeg1(precdir_send1(i)+1)),&
             &buflen1(precdir_send1(i)+1),&
-            &MPI_INT,precdir_send1(i),tag,COMM_TINKER,req2(tag),ierr)
+            &MPI_INT,precdir_send1(i),tag,get_domain_comm(),req2(tag),ierr)
       end if
    end do
    do i = 1, nrecdir_recep1
@@ -678,7 +679,7 @@ subroutine initmpipme
          tag = nproc*precdir_recep1(i) + rank + 1
          call MPI_ISEND(buf2(bufbeg2(precdir_recep1(i)+1)),&
             &buflen2(precdir_recep1(i)+1),MPI_INT,precdir_recep1(i),tag,&
-            &COMM_TINKER,req2(tag),ierr)
+            &get_domain_comm(),req2(tag),ierr)
       end if
    end do
 !

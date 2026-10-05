@@ -20,6 +20,7 @@ program dynamic
    use mpi
    use config, only: raw_cli_t, capture_raw_cli
    use domdec, only: rank
+   use parallel, only: get_domain_comm
    use iounit, only: iout
    use mdstate, only: track_mds
    use status, only: status_t, failed
@@ -55,6 +56,7 @@ subroutine dynamic_bis(raw_cli,status_value)
    use bound
    use config, only: raw_cli_t, config_t, parse_dynamic_cli
    use domdec
+   use parallel, only: get_domain_comm
    use keys
    use inform
    use iounit
@@ -232,10 +234,10 @@ subroutine dynamic_bis(raw_cli,status_value)
          time0 = time1
          if (rank.eq.0) then
             call MPI_REDUCE(MPI_IN_PLACE,timestep,1,MPI_REAL8,MPI_SUM,&
-               &0,COMM_TINKER,ierr)
+               &0,get_domain_comm(),ierr)
          else
             call MPI_REDUCE(timestep,timestep,1,MPI_REAL8,MPI_SUM,0,&
-               &COMM_TINKER,ierr)
+               &get_domain_comm(),ierr)
          end if
          if (verbose.and.rank.eq.0) then
             write(6,1000) iprint, (timestep)/nproc

@@ -576,6 +576,7 @@ module inducepcg_mod
    !real(t_p):: alphacg1=0.0,alphacg2=0.0
 end module
 subroutine inducepcg_pme2gpu(matvec,nrhs,precnd,ef,mu,murec)
+   use parallel, only: get_domain_comm
    use atmlst
    use domdec
    use ewald
@@ -805,7 +806,7 @@ subroutine inducepcg_pme2gpu(matvec,nrhs,precnd,ef,mu,murec)
 !$acc wait(reciprocal_work%queue)
 !$acc host_data use_device(gbuff)
       call MPI_ALLREDUCE(MPI_IN_PLACE,gbuff,nrhs,MPI_TPREC&
-         &,MPI_SUM,COMM_TINKER,ierr)
+         &,MPI_SUM,get_domain_comm(),ierr)
 !$acc end host_data
 !$acc serial async present(ggold1,ggold2,gbuff)
       ggold1 = gbuff(1)
@@ -890,9 +891,9 @@ subroutine inducepcg_pme2gpu(matvec,nrhs,precnd,ef,mu,murec)
 !$acc host_data use_device(gg1,gg2)
 !$acc wait(reciprocal_work%queue)
          call MPI_ALLREDUCE(MPI_IN_PLACE,gg1,1,MPI_RPREC,MPI_SUM,&
-            &COMM_TINKER,ierr)
+            &get_domain_comm(),ierr)
          call MPI_ALLREDUCE(MPI_IN_PLACE,gg2,1,MPI_RPREC,MPI_SUM,&
-            &COMM_TINKER,ierr)
+            &get_domain_comm(),ierr)
 !$acc end host_data
       end if
 
@@ -983,7 +984,7 @@ subroutine inducepcg_pme2gpu(matvec,nrhs,precnd,ef,mu,murec)
 !$acc wait(reciprocal_work%queue)
 !$acc host_data use_device(gbuff1)
          call MPI_ALLREDUCE(MPI_IN_PLACE,gbuff1,2*nrhs,MPI_RPREC,&
-            &MPI_SUM,COMM_TINKER,ierr)
+            &MPI_SUM,get_domain_comm(),ierr)
 !$acc end host_data
          !call MPI_WAIT(req3,status,ierr)
          !call MPI_WAIT(req4,status,ierr)
@@ -1107,6 +1108,7 @@ subroutine inducepcg_pme2gpu(matvec,nrhs,precnd,ef,mu,murec)
 end
 !
 subroutine inducejac_pme2gpu(matvec,nrhs,dodiis,ef,mu,murec)
+   use parallel, only: get_domain_comm
    use atoms
    use atmlst
    use domdec
@@ -1256,7 +1258,7 @@ subroutine inducejac_pme2gpu(matvec,nrhs,dodiis,ef,mu,murec)
       end do
 !
       call MPI_IALLREDUCE(MPI_IN_PLACE,rnorm(1),nrhs,MPI_TPREC,&
-         &MPI_SUM,COMM_TINKER,reqnorm,ierr)
+         &MPI_SUM,get_domain_comm(),reqnorm,ierr)
       if (dodiis) then
          ind = 0
          do i = 1, npoleloc
@@ -1272,7 +1274,7 @@ subroutine inducejac_pme2gpu(matvec,nrhs,dodiis,ef,mu,murec)
 !         Compute Pulay's Matrix and extrapolate
 !
          call diis(ndismx,3*nrhs*npoleloc,xdiis,ediis,&
-            &bmat,nmat,reqdiis,COMM_TINKER)
+            &bmat,nmat,reqdiis,get_domain_comm())
 !
          do i = 1, 2*nmat-3
             call MPI_WAIT(reqdiis(i),status,ierr)
@@ -1716,7 +1718,8 @@ contains
 end module
 
 subroutine load_shift_attr(theta,sigma,k)
-   use domdec ,only: rank,nproc,COMM_TINKER
+   use parallel, only: get_domain_comm
+   use domdec ,only: rank,nproc
    use step_cg
    use sizes  ,only: tinkerdebug
    use mpi
@@ -1740,7 +1743,7 @@ subroutine load_shift_attr(theta,sigma,k)
          write(0,'(A,I0,$)')'theta ',rank
          write(0,'(F8.4,$)')(sh_the(j),j=0,cgstep_max)
          write(0,*) ''
-         call MPI_BARRIER(COMM_TINKER,j)
+         call MPI_BARRIER(get_domain_comm(),j)
       end do
    end if
    !print*,'sigma',(real(sh_sig(i),4),i=0,cgstep_max)
@@ -1749,6 +1752,7 @@ end subroutine
 subroutine inducestepcg_pme2gpu(matvec,nrhs,precnd,ef,mu,murec)
    use atmlst
    use domdec
+   use parallel, only: get_domain_comm
    use ewald
    use iounit
    use inform    ,only: deb_Path,abort,minmaxone
@@ -2163,7 +2167,7 @@ subroutine inducestepcg_pme2gpu(matvec,nrhs,precnd,ef,mu,murec)
 !$acc host_data use_device(stepMatVr)
 !$acc wait(reciprocal_work%queue)
             call MPI_ALLREDUCE(MPI_IN_PLACE,stepMatVr,nrhs*(s**2)&
-               &,MPI_RPREC,MPI_SUM,COMM_TINKER,ierr)
+               &,MPI_RPREC,MPI_SUM,get_domain_comm(),ierr)
 !$acc end host_data
          end if
 
@@ -2261,7 +2265,7 @@ subroutine inducestepcg_pme2gpu(matvec,nrhs,precnd,ef,mu,murec)
 !$acc host_data use_device(stepMatVr)
 !$acc wait(reciprocal_work%queue)
          call MPI_ALLREDUCE(MPI_IN_PLACE,stepMatVr(nrhs*s**2+1)&
-            &,nrhs*s*(s+1),MPI_RPREC,MPI_SUM,COMM_TINKER,ierr)
+            &,nrhs*s*(s+1),MPI_RPREC,MPI_SUM,get_domain_comm(),ierr)
 !$acc end host_data
       end if
 
@@ -2403,7 +2407,7 @@ subroutine inducestepcg_pme2gpu(matvec,nrhs,precnd,ef,mu,murec)
       ! ----------  Compute norm & Convergence verification  ----------
       if (nproc.gt.1) then
          call MPI_IALLREDUCE(MPI_IN_PLACE,ggnew,nrhs,MPI_RPREC&
-            &,MPI_SUM,COMM_TINKER,req3,ierr)
+            &,MPI_SUM,get_domain_comm(),req3,ierr)
          call MPI_WAIT(req3,status,ierr)
          ggnew1=ggnew(1); ggnew2=ggnew(2)
       end if

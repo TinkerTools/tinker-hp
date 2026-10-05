@@ -21,9 +21,9 @@ M_subroutine dampewald_inl&
    &(rorder,r,r2,ewald,scale,dmpe)
 use math ,only: sqrtpi
 #ifdef TINKER_CUF
-use utilcu ,only: f_erfc
+use libm, only: f_erfc=>TINKERHP_LIBM_ERFC
 #  if  TINKER_SINGLE_PREC + TINKER_MIXED_PREC
-use utilcu ,only:  f_exp
+use libm, only: f_exp=>TINKERHP_LIBM_EXP
 #  endif
 #endif
 !$acc routine
@@ -79,9 +79,9 @@ end
 M_subroutine dampthole_inl&
    &(rorder,r,damp,pgamma,use_tholed,dmpik)
 #ifdef TINKER_CUF
-use utilcu ,only: f_erfc
+use libm, only: f_erfc=>TINKERHP_LIBM_ERFC
 #  if  TINKER_SINGLE_PREC + TINKER_MIXED_PREC
-use utilcu ,only: f_exp
+use libm, only: f_exp=>TINKERHP_LIBM_EXP
 #  endif
 #endif
 !$acc routine
@@ -163,9 +163,9 @@ end
 M_subroutine dampthole2_inl&
    &(damp,pgamma,rorder,r,dmpik)
 #ifdef TINKER_CUF
-use utilcu  ,only: f_abs
+use libm, only: f_abs=>TINKERHP_LIBM_ABS
 #  if TINKER_SINGLE_PREC + TINKER_MIXED_PREC
-use utilcu  ,only: f_sqrt,f_exp
+use libm, only: f_sqrt=>TINKERHP_LIBM_SQRT,f_exp=>TINKERHP_LIBM_EXP
 #  endif
 #endif
 !$acc routine
@@ -235,9 +235,9 @@ M_subroutine damppole_inl&
    &(r,rorder,pentyp,alphai,alphak,dmpi,dmpk,dmpik)
 use mplpot  ,only: PT_GORDON1,PT_GORDON2
 #ifdef TINKER_CUF
-use utilcu ,only: f_erfc, f_abs
+use libm, only: f_erfc=>TINKERHP_LIBM_ERFC,f_abs=>TINKERHP_LIBM_ABS
 #  if  TINKER_SINGLE_PREC + TINKER_MIXED_PREC
-use utilcu ,only: f_exp
+use libm, only: f_exp=>TINKERHP_LIBM_EXP
 #  endif
 #endif
 !$acc routine
@@ -498,9 +498,9 @@ M_subroutine dampdir_inl&
    &(pentyp,r,alphai,alphak,dmpi,dmpk)
 use mplpot ,only: PT_GORDON1,PT_GORDON2
 #ifdef TINKER_CUF
-use utilcu  ,only: f_abs
+use libm, only: f_abs=>TINKERHP_LIBM_ABS
 #  if TINKER_SINGLE_PREC + TINKER_MIXED_PREC
-use utilcu ,only: f_sqrt,f_exp
+use libm, only: f_sqrt=>TINKERHP_LIBM_SQRT,f_exp=>TINKERHP_LIBM_EXP
 #  endif
 #endif
 !$acc routine
@@ -593,9 +593,9 @@ M_subroutine dampmut_inl&
    &(r,alphai,alphak,pentyp,dmpik)
 use mplpot  ,only: PT_GORDON1,PT_GORDON2
 #ifdef TINKER_CUF
-use utilcu  ,only: f_abs
+use libm, only: f_abs=>TINKERHP_LIBM_ABS
 #  if TINKER_SINGLE_PREC + TINKER_MIXED_PREC
-use utilcu  ,only: f_sqrt,f_exp
+use libm, only: f_sqrt=>TINKERHP_LIBM_SQRT,f_exp=>TINKERHP_LIBM_EXP
 #  endif
 #endif
 !$acc routine
@@ -699,9 +699,9 @@ M_subroutine damprep_inl&
    &(r,r2,rr1,rr3,rr5,rr7,rr9,rr11&
    &,rorder,dmpi,dmpk,dmpik)
 #ifdef TINKER_CUF
-use utilcu  ,only: f_abs
+use libm, only: f_abs=>TINKERHP_LIBM_ABS
 #  if TINKER_SINGLE_PREC + TINKER_MIXED_PREC
-use utilcu  ,only:  f_sqrt,f_exp
+use libm, only: f_sqrt=>TINKERHP_LIBM_SQRT,f_exp=>TINKERHP_LIBM_EXP
 #  endif
 #endif
 !$acc routine

@@ -9,10 +9,11 @@ module nblistcu
    use cellcu    ,only: xcell,ycell,zcell,xcell2,ycell2,zcell2,mincell2&
                  ,monoclinic,triclinic
    use tinheader ,only: ti_p
-   use utilcu    ,only: all_lanes,f_sqrt,f_abs
+   use libm      ,only: f_sqrt=>TINKERHP_LIBM_SQRT,f_abs=>TINKERHP_LIBM_ABS
    integer,parameter :: BLOCK_SIZE=32
    integer,parameter :: WARP_SIZE=32
    integer,parameter :: WARP_SHFT=5
+   integer,parameter :: AllLanes=Z'ffffffff'
    real(t_p),parameter :: inf=4*huge(0.0_ti_p)
    integer,parameter::REORDER_BSIZE=64
    integer,parameter::grp=2
@@ -336,9 +337,9 @@ contains
                   !rtb   = ltb+1
                   oldbl = atomicexch(trackb(ltb+1),newbl+1)   ! Mark reserved block
                   if (oldbl.ne.0) print*, 'Tag Issue 1',oldbl
-                  oldbl = atomicand(trackb(ltb),ALL_LANES)
+                  oldbl = atomicand(trackb(ltb),AllLanes)
                   do while( oldbl.eq.0 )
-                     oldbl = atomicand(trackb(ltb),ALL_LANES)
+                     oldbl = atomicand(trackb(ltb),AllLanes)
                   end do
                   oldbl = oldbl-1
                end if
@@ -351,9 +352,9 @@ contains
             else
                ! Get previous block
                ltb   = sztb*(iblock-1)+d_onb +1
-               oldbl = atomicand(trackb(ltb),ALL_LANES)
+               oldbl = atomicand(trackb(ltb),AllLanes)
                do while( oldbl.eq.0 )
-                  oldbl = atomicand(trackb(ltb),ALL_LANES)
+                  oldbl = atomicand(trackb(ltb),AllLanes)
                end do
                oldbl = oldbl-1
                newbl = oldbl
@@ -596,9 +597,9 @@ contains
                   !rtb   = ltb+1
                   oldbl = atomicexch(trackb(oft+ltb+1),newbl+1)   ! Mark reserved block
                   if (oldbl.ne.0) print*,'Tag Issue 1',ilane,oft,oldbl
-                  oldbl = atomicand(trackb(oft+ltb),ALL_LANES)
+                  oldbl = atomicand(trackb(oft+ltb),AllLanes)
                   do while( oldbl.eq.0 )
-                     oldbl = atomicand(trackb(oft+ltb),ALL_LANES)
+                     oldbl = atomicand(trackb(oft+ltb),AllLanes)
                   end do
                   oldbl = oldbl-1
                end if
@@ -611,9 +612,9 @@ contains
             else
                ! Get previous block
                ltb   = sztb*(iblock-1)+d_onb +1
-               oldbl = atomicand(trackb(oft+ltb),ALL_LANES)
+               oldbl = atomicand(trackb(oft+ltb),AllLanes)
                do while( oldbl.eq.0 )
-                  oldbl = atomicand(trackb(oft+ltb),ALL_LANES)
+                  oldbl = atomicand(trackb(oft+ltb),AllLanes)
                end do
                oldbl = oldbl-1
                newbl = oldbl
@@ -740,7 +741,7 @@ contains
                   nrbits = nrbits + 1
                end if
             end if
-            if (accept.EQ.all_lanes) then
+            if (accept.EQ.AllLanes) then
                total  = total +1
             end if
             total1 = total1+__popc(accept)
@@ -989,7 +990,7 @@ contains
                   nrbits = nrbits + 1
                end if
             end if
-            if (accept.EQ.all_lanes) then
+            if (accept.EQ.AllLanes) then
                total  = total +1
             end if
             total1 = total1+__popc(accept)
@@ -1625,7 +1626,7 @@ contains
          if (REORDER_BSIZE>warpsize) call syncthreads
          if (iblock.eq.ib) then
             if (ilane.eq.2) accloc(bwarp) = acctot
-            call syncwarp(all_lanes)
+            call syncwarp(AllLanes)
             !Where to write reordered kdx
             if (accloc(bwarp).eq.blockDim%x) then
                iwrite = ithread

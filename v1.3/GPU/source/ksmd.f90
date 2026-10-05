@@ -32,6 +32,7 @@ subroutine ksmd(init)
    use bond
    use deriv
    use domdec
+   use parallel, only: get_domain_comm
    use energi
    use keys
    use iounit
@@ -822,7 +823,7 @@ subroutine ksmd(init)
          do i = 1, nproc-1
             tagmpi = i + 1
             call MPI_IRECV(smdproc(i),1,MPI_LOGICAL,i,tagmpi,&
-               &COMM_TINKER,reqrec(i),ierr)
+               &get_domain_comm(),reqrec(i),ierr)
          end do
          do i = 1, nproc-1
             tagmpi = i + 1
@@ -840,7 +841,7 @@ subroutine ksmd(init)
       else
          tagmpi = rank+1
          call MPI_ISEND((smdprocprint.eq.rank),1,MPI_LOGICAL,0,tagmpi,&
-            &COMM_TINKER,reqsend,ierr)
+            &get_domain_comm(),reqsend,ierr)
          call MPI_WAIT(reqsend,status,ierr)
       end if
    end if ! LOOP1

@@ -16,6 +16,7 @@
 !
 #include "tinker_macro.h"
 subroutine molecule(init)
+   use parallel, only: get_host_comm
    use sizes
    use atmlst
    use atmtyp
@@ -153,8 +154,8 @@ subroutine molecule(init)
          end do
          totmass = totmass + molmass(i)
       end do
-20    call MPI_barrier(hostcomm,ierr)
-      call MPI_BCAST(nmol,1,MPI_INT,0,hostcomm,ierr)
+20    call MPI_barrier(get_host_comm(),ierr)
+      call MPI_BCAST(nmol,1,MPI_INT,0,get_host_comm(),ierr)
       call update_device_mol
       if (nproc.gt.1) return
 !

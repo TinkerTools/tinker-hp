@@ -73,10 +73,11 @@ end subroutine
 !
 subroutine get_mpi(commcv,rankcv,nproccv)
    use domdec
+   use parallel, only: get_domain_comm
    use iso_c_binding
    implicit none
    integer(c_int) :: commcv,rankcv,nproccv
-   commcv = COMM_TINKER
+   commcv = get_domain_comm()
    rankcv = rank
    nproccv = nproc
    return
@@ -401,6 +402,7 @@ subroutine prepare_colvars(derivs)
    use colvars_inl
    use deriv
    use domdec
+   use parallel, only: get_domain_comm
    use inform
    use mpi
    use potent
@@ -468,14 +470,14 @@ subroutine prepare_colvars(derivs)
 !
    if (rank.eq.0) then
       call MPI_REDUCE(MPI_IN_PLACE,cv_pos,3*ncvatoms,MPI_RPREC&
-         &,MPI_SUM,0,COMM_TINKER,ierr)
+         &,MPI_SUM,0,get_domain_comm(),ierr)
       call MPI_REDUCE(MPI_IN_PLACE,decv_tot,3*ncvatoms,MPI_RPREC&
-         &,MPI_SUM,0,COMM_TINKER,ierr)
+         &,MPI_SUM,0,get_domain_comm(),ierr)
    else
       call MPI_REDUCE(cv_pos,cv_pos,3*ncvatoms,MPI_RPREC&
-         &,MPI_SUM,0,COMM_TINKER,ierr)
+         &,MPI_SUM,0,get_domain_comm(),ierr)
       call MPI_REDUCE(decv_tot,decv_tot,3*ncvatoms,MPI_RPREC&
-         &,MPI_SUM,0,COMM_TINKER,ierr)
+         &,MPI_SUM,0,get_domain_comm(),ierr)
    end if
    if (use_lambdadyn) then
       delambdae = delambdae + delambdaesave
@@ -484,14 +486,14 @@ subroutine prepare_colvars(derivs)
       delambdavsave = 0d0
       if (rank.eq.0) then
          call MPI_REDUCE(MPI_IN_PLACE,delambdav,1,MPI_RPREC&
-            &,MPI_SUM,0,COMM_TINKER,ierr)
+            &,MPI_SUM,0,get_domain_comm(),ierr)
          call MPI_REDUCE(MPI_IN_PLACE,delambdae,1,MPI_RPREC&
-            &,MPI_SUM,0,COMM_TINKER,ierr)
+            &,MPI_SUM,0,get_domain_comm(),ierr)
       else
          call MPI_REDUCE(delambdav,delambdav,1,MPI_RPREC&
-            &,MPI_SUM,0,COMM_TINKER,ierr)
+            &,MPI_SUM,0,get_domain_comm(),ierr)
          call MPI_REDUCE(delambdae,delambdae,1,MPI_RPREC&
-            &,MPI_SUM,0,COMM_TINKER,ierr)
+            &,MPI_SUM,0,get_domain_comm(),ierr)
       end if
    end if
 !      if (use_osrw) then
@@ -599,6 +601,7 @@ subroutine distrib_colvars(derivs)
    use colvars_inl
    use deriv
    use domdec
+   use parallel, only: get_domain_comm
    use inform
    use mpi
    use mutant
@@ -609,14 +612,14 @@ subroutine distrib_colvars(derivs)
    real(r_p) vxx,vxy,vxz,vyy,vyz,vzz
    integer   i,iglob,iloc,ierr
 !
-   call MPI_BCAST(decv,3*ncvatoms,MPI_RPREC,0,COMM_TINKER,ierr)
+   call MPI_BCAST(decv,3*ncvatoms,MPI_RPREC,0,get_domain_comm(),ierr)
    if (deb_Path) print*, 'distrib_colvars'
 
    if (use_lambdadyn) then
-      call MPI_BCAST(lambda,1,MPI_TPREC,0,COMM_TINKER,ierr)
+      call MPI_BCAST(lambda,1,MPI_TPREC,0,get_domain_comm(),ierr)
       call def_lambdadyn
       if (use_osrw) then
-         call MPI_BCAST(flambdabias,1,MPI_TPREC,0,COMM_TINKER,ierr)
+         call MPI_BCAST(flambdabias,1,MPI_TPREC,0,get_domain_comm(),ierr)
          do i = 1, nloc
             dxdelambda(:,i)= ( dxdelambdae(:,i)+dxdelambdav(:,i) )&
                &*dlambdavlambda
@@ -749,6 +752,7 @@ end subroutine
 subroutine colvars_init(dt)
    use colvars
    use domdec
+   use parallel, only: get_domain_comm
    use mpi
    use inform
    use tinheader ,only: re_p
@@ -763,7 +767,7 @@ subroutine colvars_init(dt)
    else
       rank_ = rank
       nproc_ = nproc
-      COMM_ = COMM_TINKER
+      COMM_ = get_domain_comm()
    end if
 
    use_colvars = .false.
@@ -897,11 +901,12 @@ end subroutine
 !
 subroutine get_root2root(intercomm)
    use domdec
+   use parallel, only: get_root_comm
    use replicas
    use iso_c_binding
    implicit none
 !     targeted integers, to make pgfortran and gfortran happy with their c_bindings
    integer(c_int) :: intercomm
-   intercomm = COMM_ROOT2ROOT
+   intercomm = get_root_comm()
    return
 end subroutine

@@ -21,6 +21,7 @@ subroutine kpolar(init,istep)
    use cutoff
    use chgpen
    use domdec
+   use parallel, only: get_host_comm
    use inform
    use iounit
    use,intrinsic::iso_c_binding
@@ -232,13 +233,13 @@ subroutine kpolar(init,istep)
 99    format("There are some poles without polarity :",/,&
          &3x,I12, "poles for ", I12, "polar atoms.")
 
-100   call MPI_BARRIER(hostcomm,ierr)
-      call MPI_BCAST(npole, 1,MPI_INT,0,hostcomm,ierr)
-      call MPI_BCAST(npolar,1,MPI_INT,0,hostcomm,ierr)
-      call MPI_BCAST(ncp,   1,MPI_INT,0,hostcomm,ierr)
-      call MPI_BCAST(integrate,  11,   MPI_CHAR,0,hostcomm,ierr)
-      call MPI_BCAST(nZ_Onlyglob, 1,    MPI_INT,0,hostcomm,ierr)
-      call MPI_BCAST(use_tholed, 1,MPI_LOGICAL,0,hostcomm,ierr)
+100   call MPI_BARRIER(get_host_comm(),ierr)
+      call MPI_BCAST(npole, 1,MPI_INT,0,get_host_comm(),ierr)
+      call MPI_BCAST(npolar,1,MPI_INT,0,get_host_comm(),ierr)
+      call MPI_BCAST(ncp,   1,MPI_INT,0,get_host_comm(),ierr)
+      call MPI_BCAST(integrate,  11,   MPI_CHAR,0,get_host_comm(),ierr)
+      call MPI_BCAST(nZ_Onlyglob, 1,    MPI_INT,0,get_host_comm(),ierr)
+      call MPI_BCAST(use_tholed, 1,MPI_LOGICAL,0,get_host_comm(),ierr)
 !
 !       test multipoles at chiral sites and invert if necessary
 !
@@ -777,7 +778,8 @@ subroutine orderPole
    use atmlst  ,only : poleglob
    use domdec  ,only : nproc,ndir,rank,pbig_send,nbig_send,pbig_recep&
       &, nbig_recep,bufbeg,bufbegpole,domlen,domlenpole&
-      &, glob,nbloc,comm_dir,COMM_TINKER
+      &, glob,nbloc
+   use parallel, only: get_domain_comm, get_direct_comm
    use inform  ,only : deb_Path
    use mpole   ,only : poleloc,pollist,polsiz,nbpole,npoleloc&
       &, npolebloc,nz_Onlyglob,npole
@@ -806,9 +808,9 @@ subroutine orderPole
    send_requests = MPI_REQUEST_NULL
 
    if (use_pmecore) then
-      commloc = comm_dir
+      commloc = get_direct_comm()
    else
-      commloc = COMM_TINKER
+      commloc = get_domain_comm()
    end if
    call timer_enter( timer_eneig )
    if (deb_Path) write(*,'(3X,A)') '>>  orderPole'
@@ -928,6 +930,7 @@ subroutine polargrp
    use atoms
    use couple
    use domdec
+   use parallel, only: get_host_comm
    use inform
    use iounit
    use kpolr
@@ -1195,7 +1198,7 @@ subroutine polargrp
 !     perform deallocation of some local arrays
 !
    deallocate (mask)
-120 call MPI_BARRIER(hostcomm,ierr)
+120 call MPI_BARRIER(get_host_comm(),ierr)
 !     call upload_device_polar(0)
 end
 
@@ -1205,6 +1208,7 @@ end
 subroutine upload_device_polar(config)
    use chgpen
    use domdec
+   use parallel, only: get_host_comm
    use inform ,only: deb_Path
    use mpole
    use mpi    ,only: MPI_BARRIER
@@ -1221,7 +1225,7 @@ subroutine upload_device_polar(config)
 #ifdef _OPENACC
 12 format(2x,'upload_device_polar')
    if(deb_Path) print 12
-   call MPI_BARRIER(hostcomm,ierr)
+   call MPI_BARRIER(get_host_comm(),ierr)
 #endif
    if (config.eq.up_polargrp) then
 !!$acc update device(ip11(:,:),np11(:),ip12(:,:),np12(:),

@@ -10,7 +10,7 @@ M_subroutine&
    &)
 use tintypes ,only: rpole_elt
 #if defined(TINKER_CUF) && (TINKER_SINGLE_PREC+TINKER_MIXED_PREC)
-use utilcu   ,only: f_sqrt
+use libm, only: f_sqrt=>TINKERHP_LIBM_SQRT
 #endif
 integer  ,intent(in):: pentyp,tver,tfea
 real(t_p),intent(in):: r2,pscale,dscale,aewald,corei,corek&
@@ -185,7 +185,7 @@ M_subroutine&
    &)
 use tintypes ,only: rpole_elt
 #if defined(TINKER_CUF) && (TINKER_SINGLE_PREC+TINKER_MIXED_PREC)
-use utilcu   ,only: f_sqrt
+use libm, only: f_sqrt=>TINKERHP_LIBM_SQRT
 #endif
 integer  ,intent(in):: pentyp,tver,tfea
 real(t_p),intent(in):: r2,pscale,dscale,corei,corek&
@@ -295,7 +295,7 @@ M_subroutine&
    &)
 use tintypes ,only: rpole_elt
 #if defined(TINKER_CUF) && (TINKER_SINGLE_PREC+TINKER_MIXED_PREC)
-use utilcu   ,only: f_sqrt
+use libm, only: f_sqrt=>TINKERHP_LIBM_SQRT
 #endif
 integer  ,intent(in):: pentyp,tver,tfea
 real(t_p),intent(in):: r2,pscale,dscale,aewald,corei,corek&
@@ -462,7 +462,7 @@ M_subroutine&
    &)
 use tintypes ,only: rpole_elt
 #if defined(TINKER_CUF) && (TINKER_SINGLE_PREC+TINKER_MIXED_PREC)
-use utilcu   ,only: f_sqrt
+use libm, only: f_sqrt=>TINKERHP_LIBM_SQRT
 #endif
 integer  ,intent(in):: pentyp,tver,tfea
 real(t_p),intent(in):: r2,pscale,dscale,corei,corek&

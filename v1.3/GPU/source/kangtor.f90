@@ -286,7 +286,8 @@ end
 
 subroutine upload_device_kangtor
    use angtor
-   use domdec,only: rank,hostcomm
+   use domdec,only: rank
+   use parallel, only: get_host_comm
    use inform,only: deb_Path
    use kantor
    use mpi   ,only: MPI_BARRIER
@@ -295,7 +296,7 @@ subroutine upload_device_kangtor
    integer ierr
 12 format(2x,'upload_device_kangtor')
    if(deb_Path) print 12
-   call MPI_BARRIER(hostcomm,ierr)
+   call MPI_BARRIER(get_host_comm(),ierr)
 !$acc enter data copyin(kat_sys,nangtorloc)
    ! Update if second call to routine
 !$acc update device(kat_sys,nangtorloc)

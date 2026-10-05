@@ -24,6 +24,7 @@ subroutine mdsave (istep,dt,epot)
    use bound
    use boxes
    use domdec
+   use parallel, only: get_domain_comm
    use dcdmod  ,only:dcdio
    use files
    use group
@@ -171,7 +172,7 @@ subroutine mdsave (istep,dt,epot)
       do iproc = 1, nproc-1
          tagmpi = iproc + 1
          call MPI_IRECV(domlen(iproc+1),1,MPI_INT,iproc,tagmpi,&
-            &COMM_TINKER,req(tagmpi),ierr)
+            &get_domain_comm(),req(tagmpi),ierr)
       end do
       do iproc = 1, nproc-1
          tagmpi = iproc + 1
@@ -180,7 +181,7 @@ subroutine mdsave (istep,dt,epot)
    else
       tagmpi = rank + 1
       call MPI_ISEND(domlen(rank+1),1,MPI_INT,0,tagmpi,&
-         &COMM_TINKER,req(tagmpi),ierr)
+         &get_domain_comm(),req(tagmpi),ierr)
       call MPI_WAIT(req(tagmpi),status,ierr)
    end if
 
@@ -189,7 +190,7 @@ subroutine mdsave (istep,dt,epot)
          do iproc = 1, nproc-1
             tagmpi = iproc + 1
             call MPI_IRECV(domlenpole(iproc+1),1,MPI_INT,iproc,tagmpi,&
-               &COMM_TINKER,req(tagmpi),ierr)
+               &get_domain_comm(),req(tagmpi),ierr)
          end do
          do iproc = 1, nproc-1
             tagmpi = iproc + 1
@@ -198,7 +199,7 @@ subroutine mdsave (istep,dt,epot)
       else
          tagmpi = rank + 1
          call MPI_ISEND(domlenpole(rank+1),1,MPI_INT,0,tagmpi,&
-            &COMM_TINKER,req(tagmpi),ierr)
+            &get_domain_comm(),req(tagmpi),ierr)
          call MPI_WAIT(req(tagmpi),status,ierr)
       end if
    end if
@@ -219,7 +220,7 @@ subroutine mdsave (istep,dt,epot)
       do iproc = 1, nproc-1
          tagmpi = iproc + 1
          call MPI_IRECV(globsave(bufbegsave(iproc+1)),domlen(iproc+1),&
-            &MPI_INT,iproc,tagmpi,COMM_TINKER,req(tagmpi),ierr)
+            &MPI_INT,iproc,tagmpi,get_domain_comm(),req(tagmpi),ierr)
       end do
       do iproc = 1, nproc-1
          tagmpi = nproc*rank + iproc + 1
@@ -228,7 +229,7 @@ subroutine mdsave (istep,dt,epot)
    else
       tagmpi = rank + 1
       call MPI_ISEND(glob,domlen(rank+1),MPI_INT,0,&
-         &tagmpi,COMM_TINKER,req(tagmpi),ierr)
+         &tagmpi,get_domain_comm(),req(tagmpi),ierr)
       call MPI_WAIT(req(tagmpi),status,ierr)
    end if
 
@@ -247,7 +248,7 @@ subroutine mdsave (istep,dt,epot)
          do iproc = 1, nproc-1
             tagmpi = iproc + 1
             call MPI_IRECV(globpolesave(bufbegpolesave(iproc+1)),&
-               &domlenpole(iproc+1),MPI_INT,iproc,tagmpi,COMM_TINKER,&
+               &domlenpole(iproc+1),MPI_INT,iproc,tagmpi,get_domain_comm(),&
                &req(tagmpi),ierr)
          end do
          do iproc = 1, nproc-1
@@ -257,7 +258,7 @@ subroutine mdsave (istep,dt,epot)
       else
          tagmpi = rank + 1
          call MPI_ISEND(poleglob,domlenpole(rank+1),MPI_INT,0,&
-            &tagmpi,COMM_TINKER,req(tagmpi),ierr)
+            &tagmpi,get_domain_comm(),req(tagmpi),ierr)
          call MPI_WAIT(req(tagmpi),status,ierr)
       end if
    end if
@@ -272,12 +273,12 @@ subroutine mdsave (istep,dt,epot)
          tagmpi = iproc + 1
          call MPI_IRECV(postemp(1,bufbegsave(iproc+1)),&
             &3*domlen(iproc+1),&
-            &MPI_RPREC,iproc,tagmpi,COMM_TINKER,req(tagmpi),ierr)
+            &MPI_RPREC,iproc,tagmpi,get_domain_comm(),req(tagmpi),ierr)
       end do
    else
       tagmpi = rank + 1
       call MPI_ISEND(postemp,3*nloc,MPI_RPREC,0,tagmpi,&
-         &COMM_TINKER,req(tagmpi),ierr)
+         &get_domain_comm(),req(tagmpi),ierr)
    end if
    if (rank.eq.0) then
       do iproc = 1, nproc-1
@@ -297,12 +298,12 @@ subroutine mdsave (istep,dt,epot)
             tagmpi = iproc + 1
             call MPI_IRECV(pbcWrapTemp(bufbegsave(iproc+1))&
                &,domlen(iproc+1),&
-               &MPI_INT,iproc,tagmpi,COMM_TINKER,req(tagmpi),ierr)
+               &MPI_INT,iproc,tagmpi,get_domain_comm(),req(tagmpi),ierr)
          end do
       else
          tagmpi = rank + 1
          call MPI_ISEND(pbcWrapTemp,nloc,MPI_INT,0,tagmpi&
-            &,COMM_TINKER,req(tagmpi),ierr)
+            &,get_domain_comm(),req(tagmpi),ierr)
       end if
       if (rank.eq.0) then
          do iproc = 1, nproc-1
@@ -321,11 +322,11 @@ subroutine mdsave (istep,dt,epot)
       do iproc = 1, nproc-1
          tagmpi = iproc + 1
          call MPI_IRECV(vtemp(1,bufbegsave(iproc+1)),3*domlen(iproc+1),&
-            &MPI_RPREC,iproc,tagmpi,COMM_TINKER,req(tagmpi),ierr)
+            &MPI_RPREC,iproc,tagmpi,get_domain_comm(),req(tagmpi),ierr)
       end do
    else
       tagmpi = rank + 1
-      call MPI_ISEND(vtemp,3*nloc,MPI_RPREC,0,tagmpi,COMM_TINKER,&
+      call MPI_ISEND(vtemp,3*nloc,MPI_RPREC,0,tagmpi,get_domain_comm(),&
          &req(tagmpi),ierr)
    end if
    if (rank.eq.0) then
@@ -344,11 +345,11 @@ subroutine mdsave (istep,dt,epot)
       do iproc = 1, nproc-1
          tagmpi = iproc + 1
          call MPI_IRECV(atemp(1,bufbegsave(iproc+1)),3*domlen(iproc+1),&
-            &MPI_RPREC,iproc,tagmpi,COMM_TINKER,req(tagmpi),ierr)
+            &MPI_RPREC,iproc,tagmpi,get_domain_comm(),req(tagmpi),ierr)
       end do
    else
       tagmpi = rank + 1
-      call MPI_ISEND(atemp,3*nloc,MPI_RPREC,0,tagmpi,COMM_TINKER,&
+      call MPI_ISEND(atemp,3*nloc,MPI_RPREC,0,tagmpi,get_domain_comm(),&
          &req(tagmpi),ierr)
    end if
    if (rank.eq.0) then
@@ -368,12 +369,12 @@ subroutine mdsave (istep,dt,epot)
          tagmpi = iproc + 1
          call MPI_IRECV(aalttemp(1,bufbegsave(iproc+1)),&
             &3*domlen(iproc+1)&
-            &,MPI_RPREC,iproc,tagmpi,COMM_TINKER,req(tagmpi),ierr)
+            &,MPI_RPREC,iproc,tagmpi,get_domain_comm(),req(tagmpi),ierr)
       end do
    else
       tagmpi = rank + 1
       call MPI_ISEND(aalttemp,3*nloc,MPI_RPREC,0,tagmpi,&
-         &COMM_TINKER,req(tagmpi),ierr)
+         &get_domain_comm(),req(tagmpi),ierr)
    end if
    if (rank.eq.0) then
       do iproc = 1, nproc-1
@@ -394,12 +395,12 @@ subroutine mdsave (istep,dt,epot)
             tagmpi = iproc + 1
             call MPI_IRECV(uindtemp(1,bufbegpolesave(iproc+1)),&
                &3*domlenpole(iproc+1),&
-               &MPI_REAL8,iproc,tagmpi,COMM_TINKER,req(tagmpi),ierr)
+               &MPI_REAL8,iproc,tagmpi,get_domain_comm(),req(tagmpi),ierr)
          end do
       else
          tagmpi = rank + 1
          call MPI_ISEND(uindtemp,3*npoleloc,MPI_REAL8,0,tagmpi,&
-            &COMM_TINKER,req(tagmpi),ierr)
+            &get_domain_comm(),req(tagmpi),ierr)
       end if
       if (rank.eq.0) then
          do iproc = 1, nproc-1

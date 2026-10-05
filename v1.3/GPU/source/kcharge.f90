@@ -16,6 +16,7 @@
 !
 #include "tinker_macro.h"
 subroutine kcharge(init,istep)
+   use parallel, only: get_host_comm
    use atmlst
    use atmtyp
    use atoms
@@ -189,8 +190,8 @@ subroutine kcharge(init,istep)
       chglist = list
       deallocate (list)
       deallocate (nc12)
-1000  call MPI_BARRIER(hostcomm,ierr)
-      call MPI_BCAST(nion,1,MPI_INT,0,hostcomm,ierr)
+1000  call MPI_BARRIER(get_host_comm(),ierr)
+      call MPI_BCAST(nion,1,MPI_INT,0,get_host_comm(),ierr)
 !
 !       turn off charge-charge and charge-dipole terms if not used
 !
@@ -320,9 +321,10 @@ end
 !     Upload Charge data on device
 !
 subroutine upload_device_kcharge
+   use parallel, only: get_host_comm
    use atoms
    use charge
-   use domdec,only: rank,hostcomm
+   use domdec,only: rank
    use mpi   ,only: MPI_BARRIER
    use inform,only: deb_Path
    use potent,only: use_lambdadyn
@@ -332,7 +334,7 @@ subroutine upload_device_kcharge
 #ifdef _OPENACC
 12 format(2x,'upload_device_kcharge')
    if(deb_Path) print 12
-   call MPI_BARRIER(hostcomm,ierr)
+   call MPI_BARRIER(get_host_comm(),ierr)
 #endif
 !$acc update device(iion,pchg,chglist,nbchg)
    if (use_lambdadyn) then

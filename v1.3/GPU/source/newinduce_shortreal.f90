@@ -15,21 +15,16 @@
 !
 #include "tinker_macro.h"
 subroutine newinduce_shortreal
-   use atmlst
-   use domdec
-   use ewald
-   use iounit
-   use math
-   use mpole
-   use parallel
-   use pme
-   use polar
-   use polpot
+   use atmlst   , only: poleglob
+   use domdec   , only: rank
+   use iounit   , only: iout
+   use mpole    , only: npolebloc, npoleloc
+   use parallel , only: commfieldshort, polar_comm_t, polar_finish, polar_post_comm
+   use polar    , only: polarity, uind, uinp
+   use polpot   , only: polalg, polgsf, polprt
    use potent
-   use tinheader ,only:ti_p
-   use units
-   use uprior
-   use mpi
+   use tinheader, only: ti_p
+   use uprior   , only: bpred, maxualt, nualt, udshortalt, upshortalt, use_pred
    implicit none
 !
    integer i, j, k, nrhs
@@ -172,19 +167,19 @@ subroutine newinduce_shortreal
 end
 !
 subroutine inducepcg_shortreal(matvec,nrhs,precnd,ef,mu)
-   use atmlst
-   use domdec
-   use ewald
-   use iounit
-   use math
-   use mpole
-   use parallel
-   use polar
-   use polpot
-   use timestat
-   use tinheader ,only:ti_p
-   use units
-   use mpi
+   use parallel, only: get_domain_comm
+   use atmlst   , only: poleglob
+   use domdec   , only: rank
+   use iounit   , only: iout
+   use mpole    , only: ipole, npolebloc, npoleloc
+   use parallel , only: commfieldshort, polar_comm_t, polar_finish, polar_post_comm
+   use polar    , only: npolar, polarity, tinypol
+   use polpot   , only: politer, poleps, polprt
+   use timestat , only: timerealdip
+   use tinheader, only: ti_p
+   use units    , only: coulomb
+   use mpi      , only: MPI_IALLREDUCE, MPI_IN_PLACE, MPI_STATUS_SIZE, &
+                  MPI_SUM, MPI_TPREC, MPI_WAIT, MPI_WTIME
    implicit none
 !
 !     solves the polarizable dipoles linear equations by preconditioned
@@ -274,7 +269,7 @@ subroutine inducepcg_shortreal(matvec,nrhs,precnd,ef,mu)
       ggold(k) = sum(res(:,k,:)*zr(:,k,:))
    end do
    call MPI_IALLREDUCE(MPI_IN_PLACE,ggold(1),nrhs,MPI_TPREC,MPI_SUM,&
-      &COMM_TINKER,req1,ierr)
+      &get_domain_comm(),req1,ierr)
 !
 !     MPI : begin sending
 !
@@ -296,7 +291,7 @@ subroutine inducepcg_shortreal(matvec,nrhs,precnd,ef,mu)
          gg(k) = sum(pp(:,k,1:npoleloc)*h(:,k,1:npoleloc))
       end do
       call MPI_IALLREDUCE(MPI_IN_PLACE,gg(1),nrhs,MPI_TPREC,MPI_SUM,&
-         &COMM_TINKER,req2,ierr)
+         &get_domain_comm(),req2,ierr)
       call MPI_WAIT(req2,status,ierr)
       do k = 1, nrhs
          if (gg(k).eq.zero) return
@@ -321,9 +316,9 @@ subroutine inducepcg_shortreal(matvec,nrhs,precnd,ef,mu)
             &ef(:,k,1:npoleloc)))
       end do
       call MPI_IALLREDUCE(MPI_IN_PLACE,ggnew(1),nrhs,MPI_TPREC,&
-         &MPI_SUM,COMM_TINKER,req3,ierr)
+         &MPI_SUM,get_domain_comm(),req3,ierr)
       call MPI_IALLREDUCE(MPI_IN_PLACE,ene(1),nrhs,MPI_TPREC,MPI_SUM,&
-         &COMM_TINKER,req4,ierr)
+         &get_domain_comm(),req4,ierr)
       call MPI_WAIT(req3,status,ierr)
       call MPI_WAIT(req4,status,ierr)
       resnrm = zero
@@ -382,19 +377,18 @@ subroutine inducepcg_shortreal(matvec,nrhs,precnd,ef,mu)
 end
 !
 subroutine inducejac_shortreal(matvec,nrhs,dodiis,ef,mu)
-   use atmlst
-   use domdec
-   use ewald
-   use iounit
-   use math
-   use mpole
-   use parallel
-   use polar
-   use polpot
-   use potent
-   use timestat
-   use tinheader ,only:ti_p
-   use mpi
+   use parallel, only: get_domain_comm
+   use atmlst   , only: poleglob
+   use domdec   , only: rank
+   use iounit   , only: iout
+   use mpole    , only: ipole, npolebloc, npoleloc
+   use parallel , only: commfieldshort, polar_comm_t, polar_finish, polar_post_comm
+   use polar    , only: npolar, polarity
+   use polpot   , only: politer, poleps, polprt
+   use timestat , only: timerealdip
+   use tinheader, only: ti_p
+   use mpi      , only: MPI_IALLREDUCE, MPI_IN_PLACE, MPI_STATUS_SIZE, &
+                  MPI_SUM, MPI_TPREC, MPI_WAIT, MPI_WTIME
    implicit none
 !
 !     solves the polarizable dipoles linear equations by jacobi
@@ -484,7 +478,7 @@ subroutine inducejac_shortreal(matvec,nrhs,dodiis,ef,mu)
       end do
 !
       call MPI_IALLREDUCE(MPI_IN_PLACE,rnorm(1),nrhs,MPI_TPREC,&
-         &MPI_SUM,COMM_TINKER,reqnorm,ierr)
+         &MPI_SUM,get_domain_comm(),reqnorm,ierr)
       if (dodiis) then
          ind = 0
          do i = 1, npoleloc
@@ -500,7 +494,7 @@ subroutine inducejac_shortreal(matvec,nrhs,dodiis,ef,mu)
 !         Compute Pulay's Matrix and extrapolate
 !
          call diis(ndismx,3*nrhs*npoleloc,xdiis,ediis,&
-            &bmat,nmat,reqdiis,COMM_TINKER)
+            &bmat,nmat,reqdiis,get_domain_comm())
 !
          do i = 1, 2*nmat-3
             call MPI_WAIT(reqdiis(i),status,ierr)
@@ -578,20 +572,19 @@ subroutine dbletmatxb_pme(nrhs,dodiag,mu, mu2, efi, efi2)
 !     of the induced dipoles
 !     Now on two sets of 'dipoles' at once
 !
-   use atmlst
-   use atoms
-   use domdec
-   use ewald
-   use group
-   use math
-   use mpole
-   use neigh
-   use polar
-   use polgrp
-   use polpot
-   use potent
-   use shunt
-   use tinheader ,only:ti_p
+   use atmlst   , only: poleglob, poleglobnl
+   use atoms    , only: n, x, y, z
+   use domdec   , only: loc
+   use ewald    , only: aewald
+   use math     , only: sqrtpi
+   use mpole    , only: ipole, npolebloc, npoleloc, npolelocnl, poleloc
+   use neigh    , only: elst, nelst, nshortelst, shortelst
+   use polar    , only: pdamp, polarity, thole, tinypol
+   use polgrp   , only: ip11, ip12, ip13, ip14, np11, np12, np13, np14
+   use polpot   , only: u1scale, u2scale, u3scale, u4scale
+   use potent   , only: use_polarshortreal
+   use shunt    , only: cut2
+   use tinheader, only: ti_p
    implicit none
    integer i,nrhs,iglob,kglob,iipole,kkpole,kkpoleloc,nnelst
    integer ipoleloc

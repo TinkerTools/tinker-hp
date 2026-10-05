@@ -306,6 +306,7 @@ end
 subroutine inducepcg_pmegpu(matvec,nrhs,precnd,ef,mu,murec)
    use atmlst
    use domdec
+   use parallel, only: get_domain_comm, get_direct_comm
    use ewald
    use inform    ,only: deb_Path,abort
    use interfaces,only: tmatxb_pmegpu
@@ -510,7 +511,7 @@ subroutine inducepcg_pmegpu(matvec,nrhs,precnd,ef,mu,murec)
 
    if (rank.le.ndir-1) then
       call MPI_IALLREDUCE(MPI_IN_PLACE,ggold(1),nrhs,MPI_TPREC,&
-         &MPI_SUM,comm_dir,req1,ierr)
+         &MPI_SUM,get_direct_comm(),req1,ierr)
       call timer_exit ( timer_other )
       call MPI_WAIT(req1,status,ierr)
       ggold1=ggold(1); ggold2=ggold(2);
@@ -576,9 +577,9 @@ subroutine inducepcg_pmegpu(matvec,nrhs,precnd,ef,mu,murec)
 !$acc wait
 !$acc host_data use_device(gg1,gg2)
             call MPI_ALLREDUCE(MPI_IN_PLACE,gg1,1,MPI_TPREC,MPI_SUM,&
-               &comm_dir,ierr)
+               &get_direct_comm(),ierr)
             call MPI_ALLREDUCE(MPI_IN_PLACE,gg2,1,MPI_TPREC,MPI_SUM,&
-               &comm_dir,ierr)
+               &get_direct_comm(),ierr)
 !$acc end host_data
          end if
 
@@ -631,12 +632,12 @@ subroutine inducepcg_pmegpu(matvec,nrhs,precnd,ef,mu,murec)
       end if
 
       call MPI_IALLREDUCE(MPI_IN_PLACE,ggnew(1),nrhs,MPI_RPREC,&
-         &MPI_SUM,COMM_TINKER,req3,ierr)
+         &MPI_SUM,get_domain_comm(),req3,ierr)
       call MPI_WAIT(req3,status,ierr)
 
       if (rank.le.ndir-1) then
          call MPI_IALLREDUCE(MPI_IN_PLACE,ene(1),nrhs,MPI_RPREC,&
-            &MPI_SUM,comm_dir,req4,ierr)
+            &MPI_SUM,get_direct_comm(),req4,ierr)
          call MPI_WAIT(req4,status,ierr)
 
          call timer_enter ( timer_other )
@@ -733,6 +734,7 @@ end
 subroutine inducejac_pmegpu(matvec,nrhs,dodiis,ef,mu,murec)
    use atmlst
    use domdec
+   use parallel, only: get_domain_comm, get_direct_comm
    use ewald
    use iounit
    use interfaces ,only: tmatxb_pmegpu
@@ -898,7 +900,7 @@ subroutine inducejac_pmegpu(matvec,nrhs,dodiis,ef,mu,murec)
 !
       end if
       call MPI_IALLREDUCE(MPI_IN_PLACE,rnorm(1),nrhs,MPI_TPREC,&
-         &MPI_SUM,COMM_TINKER,reqnorm,ierr)
+         &MPI_SUM,get_domain_comm(),reqnorm,ierr)
       if (rank.le.ndir-1) then
          if (dodiis) then
             ind = 0
@@ -915,7 +917,7 @@ subroutine inducejac_pmegpu(matvec,nrhs,dodiis,ef,mu,murec)
 !           Compute Pulay's Matrix and extrapolate
 !
             call diis(ndismx,3*nrhs*npoleloc,xdiis,ediis,&
-               &bmat,nmat,reqdiis,comm_dir)
+               &bmat,nmat,reqdiis,get_direct_comm())
             do i = 1, 2*nmat-3
                call MPI_WAIT(reqdiis(i),status,ierr)
             end do
@@ -1018,6 +1020,7 @@ subroutine efld0_recipgpu(cphi,ef)
    use bound
    use boxes
    use domdec
+   use parallel, only: get_domain_comm, get_recip_comm
    use ewald
    use fft
    use inform     ,only: deb_Path
@@ -1072,11 +1075,11 @@ subroutine efld0_recipgpu(cphi,ef)
 
    if (use_pmecore) then
       nprocloc = nrec
-      commloc  = comm_rec
+      commloc  = get_recip_comm()
       rankloc  = rank_bis
    else
       nprocloc = nproc
-      commloc  = COMM_TINKER
+      commloc  = get_domain_comm()
       rankloc  = rank
    end if
 
@@ -1172,7 +1175,7 @@ subroutine efld0_recipgpu(cphi,ef)
 !$acc end serial
 
 !$acc parallel loop collapse(3) async(reciprocal_work%queue) &
-!$acc         present(qfac_2d,recip,octahedron,use_bounds)
+!$acc          present(qfac_2d,recip,octahedron)
    do k3 = kstat2,ked2
       do k2 = jstat2,jed2
          do k1 = istat2,ied2
@@ -1287,6 +1290,7 @@ subroutine tmatxbrecipgpu(mu,murec,nrhs,dipfield,dipfieldbis)
    use inform    ,only: deb_Path,minmaxone
    use interfaces,only: fphi_uind_site2_p&
       &,grid_uind_site_p,tmatxb_cp
+   use parallel  ,only: get_recip_comm, get_domain_comm
    use pme
    use pme1
    use potent
@@ -1344,11 +1348,11 @@ subroutine tmatxbrecipgpu(mu,murec,nrhs,dipfield,dipfieldbis)
 
    if (use_pmecore) then
       nprocloc = nrec
-      commloc  = comm_rec
+      commloc  = get_recip_comm()
       rankloc  = rank_bis
    else
       nprocloc = nproc
-      commloc  = COMM_TINKER
+      commloc  = get_domain_comm()
       rankloc  = rank
    end if
 

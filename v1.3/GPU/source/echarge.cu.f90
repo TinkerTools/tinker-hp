@@ -13,7 +13,6 @@
 #include "tinker_cudart.h"
 module echargecu
    use sizes   ,only: maxgrp
-   use utilcu  ,only: ALL_LANES
    use tinTypes,only: real3,real6,mdyn3_r,rpole_elt
    use reduction,only: RED_BUFF_SIZE
 

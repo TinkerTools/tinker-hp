@@ -15,21 +15,22 @@
 !
 #include "tinker_precision.h"
 subroutine newinduce_pme2
-   use atmlst
-   use domdec
-   use ewald
-   use iounit
-   use math
-   use mpole
-   use parallel
-   use pme
-   use polar
-   use polpot
+   use atmlst   , only: poleglob, polerecglob
+   use domdec   , only: nproc, rank, repart
+   use ewald    , only: aewald
+   use iounit   , only: iout
+   use math     , only: sqrtpi
+   use mpole    , only: ipole, npolebloc, npolerecloc, npoleloc, poleloc, rpole
+   use parallel , only: commfield, commrecdirfields, polar_comm_t, &
+                  polar_finish, polar_finish_dip_comm, polar_post_comm, &
+                  polar_post_dip_comm
+   use pme      , only: cphirec, fphirec
+   use polar    , only: polarity, uind, uinp
+   use polpot   , only: polalg, polgsf, polprt
    use potent
-   use tinheader ,only:ti_p
-   use units
-   use uprior
-   use mpi
+   use tinheader, only: ti_p
+   use uprior   , only: bpred, maxualt, nualt, udalt, upalt, use_pred
+   use mpi      , only: MPI_STATUS_SIZE, MPI_WTIME
    implicit none
 !
 !     without separate cores for reciprocal part
@@ -260,19 +261,23 @@ subroutine newinduce_pme2
 end
 !
 subroutine inducepcg_pme2(matvec,nrhs,precnd,ef,mu,murec)
-   use atmlst
-   use domdec
-   use ewald
-   use iounit
-   use math
-   use mpole
-   use parallel
-   use polar
-   use polpot
-   use timestat
-   use tinheader ,only:ti_p
-   use units
-   use mpi
+   use atmlst   , only: poleglob
+   use domdec   , only: nproc, rank
+   use parallel, only: get_domain_comm
+   use ewald    , only: aewald
+   use iounit   , only: iout
+   use math     , only: sqrtpi
+   use mpole    , only: ipole, npolebloc, npoleloc, npolerecloc
+   use parallel , only: commfield, commrecdirsolv, polar_comm_t, &
+                  polar_finish, polar_finish_dip_comm, polar_post_comm, &
+                  polar_post_dip_comm
+   use polar    , only: npolar, polarity, tinypol
+   use polpot   , only: politer, poleps, polprt
+   use timestat , only: timerealdip, timerecdip
+   use tinheader, only: ti_p
+   use units    , only: coulomb
+   use mpi      , only: MPI_IALLREDUCE, MPI_IN_PLACE, MPI_STATUS_SIZE, &
+                  MPI_SUM, MPI_TPREC, MPI_WAIT, MPI_WTIME
    implicit none
 !
 !     solves the polarizable dipoles linear equations by preconditioned
@@ -403,7 +408,7 @@ subroutine inducepcg_pme2(matvec,nrhs,precnd,ef,mu,murec)
    call polar_post_dip_comm(dip_ticket,nrhs,murec,pp,buffermpimu1,buffermpimu2,.false.)
    call polar_finish_dip_comm(dip_ticket,nrhs,murec,pp,buffermpimu1,buffermpimu2,.false.)
    call MPI_IALLREDUCE(MPI_IN_PLACE,ggold(1),nrhs,MPI_TPREC,MPI_SUM,&
-      &COMM_TINKER,req1,ierr)
+      &get_domain_comm(),req1,ierr)
    call MPI_WAIT(req1,status,ierr)
 !
 !     now, start the main loop:
@@ -445,7 +450,7 @@ subroutine inducepcg_pme2(matvec,nrhs,precnd,ef,mu,murec)
          gg(k) = sum(pp(:,k,1:npoleloc)*h(:,k,1:npoleloc))
       end do
       call MPI_IALLREDUCE(MPI_IN_PLACE,gg(1),nrhs,MPI_TPREC,MPI_SUM,&
-         &COMM_TINKER,req2,ierr)
+         &get_domain_comm(),req2,ierr)
       call MPI_WAIT(req2,status,ierr)
       do k = 1, nrhs
          if (gg(k).eq.zero) return
@@ -470,9 +475,9 @@ subroutine inducepcg_pme2(matvec,nrhs,precnd,ef,mu,murec)
             &ef(:,k,1:npoleloc)))
       end do
       call MPI_IALLREDUCE(MPI_IN_PLACE,ggnew(1),nrhs,MPI_TPREC,&
-         &MPI_SUM,COMM_TINKER,req3,ierr)
+         &MPI_SUM,get_domain_comm(),req3,ierr)
       call MPI_IALLREDUCE(MPI_IN_PLACE,ene(1),nrhs,MPI_TPREC,MPI_SUM,&
-         &COMM_TINKER,req4,ierr)
+         &get_domain_comm(),req4,ierr)
       call MPI_WAIT(req3,status,ierr)
       call MPI_WAIT(req4,status,ierr)
       resnrm = zero
@@ -541,19 +546,22 @@ subroutine inducepcg_pme2(matvec,nrhs,precnd,ef,mu,murec)
 end
 !
 subroutine inducejac_pme2(matvec,nrhs,dodiis,ef,mu,murec)
-   use atmlst
-   use domdec
-   use ewald
-   use iounit
-   use math
-   use mpole
-   use parallel
-   use polar
-   use polpot
-   use potent
-   use timestat
-   use tinheader ,only:ti_p
-   use mpi
+   use atmlst, only: poleglob
+   use domdec, only: nproc, rank
+   use parallel, only: get_domain_comm
+   use ewald , only: aewald
+   use iounit, only: iout
+   use math  , only: sqrtpi
+   use mpole , only: ipole, npolebloc, npoleloc, npolerecloc
+   use parallel , only: commfield, commrecdirsolv, polar_comm_t, &
+                  polar_finish, polar_finish_dip_comm, polar_post_comm, &
+                  polar_post_dip_comm
+   use polar    , only: npolar, polarity
+   use polpot   , only: politer, poleps, polprt
+   use timestat , only: timerealdip, timerecdip
+   use tinheader, only: ti_p
+   use mpi      , only: MPI_IALLREDUCE, MPI_IN_PLACE, MPI_STATUS_SIZE, &
+                  MPI_SUM, MPI_TPREC, MPI_WAIT, MPI_WTIME
    implicit none
 !
 !     solves the polarizable dipoles linear equations by jacobi
@@ -679,7 +687,7 @@ subroutine inducejac_pme2(matvec,nrhs,dodiis,ef,mu,murec)
       end do
 !
       call MPI_IALLREDUCE(MPI_IN_PLACE,rnorm(1),nrhs,MPI_TPREC,&
-         &MPI_SUM,COMM_TINKER,reqnorm,ierr)
+         &MPI_SUM,get_domain_comm(),reqnorm,ierr)
       if (dodiis) then
          ind = 0
          do i = 1, npoleloc
@@ -695,7 +703,7 @@ subroutine inducejac_pme2(matvec,nrhs,dodiis,ef,mu,murec)
 !         Compute Pulay's Matrix and extrapolate
 !
          call diis(ndismx,3*nrhs*npoleloc,xdiis,ediis,&
-            &bmat,nmat,reqdiis,COMM_TINKER)
+            &bmat,nmat,reqdiis,get_domain_comm())
 !
          do i = 1, 2*nmat-3
             call MPI_WAIT(reqdiis(i),status,ierr)
@@ -795,9 +803,10 @@ end
 !
 !
 subroutine ulspred
-   use mpole
-   use uprior
-   use tinheader
+   use mpole    , only: npole
+   use uprior   , only: aspc, bpred, bpredp, bpredps, bpreds, gear, &
+                        &maxualt, nualt, polpred, udalt, upalt
+   use tinheader, only: ti_p
    implicit none
    integer i,j,k,m
    real(t_p) coeff,udk,upk
@@ -903,9 +912,9 @@ end
 ! Performs product of vector a with polarisabilities
 !
 subroutine diagvec(nrhs, A, B)
-   use atmlst
-   use mpole
-   use polar
+   use atmlst, only: poleglob
+   use mpole , only: npolebloc
+   use polar , only: polarity
    implicit none
 
    integer, intent(in) :: nrhs

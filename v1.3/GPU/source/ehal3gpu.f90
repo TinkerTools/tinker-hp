@@ -164,7 +164,7 @@ subroutine ehal3c_ac
 !
 !     apply any reduction factor to the atomic coordinates
 !
-!$acc parallel loop default(present) &
+!$acc parallel loop default(present) present(ired,kred)&
 !$acc         async(direct_work%queue)
    do k = 1,nvdwbloc
       iglob   = ivdw (vdwglob(k))

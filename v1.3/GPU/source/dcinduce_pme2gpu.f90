@@ -13,31 +13,32 @@
 !
 #include "tinker_macro.h"
 subroutine dcinduce_pme2gpu
-   use atmlst
-   use divcon
-   use domdec
-   use ewald
-   use iounit
+   use atmlst, only: poleglob, polerecglob
+   use divcon, only: clsttype, precomp
+   use domdec, only: nproc, rank, repart
+   use ewald, only: aewald
+   use iounit, only: iout
    use inform    ,only: deb_Path
    use interfaces,only: otf_dc_efld0_directgpu_p
-   use math
-   use mpole
+   use math, only: sqrtpi
+   use mpole, only: ipole, npolebloc, npoleloc, npolerecloc, poleloc, rpole
    use parallel, only: polar_comm_t, polar_post_comm, polar_finish, &
       &polar_post_dip_comm, polar_finish_dip_comm, domain_workspace_tp2d, &
       &domain_workspace_tp3d
    use parallel, only: commrecdirfields, commrecdirfieldsgpu, commrecdirsolv, commrecdirsolvgpu
    use parallel, only: commfield, commfieldgpu, commfieldshort
-   use pme
-   use polar
-   use polpot
+   use pme, only: cphirec, fphirec
+   use polar, only: polarity, uind, uinp
+   use polpot, only: polalg, polgsf, politer, polprt, poleps
    use potent
-   use tinMemory ,only: prmem_request
-   use units
-   use uprior
-   use utils
+   use tinMemory, only: prmem_request
+   use uprior, only: bpred, maxualt, nualt, udalt, upalt, use_pred
+   use utils, only: set_to_zero1, set_to_zero2
    use mdevice, only: after, direct_work, reciprocal_work, record_platform_error
    use status, only: failed, status_t
-   use mpi
+   use mpi, only: MPI_IALLREDUCE, MPI_IN_PLACE, MPI_REQUEST_NULL, MPI_STATUS_SIZE, MPI_SUM, MPI_TPREC, MPI_WAIT, &
+      &MPI_WTIME
+   use timestat, only: timerecdip, timerealdip
    implicit none
 !
 !     without separate cores for reciprocal part
@@ -279,28 +280,29 @@ subroutine dcinduce_pme2gpu
 end
 
 subroutine inducedc_pme2gpu(matvec,nrhs,dodiis,ef,mu,murec)
-   use atmlst
-   use divcon
-   use domdec
-   use ewald
-   use iounit
+   use atmlst, only: poleglob
+   use divcon, only: atmofst, klst, kofst, km, maxdim, nocomdiis, npergrp, zmat, zmatDn
+   use parallel, only: get_domain_comm
+   use domdec, only: nproc, rank
+   use ewald, only: aewald
+   use iounit, only: iout
    use inform     ,only: deb_Path
-   use interfaces
-   use math
-   use mpole
+   use interfaces, only: cuGESV, cuPOTRS
+   use math, only: sqrtpi
+   use mpole, only: ipole, npolebloc, npoleloc, npolerecloc, poleloc
    use parallel, only: polar_comm_t, polar_post_comm, polar_finish, &
       &polar_post_dip_comm, polar_finish_dip_comm, domain_workspace_tp3d
    use parallel, only: commrecdirfields, commrecdirfieldsgpu, commrecdirsolv, commrecdirsolvgpu
    use parallel, only: commfield, commfieldgpu, commfieldshort
-   use polar
-   use polpot
-   use timestat
+   use polar, only: npolar, polarity, uind, uinp
+   use polpot, only: politer, polprt, poleps
    use tinMemory  ,only: prmem_request
-   use mpi
-   use sizes
-   use utils
+   use mpi, only: MPI_IALLREDUCE, MPI_IN_PLACE, MPI_REQUEST_NULL, MPI_STATUS_SIZE, MPI_SUM, MPI_TPREC, MPI_WAIT, &
+      &MPI_WTIME
+   use utils, only: set_to_zero1, set_to_zero2, set_to_zero3, utils_amove
    use mdevice, only: after, direct_work, reciprocal_work
    use status, only: failed, status_t
+   use timestat, only: timerecdip, timerealdip
    implicit none
 !
 !     solves the polarizable dipoles linear equations by jacobi
@@ -519,7 +521,7 @@ subroutine inducedc_pme2gpu(matvec,nrhs,dodiis,ef,mu,murec)
 !$acc wait
          rnorm(1)=rnorm1; rnorm(2)=rnorm2;
          call MPI_IALLREDUCE(MPI_IN_PLACE,rnorm(1),nrhs,MPI_TPREC,&
-            &MPI_SUM,COMM_TINKER,reqnorm,ierr)
+            &MPI_SUM,get_domain_comm(),reqnorm,ierr)
       end if
 
       if (dodiis) then
@@ -539,7 +541,7 @@ subroutine inducedc_pme2gpu(matvec,nrhs,dodiis,ef,mu,murec)
          else
             reqdiis(:) = MPI_REQUEST_NULL
             call diis(ndismx,3*nrhs*npoleloc,xdiis,ediis,&
-               &bmat,nmat,reqdiis,COMM_TINKER)
+               &bmat,nmat,reqdiis,get_domain_comm())
             !TODO This loop is no longer useful; MPI_IAllReduce is not CUDA-Aware
             do i = 1, 2*nmat-3
                call MPI_WAIT(reqdiis(i),status,ierr)

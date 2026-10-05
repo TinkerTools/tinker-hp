@@ -136,6 +136,7 @@ contains
       use bound ,only : use_bounds
       use cell
       use domdec
+      use parallel, only: get_domain_comm, get_direct_comm
       use freeze,only : use_rattle
       use inform,only : deb_Path,tindPath
       use iso_c_binding
@@ -198,14 +199,14 @@ contains
 
       if (use_pmecore) then
          nprocloc = ndir
-         commloc  = comm_dir
+         commloc  = get_direct_comm()
          rankloc  = rank_bis
          if(rank >= ndir) then
             call timer_enter( timer_eneig )
          end if
       else
          nprocloc = nproc
-         commloc  = COMM_TINKER
+         commloc  = get_domain_comm()
          rankloc  = rank
       end if
       if (nproc.eq.1) return
@@ -366,7 +367,7 @@ contains
       do ineighbor = 1, nneig_send
          call MPI_Isend(iglob_send(1,ineighbor)&
             &,2*n_data_send(ineighbor)&
-            &,MPI_INT,   pneig_send(ineighbor), 0, COMM_TINKER,&
+            &,MPI_INT,   pneig_send(ineighbor), 0, get_domain_comm(),&
             &req_iglob_send(ineighbor), ierr)
       end do
 !$acc end host_data
@@ -374,7 +375,7 @@ contains
       ! Probe for sizes
       n_data_recv(:) = 0
       do ineighbor = 1, nneig_recep
-         call MPI_Probe(pneig_recep(ineighbor), 0, COMM_TINKER,&
+         call MPI_Probe(pneig_recep(ineighbor), 0, get_domain_comm(),&
             &mpi_status1, ierr)
          call MPI_Get_count( mpi_status1, MPI_INT,&
             &n_data_recv(ineighbor), ierr )
@@ -407,11 +408,11 @@ contains
       do ineighbor = 1, nneig_recep
          call MPI_Irecv(iglob_recv(1,ineighbor)&
             &,2*n_data_recv(ineighbor)&
-            &,MPI_INT, pneig_recep(ineighbor), 0, COMM_TINKER,&
+            &,MPI_INT, pneig_recep(ineighbor), 0, get_domain_comm(),&
             &req_iglob_recv(ineighbor), ierr)
          call MPI_Irecv(data_recv(1,ineighbor)&
             &,9*n_data_recv(ineighbor)*(nbeadsproc+1)&
-            &,MPI_RPREC, pneig_recep(ineighbor), 1, COMM_TINKER,&
+            &,MPI_RPREC, pneig_recep(ineighbor), 1, get_domain_comm(),&
             &req_data_recv(ineighbor), ierr)
       end do
 
@@ -426,7 +427,7 @@ contains
       do ineighbor = 1, nneig_send
          call MPI_Isend(data_send(1,ineighbor)&
             &,9*n_data_send(ineighbor)*(nbeadsproc+1)&
-            &,MPI_RPREC, pneig_send(ineighbor), 1, COMM_TINKER,&
+            &,MPI_RPREC, pneig_send(ineighbor), 1, get_domain_comm(),&
             &req_data_send(ineighbor), ierr)
       end do
 !$acc end host_data
@@ -540,7 +541,7 @@ contains
          do ineighbor = 1, nneig_recep
             call MPI_Irecv(data_recv_ctr(1,ineighbor)&
                &,3*n_data_recv(ineighbor)*nbeadsproc_ctr&
-               &,MPI_RPREC, pneig_recep(ineighbor), 1, COMM_TINKER,&
+               &,MPI_RPREC, pneig_recep(ineighbor), 1, get_domain_comm(),&
                &req_data_recv(ineighbor), ierr)
          end do
 !$acc end host_data
@@ -569,7 +570,7 @@ contains
          do ineighbor = 1, nneig_send
             call MPI_Isend(data_send_ctr(1,ineighbor)&
                &,3*n_data_send(ineighbor)*nbeadsproc_ctr&
-               &,MPI_RPREC, pneig_send(ineighbor), 1, COMM_TINKER,&
+               &,MPI_RPREC, pneig_send(ineighbor), 1, get_domain_comm(),&
                &req_data_send(ineighbor), ierr)
          end do
 !$acc end host_data
@@ -618,6 +619,7 @@ contains
       use atomsMirror
       use beads
       use domdec
+      use parallel, only: get_domain_comm
       use inform   ,only: deb_Path
       use freeze
       use mpi
@@ -690,7 +692,7 @@ contains
          tag = nproc*rank + ptemp_recep(i) + 1
          call MPI_IRECV(buffer(1,1,bufbeg(ptemp_recep(i)+1)),&
             &3*domlen(ptemp_recep(i)+1)*nbeadssend,&
-            &MPI_RPREC,ptemp_recep(i),tag,COMM_TINKER,reqrec(i),ierr)
+            &MPI_RPREC,ptemp_recep(i),tag,get_domain_comm(),reqrec(i),ierr)
       end do
 !$acc end host_data
 !
@@ -713,7 +715,7 @@ contains
          tag = nproc*ptemp_send(i) + rank + 1
          call MPI_ISEND(buffers,3*nloc*nbeadssend&
             &,MPI_RPREC,&
-            &ptemp_send(i),tag,COMM_TINKER,&
+            &ptemp_send(i),tag,get_domain_comm(),&
             &reqsend(i),ierr)
       end do
 !$acc end host_data
@@ -757,6 +759,7 @@ contains
    subroutine commposrecpi(polymer,send_centroid)
       use atomsMirror
       use domdec
+      use parallel, only: get_domain_comm, get_recip_comm
       use inform   ,only: deb_Path
       use mpi
       use potent   ,only: use_pmecore
@@ -802,11 +805,11 @@ contains
 !
       if (use_pmecore) then
          nprocloc = nrec
-         commloc  = comm_rec
+         commloc  = get_recip_comm()
          rankloc  = rank_bis
       else
          nprocloc = nproc
-         commloc  = COMM_TINKER
+         commloc  = get_domain_comm()
          rankloc  = rank
       end if
 !
@@ -834,7 +837,7 @@ contains
             tag = nproc*rank + precdir_recep2(i) + 1
             call MPI_IRECV(buffer(1,1,bufbeg(precdir_recep2(i)+1)),&
                &3*domlen(precdir_recep2(i)+1)*nbeadssend,MPI_RPREC,&
-               &precdir_recep2(i),tag,COMM_TINKER,reqrec(i),ierr)
+               &precdir_recep2(i),tag,get_domain_comm(),reqrec(i),ierr)
          end if
       end do
 !
@@ -857,7 +860,7 @@ contains
             tag = nproc*precdir_send2(i) + rank + 1
             call MPI_ISEND(buffers,3*nloc*nbeadssend&
                &,MPI_RPREC,precdir_send2(i),&
-               &tag,COMM_TINKER,reqsend(i),ierr)
+               &tag,get_domain_comm(),reqsend(i),ierr)
          end if
       end do
 !$acc end host_data
@@ -1001,6 +1004,7 @@ contains
       use mpi
       use beads
       use domdec
+      use parallel, only: get_replica_comm
       use inform, only: deb_path
       implicit none
       type(POLYMER_COMM_TYPE),intent(inout) :: polymer
@@ -1114,7 +1118,7 @@ contains
          call MPI_ISEND(bufferpi_s(1,1,iproc)&
             &,nelt*3*(ilocend-ilocbeg+1)*(ibeadend-ibeadbeg+1+cshift)&
             &,MPI_RPREC&
-            &,iproc-1, mptag_data, COMM_POLYMER, reqs(ii),ierr)
+            &,iproc-1, mptag_data, get_replica_comm(), reqs(ii),ierr)
       ENDDO
 
       ibeadbeg = polymer%ibead_beg(rank_polymer+1)
@@ -1131,7 +1135,7 @@ contains
          endif
          call MPI_IRECV(bufferpi_r(1,1,iproc)&
             &,nelt*3*(ilocend-ilocbeg+1)*(ibeadend-ibeadbeg+1+cshift)&
-            &,MPI_RPREC,iproc-1,mptag_data, COMM_POLYMER&
+            &,MPI_RPREC,iproc-1,mptag_data, get_replica_comm()&
             &,reqs(ii),ierr)
       ENDDO
 !$acc end host_data
@@ -1205,6 +1209,7 @@ contains
       use mpi
       use beads
       use domdec
+      use parallel, only: get_replica_comm
       use inform, only: deb_path
       implicit none
       type(POLYMER_COMM_TYPE),intent(inout) :: polymer
@@ -1326,7 +1331,7 @@ contains
          call MPI_ISEND(bufferpi_s(1,1,iproc)&
             &,nelt*3*(ilocend-ilocbeg+1)*(ibeadend-ibeadbeg+1)&
             &,MPI_RPREC&
-            &,iproc-1, mptag_data, COMM_POLYMER, reqs(ii),ierr)
+            &,iproc-1, mptag_data, get_replica_comm(), reqs(ii),ierr)
       ENDDO
 
       !RECEIVE DATA
@@ -1344,7 +1349,7 @@ contains
          endif
          call MPI_IRECV(bufferpi_r(1,1,iproc)&
             &,nelt*3*(ilocend-ilocbeg+1)*(ibeadend-ibeadbeg+1)&
-            &,MPI_RPREC,iproc-1,mptag_data, COMM_POLYMER&
+            &,MPI_RPREC,iproc-1,mptag_data, get_replica_comm()&
             &,reqs(ii),ierr)
       ENDDO
 !$acc end host_data
@@ -1472,6 +1477,7 @@ contains
    subroutine commforcesrecpi(derivs,temprec,nbeadsproc)
       use deriv
       use domdec
+      use parallel, only: get_domain_comm, get_recip_comm
       use mpi
       use potent ,pa=>PotentialAll
       use pme    ,only: GridDecomp1d
@@ -1526,11 +1532,11 @@ contains
 !
       if (use_pmecore) then
          nprocloc = nrec
-         commloc  = comm_rec
+         commloc  = get_recip_comm()
          rankloc  = rank_bis
       else
          nprocloc = nproc
-         commloc  = COMM_TINKER
+         commloc  = get_domain_comm()
          rankloc  = rank
       end if
 !
@@ -1624,7 +1630,7 @@ contains
          if (precdir_send1(i).ne.rank) then
             tag = nproc*rank + precdir_send1(i) + 1
             call MPI_IRECV(buffer(1,1,1,i),3*nloc*nbeadsproc,MPI_RPREC&
-               &,precdir_send1(i),tag,COMM_TINKER,reqrec(i),ierr)
+               &,precdir_send1(i),tag,get_domain_comm(),reqrec(i),ierr)
          end if
       end do
 !$acc end host_data
@@ -1657,7 +1663,7 @@ contains
             tag = nproc*precdir_recep1(i) + rank + 1
             call MPI_ISEND(buffers(1,1,bufbeg(precdir_recep1(i)+1))&
                &,3*domlen(precdir_recep1(i)+1)*nbeadsproc,MPI_RPREC&
-               &,precdir_recep1(i),tag,COMM_TINKER,reqsend(i),ierr)
+               &,precdir_recep1(i),tag,get_domain_comm(),reqsend(i),ierr)
          end if
       end do
 !$acc end host_data
@@ -1717,6 +1723,7 @@ contains
       use mpi
       use beads
       use domdec
+      use parallel, only: get_replica_comm
       implicit none
       type(POLYMER_COMM_TYPE),intent(inout) :: polymer_ctr
       real(r_p), intent(inout) :: derivs_ctr(3,nbloc,*)
@@ -1800,7 +1807,7 @@ contains
          call MPI_ISEND(bufferpi_s(1,1,iproc)&
             &,3*(ilocend-ilocbeg+1)*(ibeadend-ibeadbeg+1)&
             &,MPI_RPREC&
-            &,iproc-1, mptag_data, COMM_POLYMER, reqs(ii),ierr)
+            &,iproc-1, mptag_data, get_replica_comm(), reqs(ii),ierr)
       ENDDO
 
       !RECEIVE DATA
@@ -1818,7 +1825,7 @@ contains
          endif
          call MPI_IRECV(bufferpi_r(1,1,iproc)&
             &,3*(ilocend-ilocbeg+1)*(ibeadend-ibeadbeg+1)&
-            &,MPI_RPREC,iproc-1,mptag_data, COMM_POLYMER&
+            &,MPI_RPREC,iproc-1,mptag_data, get_replica_comm()&
             &,reqs(ii),ierr)
       ENDDO
 !$acc end host_data

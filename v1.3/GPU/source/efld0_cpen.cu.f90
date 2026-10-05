@@ -9,7 +9,6 @@
 #include "tinker_cudart.h"
 
 module efld0_cpencu
-   use utilcu  ,only: ALL_LANES
    use tinheader,only: ti_p
    use tintypes,only: rpole_elt,real3,real6,real7
    use neigh   ,only: i_bl=>inside_block,d_bl=>disc_block

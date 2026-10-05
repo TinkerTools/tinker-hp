@@ -149,8 +149,9 @@ subroutine torsions(init)
 end subroutine
 
 subroutine update_device_torsions
+   use parallel, only: get_host_comm
    use bond
-   use domdec,only: rank,hostcomm
+   use domdec,only: rank
    use mpi   ,only: MPI_BARRIER
    use nvshmem
    use sizes ,only:tinkerdebug
@@ -162,7 +163,7 @@ subroutine update_device_torsions
 #ifdef _OPENACC
 12 format(2x,'upload_device_torsions')
    if(rank.eq.0.and.tinkerdebug.gt.0) print 12
-   call MPI_BARRIER(hostcomm,ierr)
+   call MPI_BARRIER(get_host_comm(),ierr)
 #endif
 
 #ifdef USE_NVSHMEM_CUDA

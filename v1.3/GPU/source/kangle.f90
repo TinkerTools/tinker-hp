@@ -16,6 +16,7 @@
 !
 #include "tinker_macro.h"
 subroutine kangle
+   use parallel, only: get_host_comm
    use angle
    use angpot
    use atmtyp
@@ -630,7 +631,7 @@ subroutine kangle
 !
    if (nangle .eq. 0)  use_angle = .false.
 400 continue
-   call MPI_BARRIER(hostcomm,ierr)
+   call MPI_BARRIER(get_host_comm(),ierr)
    call upload_device_kangle
 end
 

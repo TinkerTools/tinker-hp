@@ -19,6 +19,7 @@
 program testgrad
    use config, only: raw_cli_t, capture_raw_cli
    use domdec, only: rank
+   use parallel, only: get_domain_comm
    use iounit, only: iout
    use mdevice, only: bind_device
    use mpi
@@ -51,6 +52,7 @@ subroutine testgrad_bis(raw_cli,status_value)
    use config, only: config_t, max_raw_cli_args, parse_common_cli, raw_cli_length, raw_cli_t
    use deriv
    use domdec
+   use parallel, only: get_domain_comm
    use energi
    use sizes
    use inform
@@ -149,7 +151,7 @@ subroutine testgrad_bis(raw_cli,status_value)
    if (value_index.gt.value_count) then
       if(ranktot.eq.0) write (iout,10)
 10    format (/,' You Need To Enter if You want to Compute the Analytical Gradient Vector Y or N')
-      call MPI_BARRIER(COMM_TINKER,ierr)
+      call MPI_BARRIER(get_domain_comm(),ierr)
       __TINKER_FATAL__ 
    end if
    answer = values(value_index)
@@ -163,7 +165,7 @@ subroutine testgrad_bis(raw_cli,status_value)
    if (value_index.gt.value_count) then
       if (ranktot.eq.0) write (iout,30)
 30    format (/,' You Need To Enter if You want to Compute the Numerical Gradient Vector: Y or N')
-      call MPI_BARRIER(COMM_TINKER,ierr)
+      call MPI_BARRIER(get_domain_comm(),ierr)
       __TINKER_FATAL__
    end if
    answer = values(value_index)
@@ -197,7 +199,7 @@ subroutine testgrad_bis(raw_cli,status_value)
       if (value_index.gt.value_count) then
          if (ranktot.eq.0) write (iout,80)
 80       format (/,' You Need To Enter If You Want The Output Breakdown by Gradient Component [Y|N]')
-         call MPI_BARRIER(COMM_TINKER,ierr)
+         call MPI_BARRIER(get_domain_comm(),ierr)
          __TINKER_FATAL__
       end if
       answer = values(value_index)
@@ -384,7 +386,7 @@ subroutine testgrad_bis(raw_cli,status_value)
 !
    do i = 1, n
       if (repart(i).eq.rank) iloc = loc(i)
-      call MPI_BARRIER(COMM_TINKER,ierr)
+      call MPI_BARRIER(get_domain_comm(),ierr)
       if (donumer .and. use(i)) then
          do j = 1, 3
             if (j .eq. 1) then
@@ -557,7 +559,7 @@ subroutine testgrad_bis(raw_cli,status_value)
          end do
       end if
    end do
-   call MPI_BARRIER(COMM_TINKER,ierr)
+   call MPI_BARRIER(get_domain_comm(),ierr)
 !
 !     perform deallocation of some local arrays
 !
@@ -593,7 +595,7 @@ subroutine testgrad_bis(raw_cli,status_value)
    denorm = 0_re_p
    ndenorm = 0_re_p
 !
-   call MPI_BARRIER(COMM_TINKER,ierr)
+   call MPI_BARRIER(get_domain_comm(),ierr)
 !
 !     print the total gradient components for each atom
 !
@@ -651,20 +653,20 @@ subroutine testgrad_bis(raw_cli,status_value)
 !            end if
       end if
    end do
-   call MPI_BARRIER(COMM_TINKER,ierr)
+   call MPI_BARRIER(get_domain_comm(),ierr)
    if (rank.eq.0) then
       call MPI_REDUCE(MPI_IN_PLACE,totnorm,1,MPI_RPREC,MPI_SUM,0,&
-         &COMM_TINKER,ierr)
+         &get_domain_comm(),ierr)
    else
       call MPI_REDUCE(totnorm,totnorm,1,MPI_RPREC,MPI_SUM,0,&
-         &COMM_TINKER,ierr)
+         &get_domain_comm(),ierr)
    end if
    if (rank.eq.0) then
       call MPI_REDUCE(MPI_IN_PLACE,ntotnorm,1,MPI_RPREC,MPI_SUM,&
-         &0,COMM_TINKER,ierr)
+         &0,get_domain_comm(),ierr)
    else
       call MPI_REDUCE(ntotnorm,ntotnorm,1,MPI_RPREC,MPI_SUM,0,&
-         &COMM_TINKER,ierr)
+         &get_domain_comm(),ierr)
    end if
 !
 !     perform deallocation of some local arrays

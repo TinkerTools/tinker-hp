@@ -40,6 +40,7 @@ contains
 end
 
 subroutine bonds(init)
+   use parallel, only: get_host_comm
    use atmlst
    use atoms
    use bond
@@ -104,7 +105,7 @@ subroutine bonds(init)
             end if
          end do
       end do
-      call MPI_BARRIER(hostcomm,i)
+      call MPI_BARRIER(get_host_comm(),i)
 
       call upload_device_bond
    end if

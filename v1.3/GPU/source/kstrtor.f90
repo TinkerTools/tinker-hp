@@ -411,19 +411,21 @@ subroutine kstrtor(init)
 end
 
 subroutine upload_device_kstrtor
-   use domdec,only: rank,hostcomm
+   use parallel, only: get_host_comm
+   use domdec,only: rank
    use inform,only: deb_Path
    use ksttor
    use mpi   ,only: MPI_BARRIER
    use sizes ,only: tinkerdebug
    use strtor
    implicit none
-   integer ierr
+   integer ierr, host_communicator
 
 #ifdef _OPENACC
 12 format(2x,'upload_device_kstrtor')
    if(deb_Path) print 12
-   call MPI_BARRIER(hostcomm,ierr)
+   host_communicator = get_host_comm()
+   call MPI_BARRIER(host_communicator,ierr)
 #endif
 
 !$acc enter data copyin(nstrtorloc,nstrtor)

@@ -10,7 +10,7 @@ M_subroutine&
 use tinheader,only : ti_p,ti_eps,prec_eps
 #ifdef TINKER_CUF
 use cellcu
-use utilcu,only: f_abs,f_floor,f_sign
+use libm, only: f_abs=>TINKERHP_LIBM_ABS,f_floor=>TINKERHP_LIBM_FLOOR,f_sign=>TINKERHP_LIBM_SIGN
 #else
 use boxes
 use cell
@@ -84,7 +84,7 @@ M_subroutine&
 use tinheader,only : ti_p,ti_eps,prec_eps
 #ifdef TINKER_CUF
 use cellcu
-use utilcu,only: f_abs,f_sign
+use libm, only: f_abs=>TINKERHP_LIBM_ABS,f_sign=>TINKERHP_LIBM_SIGN
 #else
 use boxes
 use cell

@@ -31,6 +31,7 @@ contains
    end subroutine apply_b_piston
 
    module subroutine apply_o_piston(dt)
+      use parallel, only: get_domain_comm
       use bath
       use domdec
       use inform, only: deb_Path
@@ -57,9 +58,9 @@ contains
       end if
       if(nproc>1) then
          if (anisotrop) then
-            call MPI_BCAST(vextbox,3,MPI_RPREC,0,COMM_TINKER,ierr)
+            call MPI_BCAST(vextbox,3,MPI_RPREC,0,get_domain_comm(),ierr)
          else
-            call MPI_BCAST(vextvol,1,MPI_RPREC,0,COMM_TINKER,ierr)
+            call MPI_BCAST(vextvol,1,MPI_RPREC,0,get_domain_comm(),ierr)
          endif
       endif
       if (anisotrop) then

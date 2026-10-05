@@ -16,9 +16,9 @@ use interfaces,only: m_long
 use tinheader ,only: ti_p,zero1,one1,two1,twor
 use tinTypes  ,only: rpole_elt,real3,real6,mdyn3_r
 #ifdef TINKER_CUF
-use utilcu ,only: f_erfc
+use libm, only: f_erfc=>TINKERHP_LIBM_ERFC
 #  if defined(SINGLE)||defined(MIXED)
-use utilcu ,only: f_sqrt,f_exp
+use libm, only: f_sqrt=>TINKERHP_LIBM_SQRT,f_exp=>TINKERHP_LIBM_EXP
 #  endif
 #endif
 implicit none
@@ -337,9 +337,9 @@ M_subroutine&
 use tinheader ,only: ti_p,zero1,one1,two1,twor
 use tinTypes  ,only: rpole_elt,real3,real6,mdyn3_r
 #ifdef TINKER_CUF
-use utilcu ,only: f_erfc
+use libm, only: f_erfc=>TINKERHP_LIBM_ERFC
 #  if defined(SINGLE)||defined(MIXED)
-use utilcu ,only: f_sqrt,f_exp
+use libm, only: f_sqrt=>TINKERHP_LIBM_SQRT,f_exp=>TINKERHP_LIBM_EXP
 #  endif
 #endif
 implicit none
@@ -652,9 +652,9 @@ M_subroutine&
 use tinheader ,only: ti_p
 use tinTypes  ,only: rpole_elt,real3,real6,mdyn3_r
 #ifdef TINKER_CUF
-use utilcu ,only: f_erfc
+use libm, only: f_erfc=>TINKERHP_LIBM_ERFC
 #  if defined(SINGLE)||defined(MIXED)
-use utilcu ,only: f_sqrt,f_exp
+use libm, only: f_sqrt=>TINKERHP_LIBM_SQRT,f_exp=>TINKERHP_LIBM_EXP
 #  endif
 #endif
 implicit none
@@ -906,9 +906,9 @@ M_subroutine&
 use tinheader ,only: ti_p
 use tinTypes  ,only: rpole_elt,real3,real6
 #ifdef TINKER_CUF
-use utilcu ,only: f_erfc
+use libm, only: f_erfc=>TINKERHP_LIBM_ERFC
 #  if defined(SINGLE)||defined(MIXED)
-use utilcu ,only: f_sqrt,f_exp
+use libm, only: f_sqrt=>TINKERHP_LIBM_SQRT,f_exp=>TINKERHP_LIBM_EXP
 #  endif
 #endif
 implicit none
@@ -1037,9 +1037,9 @@ use interfaces,only: m_long
 use tinheader ,only: ti_p
 use tinTypes  ,only: rpole_elt,real3,real6
 #ifdef TINKER_CUF
-use utilcu ,only: f_erfc
+use libm, only: f_erfc=>TINKERHP_LIBM_ERFC
 #  if defined(SINGLE)||defined(MIXED)
-use utilcu ,only: f_sqrt,f_exp
+use libm, only: f_sqrt=>TINKERHP_LIBM_SQRT,f_exp=>TINKERHP_LIBM_EXP
 #  endif
 #endif
 implicit none

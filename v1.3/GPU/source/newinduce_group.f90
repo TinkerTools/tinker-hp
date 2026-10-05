@@ -137,6 +137,7 @@ end
 subroutine inducepcg_group(nrhs,precnd,ef,mu)
    use atmlst
    use domdec
+   use parallel, only: get_domain_comm
    use ewald
    use inform     ,only: deb_Path,abort,minmaxone
    use interfaces ,only: commfieldfull, tmatxb_group
@@ -292,7 +293,7 @@ subroutine inducepcg_group(nrhs,precnd,ef,mu)
 
    if(nproc>1) then
       call MPI_IALLREDUCE(MPI_IN_PLACE,ggold(1),nrhs,MPI_TPREC,&
-         &MPI_SUM,COMM_TINKER,req1,ierr)
+         &MPI_SUM,get_domain_comm(),req1,ierr)
 !
       call polar_post_group_comm(comm_ticket,nrhs,pp)
       call polar_finish(comm_ticket,nrhs,pp)
@@ -326,7 +327,7 @@ subroutine inducepcg_group(nrhs,precnd,ef,mu)
       gg(1)=gg1; gg(2)=gg2
       if(nproc>1) then
          call MPI_IALLREDUCE(MPI_IN_PLACE,gg(1),nrhs,MPI_RPREC,MPI_SUM,&
-            &COMM_TINKER,req2,ierr)
+            &get_domain_comm(),req2,ierr)
          call MPI_WAIT(req2,status,ierr)
          gg1 = gg(1); gg2 = gg(2)
 !$acc update device(gg1,gg2) async(default_q)
@@ -364,7 +365,7 @@ subroutine inducepcg_group(nrhs,precnd,ef,mu)
 
       if(nproc>1) then
          call MPI_IALLREDUCE(MPI_IN_PLACE,mbuf(1),2*nrhs,MPI_RPREC,&
-            &MPI_SUM,COMM_TINKER,req3,ierr)
+            &MPI_SUM,get_domain_comm(),req3,ierr)
          call MPI_WAIT(req3,status,ierr)
          ggnew1 = ggnew(1); ggnew2=ggnew(2)
       endif
@@ -1025,8 +1026,10 @@ end
 !
 
 subroutine orderbuffergroup
+   use parallel, only: get_direct_comm
    use atoms
    use domdec
+   use parallel, only: get_domain_comm
    use group
    use mpole
    use potent
@@ -1043,9 +1046,9 @@ subroutine orderbuffergroup
    if (deb_Path) print '(2X,A)','>>>orderbuffergroup'
 
    if (use_pmecore) then
-      commloc = comm_dir
+      commloc = get_direct_comm()
    else
-      commloc = COMM_TINKER
+      commloc = get_domain_comm()
    end if
    allocate (reqrec(nproc))
    allocate (reqsend(nproc))
@@ -1058,14 +1061,14 @@ subroutine orderbuffergroup
       if (iproc.ne.rank) then
          tag = nproc*rank + iproc + 1
          call MPI_IRECV(domlengroup(iproc+1),1,MPI_INT,iproc,tag,&
-            &COMM_TINKER,reqrec(iproc+1),ierr)
+            &get_domain_comm(),reqrec(iproc+1),ierr)
       end if
    end do
    do iproc = 0, nproc-1
       if (iproc.ne.rank) then
          tag = nproc*iproc + rank + 1
          call MPI_ISEND(domlengroup(rank+1),1,MPI_INT,iproc,tag,&
-            &COMM_TINKER,reqsend(iproc+1),ierr)
+            &get_domain_comm(),reqsend(iproc+1),ierr)
       end if
    end do
    do iproc = 0, nproc-1
@@ -1096,14 +1099,14 @@ subroutine orderbuffergroup
          tag = nproc*rank + iproc + 1
          call MPI_IRECV(globgroup(bufbeggroup(iproc+1)),&
             &domlengroup(iproc+1),MPI_INT,iproc,tag,&
-            &COMM_TINKER,reqrec(iproc+1),ierr)
+            &get_domain_comm(),reqrec(iproc+1),ierr)
       end if
    end do
    do iproc = 0, nproc-1
       if (iproc.ne.rank) then
          tag = nproc*iproc + rank + 1
          call MPI_ISEND(globgroup,domlengroup(rank+1),MPI_INT,&
-            &iproc,tag,COMM_TINKER,reqsend(iproc+1),ierr)
+            &iproc,tag,get_domain_comm(),reqsend(iproc+1),ierr)
       end if
    end do
 !$acc end host_data
@@ -1138,14 +1141,14 @@ subroutine orderbuffergroup
       if (iproc.ne.rank) then
          tag = nproc*rank + iproc + 1
          call MPI_IRECV(domlenpolegroup(iproc+1),1,MPI_INT,iproc,tag,&
-            &COMM_TINKER,reqrec(iproc+1),ierr)
+            &get_domain_comm(),reqrec(iproc+1),ierr)
       end if
    end do
    do iproc = 0, nproc-1
       if (iproc.ne.rank) then
          tag = nproc*iproc + rank + 1
          call MPI_ISEND(domlenpolegroup(rank+1),1,MPI_INT,iproc,tag,&
-            &COMM_TINKER,reqsend(iproc+1),ierr)
+            &get_domain_comm(),reqsend(iproc+1),ierr)
       end if
    end do
    do iproc = 0, nproc-1
@@ -1176,14 +1179,14 @@ subroutine orderbuffergroup
          tag = nproc*rank + iproc + 1
          call MPI_IRECV(poleglobgroup(bufbegpolegroup(iproc+1)),&
             &domlenpolegroup(iproc+1),MPI_INT,iproc,tag,&
-            &COMM_TINKER,reqrec(iproc+1),ierr)
+            &get_domain_comm(),reqrec(iproc+1),ierr)
       end if
    end do
    do iproc = 0, nproc-1
       if (iproc.ne.rank) then
          tag = nproc*iproc + rank + 1
          call MPI_ISEND(poleglobgroup,domlenpolegroup(rank+1),MPI_INT,&
-            &iproc,tag,COMM_TINKER,reqsend(iproc+1),ierr)
+            &iproc,tag,get_domain_comm(),reqsend(iproc+1),ierr)
       end if
    end do
    do iproc = 0, nproc-1
@@ -1220,8 +1223,10 @@ end
 !     subroutine commfieldfull : communicate some direct fields (Newton s third law)
 !
 subroutine commfieldfull(nrhs,ef)
+   use parallel, only: get_direct_comm
    use atoms
    use domdec
+   use parallel, only: get_domain_comm
    use group
    use mpole
    use potent
@@ -1239,9 +1244,9 @@ subroutine commfieldfull(nrhs,ef)
    if (nproc.eq.1.or.((use_pmecore).and.(rank.gt.ndir-1))) return
 
    if (use_pmecore) then
-      commloc = comm_dir
+      commloc = get_direct_comm()
    else
-      commloc = COMM_TINKER
+      commloc = get_domain_comm()
    end if
 !
    call prmem_request(buffer,3,nrhs,&
@@ -1309,6 +1314,7 @@ subroutine commforcesgroup
    use atoms
    use deriv
    use domdec
+   use parallel, only: get_domain_comm
    use group
    use potent
    use mpi
@@ -1357,7 +1363,7 @@ subroutine commforcesgroup
          c=c+1
          tag = nproc*rank + i
          call MPI_IRECV(buffer(1,1,c),3*nlocatgroup,&
-            &MPI_MDTYP,i-1,tag,COMM_TINKER,reqrec(i),ierr)
+            &MPI_MDTYP,i-1,tag,get_domain_comm(),reqrec(i),ierr)
       end if
    end do
 !$acc end host_data
@@ -1369,7 +1375,7 @@ subroutine commforcesgroup
       if (i.ne.(rank+1)) then
          tag = nproc*(i-1) + rank + 1
          call MPI_ISEND(depgroup(1,bufbeggroup(i)),&
-            &3*domlengroup(i),MPI_MDTYP,i-1,tag,COMM_TINKER,&
+            &3*domlengroup(i),MPI_MDTYP,i-1,tag,get_domain_comm(),&
             &reqsend(i),ierr)
       end if
    end do

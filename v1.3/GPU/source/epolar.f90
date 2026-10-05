@@ -53,6 +53,7 @@ subroutine epolar0c
    use chgpot
    use group
    use domdec
+   use parallel, only: get_domain_comm
    use energi
    use ewald
    use math
@@ -162,17 +163,17 @@ subroutine epolar0c
                zu = zu + uind(3,iipole)
             end do
             call MPI_ALLREDUCE(MPI_IN_PLACE,xd,1,MPI_TPREC,MPI_SUM,&
-               &COMM_TINKER,ierr)
+               &get_domain_comm(),ierr)
             call MPI_ALLREDUCE(MPI_IN_PLACE,yd,1,MPI_TPREC,MPI_SUM,&
-               &COMM_TINKER,ierr)
+               &get_domain_comm(),ierr)
             call MPI_ALLREDUCE(MPI_IN_PLACE,zd,1,MPI_TPREC,MPI_SUM,&
-               &COMM_TINKER,ierr)
+               &get_domain_comm(),ierr)
             call MPI_ALLREDUCE(MPI_IN_PLACE,xu,1,MPI_TPREC,MPI_SUM,&
-               &COMM_TINKER,ierr)
+               &get_domain_comm(),ierr)
             call MPI_ALLREDUCE(MPI_IN_PLACE,yu,1,MPI_TPREC,MPI_SUM,&
-               &COMM_TINKER,ierr)
+               &get_domain_comm(),ierr)
             call MPI_ALLREDUCE(MPI_IN_PLACE,zu,1,MPI_TPREC,MPI_SUM,&
-               &COMM_TINKER,ierr)
+               &get_domain_comm(),ierr)
             if (rank.eq.0) then
                term = (2.0_ti_p/3.0_ti_p) * f * (pi/volbox)
                ep = ep + term*(xd*xu+yd*yu+zd*zu)
@@ -520,6 +521,7 @@ subroutine eprecip
    use boxes
    use chgpot
    use domdec
+   use parallel, only: get_domain_comm, get_recip_comm
    use energi
    use ewald
    use fft
@@ -548,11 +550,11 @@ subroutine eprecip
    if (use_pmecore) then
       nprocloc = nrec
       rankloc = rank_bis
-      commloc =  comm_rec
+      commloc =  get_recip_comm()
    else
       nprocloc = nproc
       rankloc = rank
-      commloc = COMM_TINKER
+      commloc = get_domain_comm()
    end if
 !
 !     return if the Ewald coefficient is zero

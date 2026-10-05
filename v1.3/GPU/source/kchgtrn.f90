@@ -24,6 +24,7 @@ subroutine kchgtrn(init,istep)
    use chgtrn
    use cutoff
    use domdec
+   use parallel, only: get_host_comm
    use inform
    use iounit
    use kctrn
@@ -187,13 +188,13 @@ subroutine kchgtrn(init,istep)
          end do
          call FromPolaxe2Ipolaxe ! Brodcast 'nZ_onlyglob' after this call
       end if
-100   call MPI_BARRIER(hostcomm,ierr)
-      call MPI_BCAST(npole ,1,MPI_INT,0,hostcomm,ierr)
-      call MPI_BCAST(npolar,1,MPI_INT,0,hostcomm,ierr)
-      call MPI_BCAST(nct   ,1,MPI_INT,0,hostcomm,ierr)
-      call MPI_BCAST(ncp   ,1,MPI_INT,0,hostcomm,ierr)
-      call MPI_BCAST(nZ_Onlyglob,1,    MPI_INT,0,hostcomm,ierr)
-      call MPI_BCAST(use_tholed,1,MPI_LOGICAL,0,hostcomm,ierr)
+100   call MPI_BARRIER(get_host_comm(),ierr)
+      call MPI_BCAST(npole ,1,MPI_INT,0,get_host_comm(),ierr)
+      call MPI_BCAST(npolar,1,MPI_INT,0,get_host_comm(),ierr)
+      call MPI_BCAST(nct   ,1,MPI_INT,0,get_host_comm(),ierr)
+      call MPI_BCAST(ncp   ,1,MPI_INT,0,get_host_comm(),ierr)
+      call MPI_BCAST(nZ_Onlyglob,1,    MPI_INT,0,get_host_comm(),ierr)
+      call MPI_BCAST(use_tholed,1,MPI_LOGICAL,0,get_host_comm(),ierr)
 !
 !     test multipoles at chiral sites and invert if necessary
 !

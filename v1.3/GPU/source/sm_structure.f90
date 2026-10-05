@@ -318,7 +318,6 @@ contains
          !     unitcell resolves KEY-file boundaries after the initial load;
          !     later analyze/read_frame calls publish coordinates again.
          use_bounds = .true.
-!$acc update device(use_bounds)
          xbox = structure_value%box_length(1)
          ybox = structure_value%box_length(2)
          zbox = structure_value%box_length(3)

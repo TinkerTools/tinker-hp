@@ -294,6 +294,7 @@ end subroutine
 subroutine initmpipmegpu
    use atmlst
    use domdec
+   use parallel, only: get_domain_comm
    use mpole
    use pme
    use potent  ,only: use_mlpot_only,use_charge
@@ -393,14 +394,14 @@ subroutine initmpipmegpu
       if (precdir_send1(i).ne.rank) then
          tag = nproc*rank + precdir_send1(i) + 1
          call MPI_IRECV(buflen1(precdir_send1(i)+1),1,MPI_INT,&
-            &precdir_send1(i),tag,COMM_TINKER,req(tag),ierr)
+            &precdir_send1(i),tag,get_domain_comm(),req(tag),ierr)
       end if
    end do
    do i = 1, nrecdir_recep1
       if (precdir_recep1(i).ne.rank) then
          tag = nproc*precdir_recep1(i) + rank + 1
          call MPI_ISEND(buflen2(precdir_recep1(i)+1),1,MPI_INT,&
-            &precdir_recep1(i),tag,COMM_TINKER,req(tag),ierr)
+            &precdir_recep1(i),tag,get_domain_comm(),req(tag),ierr)
       end if
    end do
 !
@@ -438,7 +439,7 @@ subroutine initmpipmegpu
          tag = nproc*rank + precdir_send1(i) + 1
          call MPI_IRECV(buf1(bufbeg1(precdir_send1(i)+1)),&
             &buflen1(precdir_send1(i)+1),MPI_INT,precdir_send1(i),&
-            &tag,COMM_TINKER,req2(tag),ierr)
+            &tag,get_domain_comm(),req2(tag),ierr)
       end if
    end do
    do i = 1, nrecdir_recep1
@@ -446,7 +447,7 @@ subroutine initmpipmegpu
          tag = nproc*precdir_recep1(i) + rank + 1
          call MPI_ISEND(buf2(bufbeg2(precdir_recep1(i)+1)),&
             &buflen2(precdir_recep1(i)+1),MPI_INT,precdir_recep1(i),&
-            &tag,COMM_TINKER,req2(tag),ierr)
+            &tag,get_domain_comm(),req2(tag),ierr)
       end if
    end do
 !$acc end host_data
@@ -864,9 +865,8 @@ subroutine build_cell_listgpu(istep)
    call prmem_request(cell_len,ncell_tot,async=.true.)
 
    allocate (indcelltemp(n))
-!$acc data create(indcelltemp) &
-!$acc     present(cell_len,indcell,bufbegcell,repartcell, &
-!$acc  use_bounds) async(reciprocal_work%queue)
+!$acc data create(indcelltemp) async(reciprocal_work%queue)&
+!$acc      present(cell_len,indcell,bufbegcell,repartcell)
 
 !$acc parallel loop async(reciprocal_work%queue)
    do i = 1,ncell_tot
@@ -1205,11 +1205,12 @@ end
 !
 subroutine build_cell_list2(ineignl,cell_order,&
    &nlocnl,buf,bP)
+   use parallel, only: get_domain_comm, get_direct_comm, get_recip_comm
    use atoms ,only: x,y,z,n
    use bound ,only: use_bounds
    use boxes ,only: monoclinic,triclinic,orthogonal,octahedron,xbox,ybox,zbox
    use cell  ,only: xcell2,ycell2,zcell2,eps_cell
-   use domdec,only: nproc,rank,COMM_TINKER,comm_dir,comm_rec,ndir,scala,scalb,scalc
+   use domdec,only: nproc,rank,ndir,scala,scalb,scalc
    use inform,only: deb_Path,tindPath
    use nblistgpu_inl
    use neigh ,only: repartcell,cell_scan,cell_len,cell_len1,boxPart&
@@ -1252,12 +1253,12 @@ subroutine build_cell_list2(ineignl,cell_order,&
 
    if (use_pmecore) then  !Deal with pme_core
       if (rank.lt.ndir) then
-         commloc = comm_dir
+         commloc = get_direct_comm()
       else
-         commloc = comm_rec
+         commloc = get_recip_comm()
       end if
    else
-      commloc = COMM_TINKER
+      commloc = get_domain_comm()
    end if
 
    if (deb_Path) write(*,'(2x,a)') 'build_cell_listgpu2'

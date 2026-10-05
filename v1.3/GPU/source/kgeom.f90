@@ -17,6 +17,7 @@
 !
 #include "tinker_macro.h"
 subroutine kgeom(init)
+   use parallel, only: get_host_comm
    use atmlst
    use argue  ,only: arg
    use atmtyp
@@ -455,7 +456,7 @@ subroutine kgeom(init)
       if (use_wall)  use_geom = .true.
 !
 !       deallocate (rpos)
-      call MPI_barrier(hostcomm,i)
+      call MPI_barrier(get_host_comm(),i)
 
       ! Init US for Fred if required
       if (use_geom.and.US_enable) call init_USampling(nproc,arg)
@@ -629,7 +630,8 @@ subroutine kgeom(init)
 end
 
 subroutine upload_device_kgeom
-   use domdec,only: rank,hostcomm
+   use parallel, only: get_host_comm
+   use domdec,only: rank
    use mpi   ,only: MPI_BARRIER
    use kgeoms
    use inform,only: deb_Path
@@ -641,7 +643,7 @@ subroutine upload_device_kgeom
 #ifdef _OPENACC
 12 format(2x,'upload_device_kgeom')
    if(deb_Path) print 12
-   call MPI_BARRIER(hostcomm,ierr)
+   call MPI_BARRIER(get_host_comm(),ierr)
 #endif
 !$acc update device(ipfix,xpfix,ypfix,zpfix) async
 !$acc update device(kpfix,pfix,dfix,tfix,gfix) async

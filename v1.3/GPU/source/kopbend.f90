@@ -308,9 +308,10 @@ subroutine kopbend(init)
 end
 
 subroutine upload_device_kopbend(config)
+   use parallel, only: get_host_comm
    use angle
    use angpot
-   use domdec ,only:rank,hostcomm
+   use domdec ,only:rank
    use fields
    use kopbnd
    use inform ,only:deb_Path
@@ -325,7 +326,7 @@ subroutine upload_device_kopbend(config)
 #ifdef _OPENACC
 12 format(2x,'upload_device_kopbend')
    if(deb_Path) print 12
-   call MPI_BARRIER(hostcomm,ierr)
+   call MPI_BARRIER(get_host_comm(),ierr)
 #endif
 
    if (config.eq.0) then

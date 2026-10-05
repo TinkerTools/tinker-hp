@@ -20,9 +20,8 @@ module eljcu
    use tinheader,only: ti_p
    use tintypes ,only: real3
    use sizes    ,only: maxclass,maxvalue
-   use utilcu   ,only: ALL_LANES
 #if TINKER_SINGLE_PREC + TINKER_MIXED_PREC
-   use utilcu   ,only: f_sqrt
+   use libm     ,only: f_sqrt=>TINKERHP_LIBM_SQRT
 #endif
    use reduction,only: RED_BUFF_SIZE
    use sizes    ,only: maxgrp

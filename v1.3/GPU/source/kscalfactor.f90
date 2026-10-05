@@ -557,10 +557,11 @@ end
 !     Construct vdw scaling factor interation to postprocess
 !
 subroutine vdw_scalingnl
+   use parallel, only: get_domain_comm
    use atoms  ,only: x,y,z
    use atmlst ,only: vdwglobnl
    use couple
-   use domdec ,only: rank,nlocnl,COMM_TINKER,&
+   use domdec ,only: rank,nlocnl,&
       &xbegproc,ybegproc,zbegproc,&
       &xendproc,yendproc,zendproc
 #ifdef _OPENACC
@@ -681,12 +682,12 @@ subroutine vdw_scalingnl
 
       if (f_call.eq.0) then
          call MPI_AllReduce(n_vscale,n_vscale1,1,MPI_INT,MPI_SUM&
-            &,COMM_TINKER,ii)
+            &,get_domain_comm(),ii)
 11       format(' n_vscale (',I0,') sum_vscale ('I0,')',I4,L4)
          if(rank.lt.3) print 11, n_vscale,n_vscale1,rank,skipvdw12
       else
          call MPI_AllReduce(n_vscale,n_vscalei,1,MPI_INT,MPI_SUM&
-            &,COMM_TINKER,ii)
+            &,get_domain_comm(),ii)
          if (n_vscalei.ne.n_vscale1) then
 12          format(' MPI',I9,' vscale pair found against',2I9,I3)
             if(rank.lt.3) print 12,n_vscalei,n_vscale1,n_vscale,rank

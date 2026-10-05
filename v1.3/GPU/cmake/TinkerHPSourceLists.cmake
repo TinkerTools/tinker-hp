@@ -449,7 +449,6 @@ set(F_SRCS
 
 set(DEV_F_SRCS
   source/MOD_cell.cu.f90
-  source/MOD_util.cu.f90
   source/sm_mdevice.cu.f90
   source/echarge.cu.f90
   source/echglj.cu.f90

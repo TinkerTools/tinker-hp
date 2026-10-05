@@ -11,9 +11,9 @@ M_subroutine&
 use tinheader ,only: ti_p
 use tintypes  ,only: real3,rpole_elt
 #if  defined(TINKER_CUF)
-use utilcu  ,only: f_erfc
+use libm, only: f_erfc=>TINKERHP_LIBM_ERFC
 #  if (defined(SINGLE)||defined(MIXED))
-use utilcu  ,only: f_sqrt,f_exp
+use libm, only: f_sqrt=>TINKERHP_LIBM_SQRT,f_exp=>TINKERHP_LIBM_EXP
 #  endif
 #endif
 real(t_p)      ,intent(in) :: d2
@@ -170,7 +170,7 @@ M_subroutine&
    &)
 use tintypes ,only: rpole_elt
 #if defined(TINKER_CUF) && (TINKER_SINGLE_PREC+TINKER_MIXED_PREC)
-use utilcu   ,only: f_sqrt
+use libm, only: f_sqrt=>TINKERHP_LIBM_SQRT
 #endif
 integer    ,intent(in):: tver,tfea
 logical    ,intent(in):: use_tholed
@@ -260,7 +260,7 @@ M_subroutine&
    &)
 use tintypes ,only: rpole_elt
 #if defined(TINKER_CUF) && (TINKER_SINGLE_PREC+TINKER_MIXED_PREC)
-use utilcu   ,only: f_sqrt
+use libm, only: f_sqrt=>TINKERHP_LIBM_SQRT
 #endif
 integer    ,intent(in):: tver,tfea
 logical    ,intent(in):: use_tholed

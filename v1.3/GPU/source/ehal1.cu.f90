@@ -23,14 +23,15 @@ module ehal1cu
       &,d_bl=>disc_block
    use sizes    ,only: maxvalue,maxclass,maxgrp
    use tinheader,only: ti_p
-   use utilcu   ,only: all_lanes,f_abs
+   use libm     ,only: f_abs=>TINKERHP_LIBM_ABS
    use cellcu   ,only: xcell2,ycell2,zcell2
 #if TINKER_SINGLE_PREC + TINKER_MIXED_PREC
-   use utilcu   ,only: f_sqrt
+   use libm, only: f_sqrt=>TINKERHP_LIBM_SQRT
 #endif
    use reduction,only: RED_BUFF_SIZE
    use vdwpot   ,only: ARITHMETIC_RL,GEOMETRIC_RL,CUBIC_MEAN_RL&
       &,HARMONIC_RL,HHG_RL
+   integer,parameter :: AllLanes=Z'ffffffff'
    integer,parameter :: VDW_BLOCK_DIM=128,BLOCK_SIZE=32,WARP_SIZE=32
    public :: VDW_BLOCK_DIM,BLOCK_SIZE,WARP_SIZE
 
@@ -236,7 +237,7 @@ do ii = iwarp, nvdwlocnlb_pair-1, nwarp
 #ifndef TINKER_NO_MUTATE
    mutk(threadIdx%x) = mut(kglob(threadIdx%x))
 #endif
-   call syncwarp(ALL_LANES)
+   call syncwarp(AllLanes)
 
    ! Set Data to compute to zero
    ev_    = 0
@@ -422,7 +423,7 @@ do ii = iwarp, nvdwlocnlb_pair-1, nwarp
 !             istat   = atomicAdd (dev(3,i),gzi)
 !          end if
 
-!          call syncwarp(ALL_LANES)
+!          call syncwarp(AllLanes)
 !          if (kdx.le.nvdwlocnl) then
 !             istat   = atomicSub (dev(1,kbis),gxk(threadIdx%x))
 !             istat   = atomicSub (dev(2,kbis),gyk(threadIdx%x))

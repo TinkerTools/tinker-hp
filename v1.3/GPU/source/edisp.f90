@@ -441,6 +441,7 @@ end
 !
 !
 subroutine edrecip
+   use parallel, only: get_domain_comm, get_recip_comm
    use atmlst
    use boxes
    use bound
@@ -476,11 +477,11 @@ subroutine edrecip
    if (use_pmecore) then
       nprocloc = nrec
       rankloc = rank_bis
-      commloc = comm_rec
+      commloc = get_recip_comm()
    else
       nprocloc = nproc
       rankloc = rank
-      commloc = COMM_TINKER
+      commloc = get_domain_comm()
    end if
 !
 !     set Ewald coefficient

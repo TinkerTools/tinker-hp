@@ -9,7 +9,7 @@ submodule (parallel) parallel_lifecycle
    use domdec
    use inform    , only: initDebugEnv
    use mpi
-   use replicas  , only: COMM_ROOT2ROOT, nreps, rank_reploc, use_reps
+   use replicas  , only: nreps, rank_reploc, use_reps
    use status    , only: clear_status, failed, set_status, status_invalid_argument
    use tinmemory
    implicit none
@@ -265,29 +265,21 @@ contains
       call free_communicator(platform%root_exchange%communicator, first_error)
       call free_communicator(platform%replica%communicator, first_error)
       call free_communicator(platform%host%communicator, first_error)
-      call free_communicator(comm_dir, first_error)
-      call free_communicator(comm_rec, first_error)
+      call free_communicator(platform%domain%direct_comm, first_error)
+      call free_communicator(platform%domain%recip_comm, first_error)
       call free_communicator(platform%domain%communicator, first_error)
       if (present(cleanup_status)) cleanup_status = first_error
       if (first_error /= MPI_SUCCESS) then
-         COMM_TINKER = platform%domain%communicator
-         COMM_POLYMER = platform%replica%communicator
-         COMM_ROOT2ROOT = platform%root_exchange%communicator
-         hostcomm = platform%host%communicator
          return
       end if
       call reset_domain_state(platform%domain)
       platform%host = host_t()
       platform%replica = replica_t()
       platform%root_exchange = root_exch_t()
-      COMM_TINKER = MPI_COMM_NULL
-      COMM_POLYMER = MPI_COMM_NULL
-      COMM_ROOT2ROOT = MPI_COMM_NULL
       nproc = 0
       rank = 0
       nproc_polymer = 0
       rank_polymer = 0
-      hostcomm = MPI_COMM_NULL
       hostrank = 0
       rank_reploc = 0
       use_reps = .false.
@@ -315,9 +307,8 @@ contains
          &platform%host%communicator /= MPI_COMM_NULL .or. &
          &platform%replica%communicator /= MPI_COMM_NULL .or. &
          &platform%root_exchange%communicator /= MPI_COMM_NULL .or. &
-         &comm_dir /= MPI_COMM_NULL .or. comm_rec /= MPI_COMM_NULL .or. &
-         &COMM_TINKER /= MPI_COMM_NULL .or. COMM_POLYMER /= MPI_COMM_NULL .or. &
-         &COMM_ROOT2ROOT /= MPI_COMM_NULL .or. hostcomm /= MPI_COMM_NULL
+         &platform%domain%direct_comm /= MPI_COMM_NULL .or. &
+         &platform%domain%recip_comm /= MPI_COMM_NULL
    end function has_live_topology
 
    logical function has_inconsistent_topology(platform)
@@ -330,29 +321,20 @@ contains
       if (platform%domain%communicator /= MPI_COMM_NULL .and. &
             &platform%host%communicator == MPI_COMM_NULL) has_inconsistent_topology = .true.
       if (platform%domain%communicator == MPI_COMM_NULL .and. &
-            &COMM_TINKER /= MPI_COMM_NULL) has_inconsistent_topology = .true.
-      if (platform%domain%communicator /= MPI_COMM_NULL .and. &
-            &COMM_TINKER == MPI_COMM_NULL) has_inconsistent_topology = .true.
-      if (platform%host%communicator == MPI_COMM_NULL .and. &
-            &hostcomm /= MPI_COMM_NULL) has_inconsistent_topology = .true.
-      if (platform%host%communicator /= MPI_COMM_NULL .and. &
-            &hostcomm == MPI_COMM_NULL) has_inconsistent_topology = .true.
-      if (platform%replica%communicator == MPI_COMM_NULL .and. &
-            &COMM_POLYMER /= MPI_COMM_NULL) has_inconsistent_topology = .true.
-      if (platform%replica%communicator /= MPI_COMM_NULL .and. &
-            &COMM_POLYMER == MPI_COMM_NULL) has_inconsistent_topology = .true.
-      if (platform%root_exchange%communicator == MPI_COMM_NULL .and. &
-            &COMM_ROOT2ROOT /= MPI_COMM_NULL) has_inconsistent_topology = .true.
-      if (platform%root_exchange%communicator /= MPI_COMM_NULL .and. &
-            &COMM_ROOT2ROOT == MPI_COMM_NULL) has_inconsistent_topology = .true.
-      if (platform%domain%communicator == MPI_COMM_NULL .and. &
-            &(comm_dir /= MPI_COMM_NULL .or. comm_rec /= MPI_COMM_NULL)) has_inconsistent_topology = .true.
-      if (comm_dir /= MPI_COMM_NULL .and. comm_rec /= MPI_COMM_NULL) has_inconsistent_topology = .true.
-      if (comm_dir /= MPI_COMM_NULL .or. comm_rec /= MPI_COMM_NULL) then
-         if (rank < ndir .and. comm_dir == MPI_COMM_NULL) has_inconsistent_topology = .true.
-         if (rank >= ndir .and. comm_dir /= MPI_COMM_NULL) has_inconsistent_topology = .true.
-         if (rank < ndir .and. comm_rec /= MPI_COMM_NULL) has_inconsistent_topology = .true.
-         if (rank >= ndir .and. comm_rec == MPI_COMM_NULL) has_inconsistent_topology = .true.
+            &(platform%domain%direct_comm /= MPI_COMM_NULL .or. &
+            &platform%domain%recip_comm /= MPI_COMM_NULL)) has_inconsistent_topology = .true.
+      if (platform%domain%direct_comm /= MPI_COMM_NULL .and. &
+            &platform%domain%recip_comm /= MPI_COMM_NULL) has_inconsistent_topology = .true.
+      if (platform%domain%direct_comm /= MPI_COMM_NULL .or. &
+            &platform%domain%recip_comm /= MPI_COMM_NULL) then
+         if (rank < ndir .and. platform%domain%direct_comm == MPI_COMM_NULL) &
+            &has_inconsistent_topology = .true.
+         if (rank >= ndir .and. platform%domain%direct_comm /= MPI_COMM_NULL) &
+            &has_inconsistent_topology = .true.
+         if (rank < ndir .and. platform%domain%recip_comm /= MPI_COMM_NULL) &
+            &has_inconsistent_topology = .true.
+         if (rank >= ndir .and. platform%domain%recip_comm == MPI_COMM_NULL) &
+            &has_inconsistent_topology = .true.
       end if
       if (use_reps .and. platform%domain%rank == 0 .and. &
             &platform%root_exchange%communicator == MPI_COMM_NULL) has_inconsistent_topology = .true.
@@ -367,6 +349,8 @@ contains
       type(domain_t), intent(inout) :: domain
 
       domain%communicator = MPI_COMM_NULL
+      domain%direct_comm = MPI_COMM_NULL
+      domain%recip_comm = MPI_COMM_NULL
       domain%size = 0
       domain%rank = 0
       domain%nproc = 0
@@ -407,18 +391,12 @@ contains
       type(parallel_t), intent(in) :: platform
       type(config_t), intent(in) :: configuration
 
-      COMM_TINKER = platform%domain%communicator
       nproc = platform%domain%size
       rank = platform%domain%rank
-      hostcomm = platform%host%communicator
       hostrank = platform%host%rank
-      COMM_POLYMER = platform%replica%communicator
       nproc_polymer = platform%replica%size
       rank_polymer = platform%replica%rank
-      COMM_ROOT2ROOT = platform%root_exchange%communicator
       use_reps = configuration%replicas_enabled
       nreps = configuration%replica_count
-      comm_dir = MPI_COMM_NULL
-      comm_rec = MPI_COMM_NULL
    end subroutine publish_legacy_topology
 end submodule parallel_lifecycle

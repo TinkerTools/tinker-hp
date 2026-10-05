@@ -68,6 +68,7 @@ subroutine epolar3cgpu
    use boxes
    use chgpot
    use domdec
+   use parallel, only: get_domain_comm
    use energi     ,only: ep,ep_r,eprec
    use ewald
    use epolar3gpu_inl
@@ -223,17 +224,17 @@ subroutine epolar3cgpu
             end do
             !implicit wait added here by the compiler
             call MPI_ALLREDUCE(MPI_IN_PLACE,xd,1,MPI_TPREC,MPI_SUM,&
-               &COMM_TINKER,ierr)
+               &get_domain_comm(),ierr)
             call MPI_ALLREDUCE(MPI_IN_PLACE,yd,1,MPI_TPREC,MPI_SUM,&
-               &COMM_TINKER,ierr)
+               &get_domain_comm(),ierr)
             call MPI_ALLREDUCE(MPI_IN_PLACE,zd,1,MPI_TPREC,MPI_SUM,&
-               &COMM_TINKER,ierr)
+               &get_domain_comm(),ierr)
             call MPI_ALLREDUCE(MPI_IN_PLACE,xu,1,MPI_TPREC,MPI_SUM,&
-               &COMM_TINKER,ierr)
+               &get_domain_comm(),ierr)
             call MPI_ALLREDUCE(MPI_IN_PLACE,yu,1,MPI_TPREC,MPI_SUM,&
-               &COMM_TINKER,ierr)
+               &get_domain_comm(),ierr)
             call MPI_ALLREDUCE(MPI_IN_PLACE,zu,1,MPI_TPREC,MPI_SUM,&
-               &COMM_TINKER,ierr)
+               &get_domain_comm(),ierr)
             if (rank.eq.0) then
                term = (2.0_ti_p/3.0_ti_p) * f * (pi/volbox)
 !$acc serial async
@@ -955,6 +956,7 @@ subroutine eprecipgpu
    use boxes
    use chgpot
    use domdec
+   use parallel, only: get_domain_comm, get_recip_comm
    use energi
    use ewald
    use fft
@@ -995,11 +997,11 @@ subroutine eprecipgpu
    if (use_pmecore) then
       nprocloc = nrec
       rankloc  = rank_bis
-      commloc  =  comm_rec
+      commloc  =  get_recip_comm()
    else
       nprocloc = nproc
       rankloc  = rank
-      commloc  = COMM_TINKER
+      commloc  = get_domain_comm()
    end if
 !
 !     return if the Ewald coefficient is zero
@@ -1011,7 +1013,7 @@ subroutine eprecipgpu
 !
 !$acc data async(reciprocal_work%queue) &
 !$acc     present(ipole,fphirec,polerecglob,uind,qgrid2in_2d, &
-!$acc   istart2,jstart2,kstart2,use_bounds,eprec)
+!$acc   istart2,jstart2,kstart2,eprec)
 
 !$acc serial async(reciprocal_work%queue) present(e,a)
    e = 0.0_re_p

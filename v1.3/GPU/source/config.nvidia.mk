@@ -200,6 +200,23 @@ else ifeq ($(nvfortran_opt_level__),O0)
 else
    $(error nvfortran_opt_level__ must be fast, O1, or O0; got '$(nvfortran_opt_level__)')
 endif
+nvfortran_o0__ := 0
+ifeq ($(nvfortran_opt_level__),O0)
+   nvfortran_o0__ := 1
+endif
+ifeq ($(opt),debug)
+   nvfortran_o0__ := 1
+endif
+ifeq ($(opt),debug+)
+   nvfortran_o0__ := 1
+endif
+# NVHPC 24.7 emits invalid NVVM debug metadata for O0 OpenACC code.
+ifeq ($(nvfortran_o0__),1)
+ifeq ($(legacy_flags),off)
+   device_flags_f_   := $(device_flags_f_),nodebug
+   device_flags_cxx_ := $(device_flags_cxx_),nodebug
+endif
+endif
 # NVFORTRAN compiler-stability workaround for all Fortran units.
 # Opt in with "nvfortran_gpu_noinline__=-Mnoinline" for an assessment build.
 nvfortran_gpu_noinline__ ?=

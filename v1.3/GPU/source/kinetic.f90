@@ -16,17 +16,16 @@
 !
 #include "tinker_macro.h"
 subroutine kinetic (eksum,ekin,temp)
-   use atmtyp
-   use atoms
-   use bath
-   use domdec
-   use group
-   use mdstuf
-   use moldyn
-   use units
-   use usage
-   use mpi
-   use qtb, only: corr_fact_qtb
+   use atmtyp  , only: mass
+   use bath    , only: barostat, eta, isobaric, kelvin, taupres
+   use domdec  , only: glob, nloc, nproc
+   use parallel, only: get_domain_comm
+   use mdstuf  , only: nfree
+   use moldyn  , only: v
+   use units   , only: convert, gasconst
+   use usage   , only: is_used=>use
+   use mpi     , only: MPI_ALLREDUCE, MPI_IN_PLACE, MPI_RPREC, MPI_SUM
+   use qtb     , only: corr_fact_qtb
    implicit none
    integer i,j,k,ierr,iglob
    integer start,stop
@@ -37,7 +36,7 @@ subroutine kinetic (eksum,ekin,temp)
    real(r_p) inert(3,3)
 !
 !$acc data copyout(eksum,ekin) &
-!$acc     present(use,glob,v) &
+!$acc     present(is_used,glob,v) &
 !$acc     async
 !
 !     zero out the total kinetic energy and its outer product
@@ -60,7 +59,7 @@ subroutine kinetic (eksum,ekin,temp)
       iglob = glob(i)
       term = 0.5_re_p * mass(iglob) / convert&
          &/ corr_fact_qtb_
-      if (use(iglob)) then
+      if (is_used(iglob)) then
 !$acc loop seq collapse(2)
          do j = 1, 3
             do k = 1, 3
@@ -76,7 +75,7 @@ subroutine kinetic (eksum,ekin,temp)
 !$acc wait
 !$acc host_data use_device(ekin)
       call MPI_ALLREDUCE(MPI_IN_PLACE,ekin,9,MPI_RPREC,MPI_SUM,&
-         &COMM_TINKER,ierr)
+         &get_domain_comm(),ierr)
 !$acc end host_data
    end if
 !$acc serial async
@@ -102,18 +101,16 @@ end
 !
 !
 subroutine kineticgpu (eksum,ekin,temp)
-   use atmtyp
-   use atoms
-   use bath
-   use domdec
-   use energi ,only: calc_e
-   use group
-   use mdstuf
-   use moldyn
-   use units
-   use usage
-   use mpi
-   use qtb, only: corr_fact_qtb
+   use atmtyp  , only: mass
+   use bath    , only: barostat, eta, isobaric, kelvin, taupres
+   use domdec  , only: glob, nloc, nproc
+   use parallel, only: get_domain_comm
+   use mdstuf  , only: nfree
+   use moldyn  , only: v
+   use units   , only: convert, gasconst
+   use usage   , only: is_used=>use
+   use mpi     , only: MPI_ALLREDUCE, MPI_IN_PLACE, MPI_RPREC, MPI_SUM
+   use qtb     , only: corr_fact_qtb
    implicit none
    integer i,j,k,ierr,iglob
    integer start,stop
@@ -149,7 +146,7 @@ subroutine kineticgpu (eksum,ekin,temp)
    do i = 1, nloc
       do j = 1, 3
          iglob = glob(i)
-         if (use(iglob)) then
+         if (is_used(iglob)) then
             term = 0.5_re_p * mass(iglob) / convert
             if (j.eq.1) then
                ekin11 = ekin11 + real(term*v(1,iglob)*v(1,iglob),r_p)
@@ -206,7 +203,7 @@ subroutine kineticgpu (eksum,ekin,temp)
    if (nproc.ne.1) then
 !$acc wait
       call MPI_ALLREDUCE(MPI_IN_PLACE,ekin,9,MPI_RPREC,MPI_SUM,&
-         &COMM_TINKER,ierr)
+         &get_domain_comm(),ierr)
    end if
 !
    if (isobaric.and.barostat.eq.'BUSSI') then

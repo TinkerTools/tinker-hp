@@ -9,11 +9,12 @@
 #include "tinker_cudart.h"
 
 module tmatxb_pmecu
-   use utilcu  ,only: ALL_LANES,f_min,f_max
+   use libm     ,only: f_min=>TINKERHP_LIBM_MIN,f_max=>TINKERHP_LIBM_MAX
    use tinheader,only: ti_p
    use tintypes,only: rpole_elt,real3,real6,real7
    use neigh   ,only: i_bl=>inside_block,d_bl=>disc_block
    private
+   integer,parameter :: AllLanes=Z'ffffffff'
    integer,parameter :: BLOCK_DIM=128,BLOCK_SIZE=32,WARP_SIZE=32,WARP_SHFT=5
    integer,parameter :: maxBlock=ishft(1,16)
    public :: tmatxb_pme_core_cu, tmatxb_pme_core_v4_cu&
@@ -284,7 +285,7 @@ do ii = iwarp, npolelocnlb_pair-1, nwarp
    equk(threadIdx%x)%xx = mu4(1,kploc)
    equk(threadIdx%x)%yy = mu4(2,kploc)
    equk(threadIdx%x)%zz = mu4(3,kploc)
-   call syncwarp(ALL_LANES)
+   call syncwarp(AllLanes)
 
    ! Load atom block i parameters
    iblock  = ieblst(ii+1)
@@ -394,7 +395,7 @@ do ii = iwarp, npolelocnlb_pair-1, nwarp
    rstat = atomicAdd( efi4(1,iploc),fiq%x )
    rstat = atomicAdd( efi4(2,iploc),fiq%y )
    rstat = atomicAdd( efi4(3,iploc),fiq%z )
-   call syncwarp(ALL_LANES)
+   call syncwarp(AllLanes)
    rstat = atomicAdd( efi(1,1,kploc),fkd(threadIdx%x)%x )
    rstat = atomicAdd( efi(2,1,kploc),fkd(threadIdx%x)%y )
    rstat = atomicAdd( efi(3,1,kploc),fkd(threadIdx%x)%z )
@@ -481,7 +482,7 @@ do ii = iwarp, npolelocnlb_pair-1, nwarp
    dpui%xx = mu(1,2,iploc)
    dpui%yy = mu(2,2,iploc)
    dpui%zz = mu(3,2,iploc)
-   call syncwarp(ALL_LANES)
+   call syncwarp(AllLanes)
 
    ! Load atom block k parameters
    kdx     = eblst(ii*warpsize + ilane)
@@ -564,7 +565,7 @@ do ii = iwarp, npolelocnlb_pair-1, nwarp
    rstat = atomicAdd( efi(1,2,iploc),fip%x )
    rstat = atomicAdd( efi(2,2,iploc),fip%y )
    rstat = atomicAdd( efi(3,2,iploc),fip%z )
-   call syncwarp(ALL_LANES)
+   call syncwarp(AllLanes)
    rstat = atomicAdd( efi(1,1,kploc),fkd(threadIdx%x)%x )
    rstat = atomicAdd( efi(2,1,kploc),fkd(threadIdx%x)%y )
    rstat = atomicAdd( efi(3,1,kploc),fkd(threadIdx%x)%z )

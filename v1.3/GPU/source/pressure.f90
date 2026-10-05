@@ -385,6 +385,7 @@ subroutine pmonte (epot,temp)
    use usage
    use sizes      ,only: tinkerdebug
    use mpi
+   use parallel, only: get_domain_comm
    implicit none
    integer i,j,k,iglob,ierr
    integer start,stop
@@ -428,7 +429,7 @@ subroutine pmonte (epot,temp)
    if (rank.eq.0) then
       valrand = random()
    end if
-   call MPI_BCAST(valrand,1,MPI_TPREC,0,COMM_TINKER,ierr)
+   call MPI_BCAST(valrand,1,MPI_TPREC,0,get_domain_comm(),ierr)
 !
    if (valrand .lt. 1.0_ti_p/real(voltrial,t_p)) dotrial=.true.
 !
@@ -453,7 +454,7 @@ subroutine pmonte (epot,temp)
       !Broadcast potential
 !$acc update host(epot,temp) async
 !$acc wait
-      call MPI_BCAST(epot,1,MPI_RPREC,0,COMM_TINKER,ierr)
+      call MPI_BCAST(epot,1,MPI_RPREC,0,get_domain_comm(),ierr)
 
       kt = gasconst * temp
       if (isothermal)  kt = gasconst * kelvin
@@ -487,7 +488,7 @@ subroutine pmonte (epot,temp)
          if (rank.eq.0) then
             valrand = random()
          end if
-         call MPI_BCAST(valrand,1,MPI_TPREC,0,COMM_TINKER,ierr)
+         call MPI_BCAST(valrand,1,MPI_TPREC,0,get_domain_comm(),ierr)
          step   = volmove * (2.0_re_p*valrand-1.0_re_p)
          volbox = volbox + step
          scale  = (volbox/volold)**third
@@ -610,7 +611,7 @@ subroutine pmonte (epot,temp)
       if (rank.eq.0) then
          valrand = random()
       end if
-      call MPI_BCAST(valrand,1,MPI_TPREC,0,COMM_TINKER,ierr)
+      call MPI_BCAST(valrand,1,MPI_TPREC,0,get_domain_comm(),ierr)
       if (valrand .gt. expterm) then
          if (rank.eq.0.and.tinkerdebug.gt.0)&
             &write(*,15) ' Reject montecarlo',valrand&
@@ -901,6 +902,7 @@ subroutine initialize_langevin_piston()
    use boxes
    use mpi
    use domdec
+   use parallel, only: get_domain_comm
    implicit none
    integer ierr
    interface
@@ -924,9 +926,9 @@ subroutine initialize_langevin_piston()
       endif
    end if
    if (.not. anisotrop) then
-      call MPI_BCAST(vextvol,1,MPI_RPREC,0,COMM_TINKER,ierr)
+      call MPI_BCAST(vextvol,1,MPI_RPREC,0,get_domain_comm(),ierr)
    else
-      call MPI_BCAST(vextbox,3,MPI_RPREC,0,COMM_TINKER,ierr)
+      call MPI_BCAST(vextbox,3,MPI_RPREC,0,get_domain_comm(),ierr)
    endif
    aextvol    = 0.0d0
    aextbox    = 0.0d0

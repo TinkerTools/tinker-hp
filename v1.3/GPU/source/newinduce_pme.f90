@@ -279,6 +279,7 @@ end
 subroutine inducepcg_pme(matvec,nrhs,precnd,ef,mu,murec)
    use atmlst
    use domdec
+   use parallel, only: get_domain_comm, get_direct_comm
    use ewald
    use iounit
    use math
@@ -437,7 +438,7 @@ subroutine inducepcg_pme(matvec,nrhs,precnd,ef,mu,murec)
 
    if (rank.le.ndir-1) then
       call MPI_IALLREDUCE(MPI_IN_PLACE,ggold(1),nrhs,MPI_TPREC,&
-         &MPI_SUM,comm_dir,req1,ierr)
+         &MPI_SUM,get_direct_comm(),req1,ierr)
       call MPI_WAIT(req1,status,ierr)
    end if
 !
@@ -495,7 +496,7 @@ subroutine inducepcg_pme(matvec,nrhs,precnd,ef,mu,murec)
 
 
          call MPI_IALLREDUCE(MPI_IN_PLACE,gg(1),nrhs,MPI_TPREC,MPI_SUM,&
-            &comm_dir,req2,ierr)
+            &get_direct_comm(),req2,ierr)
          call MPI_WAIT(req2,status,ierr)
          do k = 1, nrhs
             if (gg(k).eq.zero) return
@@ -524,11 +525,11 @@ subroutine inducepcg_pme(matvec,nrhs,precnd,ef,mu,murec)
          end do
       end if
       call MPI_IALLREDUCE(MPI_IN_PLACE,ggnew(1),nrhs,MPI_TPREC,&
-         &MPI_SUM,COMM_TINKER,req3,ierr)
+         &MPI_SUM,get_domain_comm(),req3,ierr)
       call MPI_WAIT(req3,status,ierr)
       if (rank.le.ndir-1) then
          call MPI_IALLREDUCE(MPI_IN_PLACE,ene(1),nrhs,MPI_TPREC,&
-            &MPI_SUM,comm_dir,req4,ierr)
+            &MPI_SUM,get_direct_comm(),req4,ierr)
          call MPI_WAIT(req4,status,ierr)
 
          do i = 1, npoleloc
@@ -605,6 +606,7 @@ end
 subroutine inducejac_pme(matvec,nrhs,dodiis,ef,mu,murec)
    use atmlst
    use domdec
+   use parallel, only: get_domain_comm, get_direct_comm
    use ewald
    use iounit
    use math
@@ -759,7 +761,7 @@ subroutine inducejac_pme(matvec,nrhs,dodiis,ef,mu,murec)
 !
       end if
       call MPI_IALLREDUCE(MPI_IN_PLACE,rnorm(1),nrhs,MPI_TPREC,&
-         &MPI_SUM,COMM_TINKER,reqnorm,ierr)
+         &MPI_SUM,get_domain_comm(),reqnorm,ierr)
       if (rank.le.ndir-1) then
          if (dodiis) then
             ind = 0
@@ -776,7 +778,7 @@ subroutine inducejac_pme(matvec,nrhs,dodiis,ef,mu,murec)
 !           Compute Pulay's Matrix and extrapolate
 !
             call diis(ndismx,3*nrhs*npoleloc,xdiis,ediis,&
-               &bmat,nmat,reqdiis,comm_dir)
+               &bmat,nmat,reqdiis,get_direct_comm())
             do i = 1, 2*nmat-3
                call MPI_WAIT(reqdiis(i),status,ierr)
             end do
@@ -865,6 +867,7 @@ subroutine efld0_recip(cphi)
    use bound
    use boxes
    use domdec
+   use parallel, only: get_domain_comm, get_recip_comm
    use ewald
    use fft
    use math
@@ -895,11 +898,11 @@ subroutine efld0_recip(cphi)
 !
    if (use_pmecore) then
       nprocloc = nrec
-      commloc  = comm_rec
+      commloc  = get_recip_comm()
       rankloc  = rank_bis
    else
       nprocloc = nproc
-      commloc  = COMM_TINKER
+      commloc  = get_domain_comm()
       rankloc  = rank
    end if
 
@@ -1115,6 +1118,7 @@ subroutine tmatxbrecip(mu,murec,nrhs,dipfield,dipfieldbis)
    use atmlst
    use boxes
    use domdec
+   use parallel, only: get_domain_comm, get_recip_comm
    use ewald
    use fft
    use math
@@ -1141,11 +1145,11 @@ subroutine tmatxbrecip(mu,murec,nrhs,dipfield,dipfieldbis)
 !
    if (use_pmecore) then
       nprocloc = nrec
-      commloc  = comm_rec
+      commloc  = get_recip_comm()
       rankloc  = rank_bis
    else
       nprocloc = nproc
-      commloc  = COMM_TINKER
+      commloc  = get_domain_comm()
       rankloc  = rank
    end if
 

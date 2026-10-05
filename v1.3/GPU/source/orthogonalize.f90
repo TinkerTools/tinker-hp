@@ -248,6 +248,7 @@ subroutine MatxVec(Rin,Rout)
 end subroutine
 
 subroutine InnerProd( veca, vecb, sza, Ip )
+   use parallel, only: get_domain_comm
    use domdec
    use mpi
    implicit none
@@ -265,7 +266,7 @@ subroutine InnerProd( veca, vecb, sza, Ip )
    if (nproc.gt.1) then
 !$acc wait
       call MPI_ALLREDUCE(MPI_IN_PLACE,Ip,1,MPI_RPREC,MPI_SUM&
-         &,COMM_TINKER,i)
+         &,get_domain_comm(),i)
    end if
 end subroutine
 
@@ -306,6 +307,7 @@ subroutine InnerMProdInl( veca, vecb, diag, sza, Ip )
 end subroutine
 
 subroutine InnerProdEf( veca, vecb, sza, Ip1, Ip2 )
+   use parallel, only: get_domain_comm
    use domdec
    use mpi
    use orthogonalize,only: debg
@@ -333,13 +335,14 @@ subroutine InnerProdEf( veca, vecb, sza, Ip1, Ip2 )
 !$acc wait
       Ip(1)=Ip1; Ip(2)=Ip2
       call MPI_ALLREDUCE(MPI_IN_PLACE,Ip,2,MPI_RPREC,MPI_SUM&
-         &,COMM_TINKER,i)
+         &,get_domain_comm(),i)
       Ip1=Ip(1); Ip2=Ip(2)
    end if
 
 end subroutine
 
 subroutine InnerMProdEf( veca, vecb, sza, Ip1, Ip2 )
+   use parallel, only: get_domain_comm
    use domdec
    use mpi
    use mpole      ,only: npoleloc
@@ -377,7 +380,7 @@ subroutine InnerMProdEf( veca, vecb, sza, Ip1, Ip2 )
 !$acc wait
       Ip(1)=Ip1; Ip(2)=Ip2
       call MPI_ALLREDUCE(MPI_IN_PLACE,Ip,2,MPI_RPREC,MPI_SUM&
-         &,COMM_TINKER,i)
+         &,get_domain_comm(),i)
       Ip1=Ip(1); Ip2=Ip(2)
    end if
 
@@ -563,6 +566,7 @@ subroutine lanzcos_iteration
    use domdec
    use inform  ,only: deb_path,minmaxone
    use mpi
+   use parallel, only: get_domain_comm
    use mpole
    use orthogonalize
    use polar_temp   ,only: res,diag
@@ -643,7 +647,7 @@ subroutine lanzcos_iteration
    if (nproc.gt.1) then
       beta_v(1)=beta; beta_v(2)=beta1
       call MPI_ALLREDUCE(MPI_IN_PLACE,beta_v,2,MPI_RPREC,MPI_SUM,&
-         &COMM_TINKER,ierr)
+         &get_domain_comm(),ierr)
       beta=beta_v(1); beta1=beta_v(2)
    end if
 
@@ -777,7 +781,7 @@ subroutine lanzcos_iteration
       if (nproc.gt.1) then
          beta_v(1)=beta; beta_v(2)=beta1
          call MPI_ALLREDUCE(MPI_IN_PLACE,beta_v,2,MPI_RPREC&
-            &,MPI_SUM,COMM_TINKER,ierr)
+            &,MPI_SUM,get_domain_comm(),ierr)
          beta=beta_v(1); beta1=beta_v(2)
       end if
       beta  = sqrt(beta); beta1=sqrt(beta1)
@@ -801,7 +805,7 @@ subroutine lanzcos_iteration
 !$acc wait
 !$acc host_data use_device(scalV)
             call MPI_ALLREDUCE(MPI_IN_PLACE,scalV,kk-02,MPI_TPREC&
-               &,MPI_SUM,COMM_TINKER,ierr)
+               &,MPI_SUM,get_domain_comm(),ierr)
 !$acc end host_data
          end if
 !$acc parallel loop gang vector_length(512) default(present) async
@@ -823,7 +827,7 @@ subroutine lanzcos_iteration
 !$acc wait
          if (nproc.gt.1) then
             call MPI_ALLREDUCE(MPI_IN_PLACE,nrm_b,1,MPI_RPREC&
-               &,MPI_SUM,COMM_TINKER,ierr)
+               &,MPI_SUM,get_domain_comm(),ierr)
          end if
          nrm_b = sqrt(nrm_b)
          nrmbi = nrm_b
@@ -1033,6 +1037,7 @@ subroutine chkOrthogonality_r8(Mat,nl,nc,ldM,name)
 end subroutine
 
 subroutine OrthogonalizeBase1(Base,ldb,nl,nv,start0)
+   use parallel, only: get_domain_comm
    use domdec
    use orthogonalize
    use mpi
@@ -1077,7 +1082,7 @@ subroutine OrthogonalizeBase1(Base,ldb,nl,nv,start0)
          if (nproc.gt.1) then
 !$acc wait
             call MPI_ALLREDUCE(MPI_IN_PLACE,v_scal(start0+1),nv-start0& ! Parallel Inner Product
-               &,MPI_TPREC,MPI_SUM,COMM_TINKER,ierr)
+               &,MPI_TPREC,MPI_SUM,get_domain_comm(),ierr)
          end if
 !$acc parallel loop gang vector_length(vl) async &
 !$acc         deviceptr(v_scal,Base)
@@ -1095,6 +1100,7 @@ subroutine OrthogonalizeBase1(Base,ldb,nl,nv,start0)
 end subroutine
 
 subroutine OrthogonalizeBase(Base,ldb,nl,nv)
+   use parallel, only: get_domain_comm
    use domdec
    use orthogonalize
    use mpi
@@ -1119,7 +1125,7 @@ subroutine OrthogonalizeBase(Base,ldb,nl,nv)
    do j = 1,nl; a_nrm= a_nrm+ Base(j,1)**2; end do ! Compute norm
 !$acc wait
    if (nproc.gt.1) call MPI_ALLREDUCE(MPI_IN_PLACE,a_nrm,1&
-      &,MPI_RPREC,MPI_SUM,COMM_TINKER,ierr)
+      &,MPI_RPREC,MPI_SUM,get_domain_comm(),ierr)
    a_nrm = sqrt(a_nrm) ! Comp norm 2
    aNrm  = a_nrm       ! Cast
 !$acc parallel loop async &
@@ -1141,7 +1147,7 @@ subroutine OrthogonalizeBase(Base,ldb,nl,nv)
       if (nproc.gt.1) then
 !$acc wait
          call MPI_ALLREDUCE(MPI_IN_PLACE,v_scal(i+1),nv-i& ! Parallel Inner Product
-            &,MPI_TPREC,MPI_SUM,COMM_TINKER,ierr)
+            &,MPI_TPREC,MPI_SUM,get_domain_comm(),ierr)
       end if
 !$acc parallel loop gang vector_length(vl) async &
 !$acc         deviceptr(v_scal,Base)
@@ -1159,7 +1165,7 @@ subroutine OrthogonalizeBase(Base,ldb,nl,nv)
       do j = 1,nl; a_nrm= a_nrm+ Base(j,i1)**2; end do ! Compute norm
 !$acc wait
       if (nproc.gt.1) call MPI_ALLREDUCE(MPI_IN_PLACE,a_nrm,1&
-         &,MPI_RPREC,MPI_SUM,COMM_TINKER,ierr)
+         &,MPI_RPREC,MPI_SUM,get_domain_comm(),ierr)
       a_nrm = sqrt(a_nrm) ! Comp norm 2
       aNrm  = a_nrm       ! Cast
       if(tinkerdebug.gt.0) print*, 'orthogonalize',i,a_nrm
@@ -1173,6 +1179,7 @@ subroutine OrthogonalizeBase(Base,ldb,nl,nv)
 end subroutine
 
 subroutine OrthogonalizeLastVec1(Base,ldb,nl,nv)
+   use parallel, only: get_domain_comm
    use domdec
    use orthogonalize
    use mpi
@@ -1205,7 +1212,7 @@ subroutine OrthogonalizeLastVec1(Base,ldb,nl,nv)
    if (nproc.gt.1) then
 !$acc wait
       call MPI_ALLREDUCE(MPI_IN_PLACE,v_scal,nv& ! Parallel Inner Product
-         &,MPI_TPREC,MPI_SUM,COMM_TINKER,ierr)
+         &,MPI_TPREC,MPI_SUM,get_domain_comm(),ierr)
    end if
 !$acc parallel loop gang vector_length(vl) async &
 !$acc         deviceptr(v_scal,Base)
@@ -1284,7 +1291,8 @@ end subroutine
 #endif
 
 subroutine getEigenVec
-   use domdec ,only: rank,nproc,COMM_TINKER
+   use parallel, only: get_domain_comm
+   use domdec ,only: rank,nproc
    use mpole
    use mpi
    use orthogonalize
@@ -1418,9 +1426,9 @@ subroutine getEigenVec
             end do
             !call minmaxone(Vp(1,1,i),3*npoleloc,'Vp')
             call MPI_ALLREDUCE(MPI_IN_PLACE,nrm,1,MPI_RPREC,MPI_SUM,&
-               &COMM_TINKER,info)
+               &get_domain_comm(),info)
             call MPI_ALLREDUCE(MPI_IN_PLACE,scal,1,MPI_RPREC,MPI_SUM,&
-               &COMM_TINKER,info)
+               &get_domain_comm(),info)
             if (rank.eq.0) print 13, i,nrm,nrm1,scal,scal2,i1,i2,scal1
          end do
       end if
@@ -1505,6 +1513,7 @@ subroutine calcEigenVectorImage
 end subroutine
 
 subroutine BuildEMat
+   use parallel, only: get_domain_comm
    use domdec
    use inform     ,only: deb_path
 #if defined(_OPENACC)
@@ -1568,7 +1577,7 @@ subroutine BuildEMat
    if (nproc.gt.1) then
 !$acc wait
       call MPI_ALLREDUCE(MPI_IN_PLACE,MatE,2*nEigenV**2,MPI_RPREC&
-         &,MPI_SUM,COMM_TINKER,it)
+         &,MPI_SUM,get_domain_comm(),it)
    end if
 
    ! Casting operation in both MatE and MatE1
@@ -1648,6 +1657,7 @@ end subroutine
 !
 subroutine projectorOpe(Vin,Vout,invert)
    use domdec
+   use parallel, only: get_domain_comm
    use orthogonalize
    use mpole
    use mpi
@@ -1699,7 +1709,7 @@ subroutine projectorOpe(Vin,Vout,invert)
 !$acc wait
 !$acc host_data use_device(Evec)
       call MPI_ALLREDUCE(MPI_IN_PLACE,Evec,nEigenV*2,MPI_RPREC&
-         &,MPI_SUM,COMM_TINKER,i)
+         &,MPI_SUM,get_domain_comm(),i)
 !$acc end host_data
    end if
 
@@ -1729,7 +1739,8 @@ subroutine projectorOpe(Vin,Vout,invert)
 end subroutine
 
 subroutine ProjectorPGeneric(Vin,Vout)
-   use domdec  ,only: COMM_TINKER,rank,nproc
+   use domdec  ,only: rank,nproc
+   use parallel, only: get_domain_comm
    use orthogonalize
    use mpi
    use mpole
@@ -1783,7 +1794,7 @@ subroutine ProjectorPGeneric(Vin,Vout)
 !$acc wait
 !$acc host_data use_device(Evec)
       call MPI_ALLREDUCE(MPI_IN_PLACE,Evec,nEigenV*2,MPI_RPREC&
-         &,MPI_SUM,COMM_TINKER,ierr)
+         &,MPI_SUM,get_domain_comm(),ierr)
 !$acc end host_data
    end if
 
@@ -1813,7 +1824,8 @@ subroutine ProjectorPGeneric(Vin,Vout)
 end subroutine
 
 subroutine ProjectorPTransGeneric(Vin,Vout)
-   use domdec  ,only: COMM_TINKER,rank,nproc
+   use domdec  ,only: rank,nproc
+   use parallel, only: get_domain_comm
    use orthogonalize
    use mpi
    use mpole
@@ -1865,7 +1877,7 @@ subroutine ProjectorPTransGeneric(Vin,Vout)
 !$acc wait
 !$acc host_data use_device(Evec)
       call MPI_ALLREDUCE(MPI_IN_PLACE,Evec,nEigenV*2,MPI_RPREC&
-         &,MPI_SUM,COMM_TINKER,ierr)
+         &,MPI_SUM,get_domain_comm(),ierr)
 !$acc end host_data
    end if
 
@@ -1916,7 +1928,8 @@ end subroutine
 !     Compute Vout = alpha*Vout + Vp*EigVal^{-1}*Vp^{T}
 !
 subroutine ApplyQxV (Vin,Vout,alpha)
-   use domdec  ,only: COMM_TINKER,rank,nproc
+   use domdec  ,only: rank,nproc
+   use parallel, only: get_domain_comm
    use inform  ,only: minmaxone
    use orthogonalize
    use mpi
@@ -1968,7 +1981,7 @@ subroutine ApplyQxV (Vin,Vout,alpha)
 !$acc wait
 !$acc host_data use_device(Evec)
       call MPI_ALLREDUCE(MPI_IN_PLACE,Evec,nEigenV*2,MPI_RPREC&
-         &,MPI_SUM,COMM_TINKER,ierr)
+         &,MPI_SUM,get_domain_comm(),ierr)
 !$acc end host_data
    end if
 
@@ -2123,6 +2136,7 @@ end subroutine
 subroutine FinalizeKrylovBase
    use orthogonalize
    use domdec
+   use parallel, only: get_domain_comm
    use inform        ,only: deb_path
    use mpole
    use mpi
@@ -2182,7 +2196,7 @@ subroutine FinalizeKrylovBase
 !$acc wait
 !$acc host_data use_device(MIdk)
       call MPI_ALLREDUCE(MPI_IN_PLACE,MIdk,nEigenV**2,MPI_TPREC&
-         &,MPI_SUM,COMM_TINKER,ierr)
+         &,MPI_SUM,get_domain_comm(),ierr)
 !$acc end host_data
    end if
 

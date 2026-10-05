@@ -390,7 +390,8 @@ subroutine kurey(init)
 end
 
 subroutine upload_device_kurey
-   use domdec,only: rank,hostcomm
+   use parallel, only: get_host_comm
+   use domdec,only: rank
    use inform,only: deb_Path
    use kurybr
    use mpi   ,only: MPI_BARRIER
@@ -403,7 +404,7 @@ subroutine upload_device_kurey
 #ifdef _OPENACC
 12 format(2x,'upload_device_kurey')
    if(deb_Path) print 12
-   call MPI_BARRIER(hostcomm,ierr)
+   call MPI_BARRIER(get_host_comm(),ierr)
 #endif
 !$acc update device(ul,uk,iury,nburey,ureytypI)
 !$acc update device(ku,ku_sys)

@@ -14,7 +14,7 @@ submodule(inform) subInform
    use atomsMirror ,only: x,y,z,n
    use bath
    use cutoff
-   use domdec ,only: rank,MasterRank,COMM_TINKER&
+   use domdec ,only: rank,MasterRank&
       &,glob,nloc,nlocnl,nbloc,nproc
    use keys   ,only: fetchkey
    use moldyn ,only: v,a,aalt,aalt2
@@ -190,6 +190,7 @@ contains
 
 #ifdef USE_DETERMINISTIC_REDUCTION
    module subroutine minmaxonef( vector,sz,name,mi_,ma_,on_ )
+      use parallel, only: get_domain_comm
       implicit none
       integer sz
       mdyn_rtyp vector(*)
@@ -210,9 +211,9 @@ contains
 12    format(A6,2F20.8,1x,F21.5,I5)
 13    format(A6,2F20.8,1x,F21.5,I5,F19.5)
       if (nproc.gt.1) then
-         call MPI_ALLREDUCE(on,on1,1,MPI_RPREC,MPI_SUM,COMM_TINKER,i)
-         call MPI_ALLREDUCE(mi,mi1,1,MPI_RPREC,MPI_MIN,COMM_TINKER,i)
-         call MPI_ALLREDUCE(ma,ma1,1,MPI_RPREC,MPI_MAX,COMM_TINKER,i)
+         call MPI_ALLREDUCE(on,on1,1,MPI_RPREC,MPI_SUM,get_domain_comm(),i)
+         call MPI_ALLREDUCE(mi,mi1,1,MPI_RPREC,MPI_MIN,get_domain_comm(),i)
+         call MPI_ALLREDUCE(ma,ma1,1,MPI_RPREC,MPI_MAX,get_domain_comm(),i)
       end if
       !on1 = sqrt(on1)
       !on  = sqrt(on )
@@ -225,6 +226,7 @@ contains
 #endif
 
    module subroutine minmaxonei( vector,sz,name )
+      use parallel, only: get_domain_comm
       implicit none
       integer sz
       integer vector(*)
@@ -246,7 +248,7 @@ contains
 12    format(A6,2I8,1x,I12,I5)
 13    format(A6,2I8,1x,I12,I5,I0)
       if (nproc.gt.1) then
-         call MPI_ALLREDUCE(on,on1,1,MPI_INTEGER8,MPI_SUM,COMM_TINKER,i)
+         call MPI_ALLREDUCE(on,on1,1,MPI_INTEGER8,MPI_SUM,get_domain_comm(),i)
       end if
       !on1 = sqrt(on1)
       !on  = sqrt(on )
@@ -258,6 +260,7 @@ contains
    end subroutine
 
    module subroutine minmaxonet( vector,sz,name )
+      use parallel, only: get_domain_comm
       implicit none
       integer sz
       real(t_p) vector(*)
@@ -278,9 +281,9 @@ contains
 12    format(A6,2F20.8,1x,F21.5,I5)
 13    format(A6,2F20.8,1x,F21.5,I5,F19.5)
       if (nproc.gt.1) then
-         call MPI_ALLREDUCE(on,on1,1,MPI_REAL8,MPI_SUM,COMM_TINKER,i)
-         call MPI_ALLREDUCE(mi,mi1,1,MPI_REAL8,MPI_MIN,COMM_TINKER,i)
-         call MPI_ALLREDUCE(ma,ma1,1,MPI_REAL8,MPI_MAX,COMM_TINKER,i)
+         call MPI_ALLREDUCE(on,on1,1,MPI_REAL8,MPI_SUM,get_domain_comm(),i)
+         call MPI_ALLREDUCE(mi,mi1,1,MPI_REAL8,MPI_MIN,get_domain_comm(),i)
+         call MPI_ALLREDUCE(ma,ma1,1,MPI_REAL8,MPI_MAX,get_domain_comm(),i)
       end if
       !on1 = sqrt(on1)
       !on  = sqrt(on )
@@ -293,6 +296,7 @@ contains
 
 #if TINKER_MIXED_PREC
    module subroutine minmaxoner( vector,sz,name )
+      use parallel, only: get_domain_comm
       implicit none
       integer sz
       real(r_p) vector(*)
@@ -313,9 +317,9 @@ contains
 12    format(A6,2F20.8,1x,F21.5,I5)
 13    format(A6,2F20.8,1x,F21.5,I5,F19.5)
       if (nproc.gt.1) then
-         call MPI_ALLREDUCE(on,on1,1,MPI_RPREC,MPI_SUM,COMM_TINKER,i)
-         call MPI_ALLREDUCE(mi,mi1,1,MPI_RPREC,MPI_MIN,COMM_TINKER,i)
-         call MPI_ALLREDUCE(ma,ma1,1,MPI_RPREC,MPI_MAX,COMM_TINKER,i)
+         call MPI_ALLREDUCE(on,on1,1,MPI_RPREC,MPI_SUM,get_domain_comm(),i)
+         call MPI_ALLREDUCE(mi,mi1,1,MPI_RPREC,MPI_MIN,get_domain_comm(),i)
+         call MPI_ALLREDUCE(ma,ma1,1,MPI_RPREC,MPI_MAX,get_domain_comm(),i)
       end if
       on1 = sqrt(on1)
       on  = sqrt(on )
@@ -454,6 +458,7 @@ contains
 !     Print information on position, velocities and aceleration
 !
    module subroutine info_minmax_pva(opt)
+      use parallel, only: get_domain_comm
       implicit none
       integer,optional:: opt
       integer i,iglob,opt_
@@ -522,18 +527,18 @@ contains
 !$acc end data
       if (rank.eq.0) then
          call MPI_REDUCE(MPI_IN_PLACE,minmax,nel,MPI_RPREC,&
-            &MPI_MIN,0,COMM_TINKER,i)
+            &MPI_MIN,0,get_domain_comm(),i)
          call MPI_REDUCE(MPI_IN_PLACE,minmax(6),nel,MPI_RPREC,&
-            &MPI_MAX,0,COMM_TINKER,i)
+            &MPI_MAX,0,get_domain_comm(),i)
          call MPI_REDUCE(MPI_IN_PLACE,minmax(11),2,MPI_RPREC,&
-            &MPI_SUM,0,COMM_TINKER,i)
+            &MPI_SUM,0,get_domain_comm(),i)
       else
          call MPI_REDUCE(minmax,minmax,nel,MPI_RPREC,&
-            &MPI_MIN,0,COMM_TINKER,i)
+            &MPI_MIN,0,get_domain_comm(),i)
          call MPI_REDUCE(minmax(6),minmax(6),nel,MPI_RPREC,&
-            &MPI_MAX,0,COMM_TINKER,i)
+            &MPI_MAX,0,get_domain_comm(),i)
          call MPI_REDUCE(minmax(11),minmax(11),2,MPI_RPREC,&
-            &MPI_SUM,0,COMM_TINKER,i)
+            &MPI_SUM,0,get_domain_comm(),i)
       end if
 
       if (rank.eq.0) then
@@ -646,9 +651,10 @@ end submodule
 
 subroutine write0_mpi(name,line)
    use domdec
+   use parallel, only: get_domain_comm
    use mpi
    character(*) name
    integer i
-   call MPI_BARRIER(COMM_TINKER,i)
+   call MPI_BARRIER(get_domain_comm(),i)
    if(rank.eq.0) write(0,'(A,X,A,X,I0)') 'w0',name,line
 end subroutine

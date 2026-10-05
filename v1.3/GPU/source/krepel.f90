@@ -19,7 +19,8 @@
 subroutine krepel
    use atoms
    use atmtyp
-   use domdec ,only: hostrank,hostcomm
+   use domdec ,only: hostrank
+   use parallel, only: get_host_comm
    use inform
    use iounit
    use krepl
@@ -135,7 +136,7 @@ subroutine krepel
       end if
    end do
 
-100 call MPI_BARRIER(hostcomm,ierr)
+100 call MPI_BARRIER(get_host_comm(),ierr)
 !
 !     remove zero and undefined repulsion sites from the list
 !

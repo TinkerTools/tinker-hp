@@ -16,6 +16,7 @@
 !
 #include "tinker_precision.h"
 subroutine active
+   use parallel, only: get_host_comm
    use atoms
    use domdec
    use keys
@@ -224,8 +225,8 @@ subroutine active
    deallocate (mobile)
    deallocate (fixed)
 90 continue
-   call MPI_BCAST(nuse,1,MPI_INT,0,hostcomm,ierr)
-   call MPI_BARRIER(hostcomm,ierr)
+   call MPI_BCAST(nuse,1,MPI_INT,0,get_host_comm(),ierr)
+   call MPI_BARRIER(get_host_comm(),ierr)
 !$acc update device(use(0:n),iuse)
 end
 !

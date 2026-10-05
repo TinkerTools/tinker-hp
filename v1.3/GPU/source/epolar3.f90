@@ -43,6 +43,7 @@ end
 !
 !
 subroutine epolar3c
+   use parallel, only: get_domain_comm
    use action
    use sizes
    use analyz
@@ -172,17 +173,17 @@ subroutine epolar3c
                zu = zu + uind(3,iipole)
             end do
             call MPI_ALLREDUCE(MPI_IN_PLACE,xd,1,MPI_TPREC,MPI_SUM,&
-               &COMM_TINKER,ierr)
+               &get_domain_comm(),ierr)
             call MPI_ALLREDUCE(MPI_IN_PLACE,yd,1,MPI_TPREC,MPI_SUM,&
-               &COMM_TINKER,ierr)
+               &get_domain_comm(),ierr)
             call MPI_ALLREDUCE(MPI_IN_PLACE,zd,1,MPI_TPREC,MPI_SUM,&
-               &COMM_TINKER,ierr)
+               &get_domain_comm(),ierr)
             call MPI_ALLREDUCE(MPI_IN_PLACE,xu,1,MPI_TPREC,MPI_SUM,&
-               &COMM_TINKER,ierr)
+               &get_domain_comm(),ierr)
             call MPI_ALLREDUCE(MPI_IN_PLACE,yu,1,MPI_TPREC,MPI_SUM,&
-               &COMM_TINKER,ierr)
+               &get_domain_comm(),ierr)
             call MPI_ALLREDUCE(MPI_IN_PLACE,zu,1,MPI_TPREC,MPI_SUM,&
-               &COMM_TINKER,ierr)
+               &get_domain_comm(),ierr)
             if (rank.eq.0) then
                term = (2.0_ti_p/3.0_ti_p) * f * (pi/volbox)
                ep = ep + term*(xd*xu+yd*yu+zd*zu)
@@ -549,6 +550,7 @@ subroutine totaldipole
    use boxes
    use charge
    use domdec
+   use parallel, only: get_domain_comm
    use iounit
    use mpole
    use polar
@@ -579,18 +581,18 @@ subroutine totaldipole
 
    if (rank.eq.0) then
       call MPI_REDUCE(MPI_IN_PLACE,dipx,1,MPI_RPREC,MPI_SUM,0,&
-         &COMM_TINKER,ierr)
+         &get_domain_comm(),ierr)
       call MPI_REDUCE(MPI_IN_PLACE,dipy,1,MPI_RPREC,MPI_SUM,0,&
-         &COMM_TINKER,ierr)
+         &get_domain_comm(),ierr)
       call MPI_REDUCE(MPI_IN_PLACE,dipz,1,MPI_RPREC,MPI_SUM,0,&
-         &COMM_TINKER,ierr)
+         &get_domain_comm(),ierr)
    else
       call MPI_REDUCE(dipx,dipx,1,MPI_RPREC,MPI_SUM,0,&
-         &COMM_TINKER,ierr)
+         &get_domain_comm(),ierr)
       call MPI_REDUCE(dipy,dipy,1,MPI_RPREC,MPI_SUM,0,&
-         &COMM_TINKER,ierr)
+         &get_domain_comm(),ierr)
       call MPI_REDUCE(dipz,dipz,1,MPI_RPREC,MPI_SUM,0,&
-         &COMM_TINKER,ierr)
+         &get_domain_comm(),ierr)
    end if
    if (rank.eq.0) write(iout,1000) dipx
    if (rank.eq.0) write(iout,1010) dipy

@@ -370,8 +370,9 @@ subroutine ktortor(init)
 end
 
 subroutine upload_device_ktortor
+   use parallel, only: get_host_comm
    use bitor
-   use domdec,only: rank,hostcomm
+   use domdec,only: rank
    use inform,only: deb_Path
    use ktrtor
    use mpi   ,only: MPI_BARRIER
@@ -382,7 +383,7 @@ subroutine upload_device_ktortor
 #ifdef _OPENACC
 12 format(2x,'upload_device_kpitors')
    if(deb_Path) print 12
-   call MPI_BARRIER(hostcomm,ierr)
+   call MPI_BARRIER(get_host_comm(),ierr)
    call malloc_device_data
 #endif
 !$acc update device(tbxy,tbf,tbx,tby,ttx,tty,tnx,tny)

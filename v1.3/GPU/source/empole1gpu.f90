@@ -158,6 +158,7 @@ subroutine empole1cgpu
    use cflux
    use deriv
    use domdec
+   use parallel, only: get_domain_comm
    use elec_wspace,only: trq=>r2Work4
    use empole1gpu_inl
    use energi
@@ -313,11 +314,11 @@ subroutine empole1cgpu
             end do
 !$acc wait(direct_work%queue)
             call MPI_ALLREDUCE(MPI_IN_PLACE,xd,1,MPI_TPREC,MPI_SUM,&
-               &COMM_TINKER,ierr)
+               &get_domain_comm(),ierr)
             call MPI_ALLREDUCE(MPI_IN_PLACE,yd,1,MPI_TPREC,MPI_SUM,&
-               &COMM_TINKER,ierr)
+               &get_domain_comm(),ierr)
             call MPI_ALLREDUCE(MPI_IN_PLACE,zd,1,MPI_TPREC,MPI_SUM,&
-               &COMM_TINKER,ierr)
+               &get_domain_comm(),ierr)
             if (rank.eq.0) then
 !$acc serial async(direct_work%queue) present(em)
                em = em + term*(xd*xd+yd*yd+zd*zd)
@@ -368,17 +369,17 @@ subroutine empole1cgpu
             end do
 !$acc wait(direct_work%queue)
             call MPI_ALLREDUCE(MPI_IN_PLACE,xd,1,MPI_TPREC,MPI_SUM,&
-               &COMM_TINKER,ierr)
+               &get_domain_comm(),ierr)
             call MPI_ALLREDUCE(MPI_IN_PLACE,yd,1,MPI_TPREC,MPI_SUM,&
-               &COMM_TINKER,ierr)
+               &get_domain_comm(),ierr)
             call MPI_ALLREDUCE(MPI_IN_PLACE,zd,1,MPI_TPREC,MPI_SUM,&
-               &COMM_TINKER,ierr)
+               &get_domain_comm(),ierr)
             call MPI_ALLREDUCE(MPI_IN_PLACE,xq,1,MPI_TPREC,MPI_SUM,&
-               &COMM_TINKER,ierr)
+               &get_domain_comm(),ierr)
             call MPI_ALLREDUCE(MPI_IN_PLACE,yq,1,MPI_TPREC,MPI_SUM,&
-               &COMM_TINKER,ierr)
+               &get_domain_comm(),ierr)
             call MPI_ALLREDUCE(MPI_IN_PLACE,zq,1,MPI_TPREC,MPI_SUM,&
-               &COMM_TINKER,ierr)
+               &get_domain_comm(),ierr)
             if (rank.eq.0) then
 !$acc serial default(present)
                xv = xd * xq
@@ -1297,6 +1298,7 @@ subroutine emrecip1gpu
    use cflux
    use deriv
    use domdec
+   use parallel, only: get_domain_comm, get_recip_comm
    use emrecip_mod
    use energi
    use ewald
@@ -1368,11 +1370,11 @@ subroutine emrecip1gpu
 
    if (use_pmecore) then
       nprocloc = nrec
-      commloc  = comm_rec
+      commloc  = get_recip_comm()
       rankloc  = rank_bis
    else
       nprocloc = nproc
-      commloc  = COMM_TINKER
+      commloc  = get_domain_comm()
       rankloc  = rank
    end if
    f = electric / dielec
@@ -1477,7 +1479,7 @@ subroutine emrecip1gpu
 !
 !$acc parallel loop collapse(3) default(present) &
 !!$acc        reduction(+:vxx,vxy,vxz,vyy,vyz,vzz) &
-!$acc         present(vxx,vxy,vxz,vyy,vyz,vzz,use_bounds) &
+!$acc         present(vxx,vxy,vxz,vyy,vyz,vzz) &
 !$acc         async(reciprocal_work%queue)
    do k3 = kstart2(rankloc+1),kend2(rankloc+1)
       do k2 = jstart2(rankloc+1),jend2(rankloc+1)

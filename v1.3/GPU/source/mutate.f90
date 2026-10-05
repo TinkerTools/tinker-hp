@@ -16,20 +16,21 @@
 !
 #include "tinker_macro.h"
 subroutine mutate
-   use atmtyp
-   use atoms
-   use bond
-   use charge
-   use domdec
-   use keys
-   use inform
-   use iounit
-   use katoms
-   use mutant
+   use atmtyp, only: class
+   use atoms, only: n,type
+   use bond, only: nbond
+   use domdec, only: hostrank,nproc,rank
+   use parallel, only: get_host_comm
+   use keys, only: keyline,nkey
+   use inform, only: deb_Path,silent
+   use iounit, only: iout
+   use katoms, only: atmcls
+   use mutant, only: belambda,bplambda,bvlambda,class0,class1,elambda,imut,&
+      &lambda,mut,mutInt,nmut,scalpha,scexp,sck,scs,sct,tlambda,type0,type1,&
+      &vcouple,vlambda
    use mpi
-   use mpole
    use potent
-   use tinheader ,only:ti_p,re_p
+   use tinheader, only: ti_p
    implicit none
    integer i,j,k,ihyb
    integer it0,it1,next
@@ -191,17 +192,17 @@ subroutine mutate
    end do
    call def_lambdadyn_init
    if (nproc.gt.1) then
-      call MPI_BCAST(nmut,1,MPI_INT,0,hostcomm,ierr)
-      call MPI_BCAST(lambda,1,MPI_TPREC,0,hostcomm,ierr)
-      call MPI_BCAST(elambda,1,MPI_TPREC,0,hostcomm,ierr)
-      call MPI_BCAST(vlambda,1,MPI_TPREC,0,hostcomm,ierr)
-      call MPI_BCAST(tlambda,1,MPI_TPREC,0,hostcomm,ierr)
-      call MPI_BCAST(vcouple,1,MPI_INT,0,hostcomm,ierr)
-      call MPI_BCAST(scexp,1,MPI_TPREC,0,hostcomm,ierr)
-      call MPI_BCAST(scalpha,1,MPI_TPREC,0,hostcomm,ierr)
-      call MPI_BCAST(sck,1,MPI_TPREC,0,hostcomm,ierr)
-      call MPI_BCAST(sct,1,MPI_TPREC,0,hostcomm,ierr)
-      call MPI_BCAST(scs,1,MPI_TPREC,0,hostcomm,ierr)
+      call MPI_BCAST(nmut,1,MPI_INT,0,get_host_comm(),ierr)
+      call MPI_BCAST(lambda,1,MPI_TPREC,0,get_host_comm(),ierr)
+      call MPI_BCAST(elambda,1,MPI_TPREC,0,get_host_comm(),ierr)
+      call MPI_BCAST(vlambda,1,MPI_TPREC,0,get_host_comm(),ierr)
+      call MPI_BCAST(tlambda,1,MPI_TPREC,0,get_host_comm(),ierr)
+      call MPI_BCAST(vcouple,1,MPI_INT,0,get_host_comm(),ierr)
+      call MPI_BCAST(scexp,1,MPI_TPREC,0,get_host_comm(),ierr)
+      call MPI_BCAST(scalpha,1,MPI_TPREC,0,get_host_comm(),ierr)
+      call MPI_BCAST(sck,1,MPI_TPREC,0,get_host_comm(),ierr)
+      call MPI_BCAST(sct,1,MPI_TPREC,0,get_host_comm(),ierr)
+      call MPI_BCAST(scs,1,MPI_TPREC,0,get_host_comm(),ierr)
    end if
 !
 !     scale electrostatic and torsion parameter values based on lambda
@@ -218,7 +219,7 @@ subroutine mutate
          if (ntbnd.ne.0) call alttors(ntbnd,itbnd)
       end if
    end if
-   if (nproc.gt.1) call MPI_BARRIER(hostcomm,ierr)
+   if (nproc.gt.1) call MPI_BARRIER(get_host_comm(),ierr)
 ! update from altelec call
    call upload_device_mutate
 !
@@ -253,9 +254,9 @@ end
 !
 !
 subroutine alttors (ntbnd,itbnd)
-   use mutant
-   use potent
-   use tors
+   use mutant, only: mut,tlambda
+   use potent, only: use_tors
+   use tors, only: itors,ntors,tors1,tors2,tors3,tors4,tors5,tors6
    implicit none
    integer i,j
    integer ia,ib,ic,id
@@ -305,19 +306,14 @@ end
 !
 !
 subroutine altchg(option)
-   use angle
-   use bond
-   use cflux
-   use charge
-   use chgpen
-   use chgtrn
-   use domdec
-   use mpole
-   use mpi
-   use mutant
-   use polar
-   use potent
-   use sizes
+   use angle, only: iang,nangle
+   use bond, only: ibnd,nbond
+   use cflux, only: abflx,aflx,bflx
+   use chgtrn, only: chgct
+   use domdec, only: hostrank
+   use mpole, only: ipole,npole
+   use mutant, only: elambda,mut
+   use potent, only: use_chgflx,use_chgtrn
    implicit none
    integer ,intent(in):: option
    integer i,j,k,ierr
@@ -389,17 +385,16 @@ end subroutine
 !     altered original state of elec entities
 !
 subroutine altelec_definitive
-   use sizes
-   use charge
-   use chgpen
-   use chgtrn
-   use domdec
-   use mpole
-   use inform ,only: deb_Path
+   use charge, only: iion,nion,pchg,pchg0
+   use chgpen, only: pcore,pval,pval0
+   use domdec, only: hostrank
+   use parallel, only: get_host_comm
+   use inform, only: deb_Path
+   use mpole, only: ipole,mono0,npole,pole
    use mpi
-   use mutant
-   use polar
-   use potent
+   use mutant, only: elambda,mut,mutInt
+   use polar, only: polarity
+   use potent, only: use_charge,use_chgpen,use_mpole,use_polar
    implicit none
    integer i,j,k,ierr
 !
@@ -450,22 +445,22 @@ subroutine altelec_definitive
       call altchg(3)
 
    end if
-   call MPI_BARRIER(hostcomm,ierr)
+   call MPI_BARRIER(get_host_comm(),ierr)
 end
 !
 !     altered a copy of elec entities
 !
 subroutine altelec(option)
-   use sizes
-   use charge
-   use chgpen
-   use domdec
-   use inform ,only: deb_Path
-   use mpole
+   use charge, only: iion,nion,pchg,pchg_orig
+   use chgpen, only: pcore,pval,pval0
+   use domdec, only: hostrank,nproc
+   use parallel, only: get_host_comm
+   use inform, only: deb_Path
+   use mpole, only: ipole,mono0,npole,pole,pole_orig
    use mpi
-   use mutant
-   use polar
-   use potent
+   use mutant, only: elambda,mut
+   use polar, only: polarity,polarity_orig
+   use potent, only: use_charge,use_chgpen,use_lambdadyn,use_mpole,use_polar
    implicit none
    integer,intent(in):: option
    integer i,j,k,ierr
@@ -541,16 +536,16 @@ subroutine altelec(option)
    call altchg(option)
 
 20 continue
-   if (nproc.gt.1) call MPI_BARRIER(hostcomm,ierr)
+   if (nproc.gt.1) call MPI_BARRIER(get_host_comm(),ierr)
 end
 !
 !     subroutine def_lambdadyn_init: lambda dynamics initialization
 !
 subroutine def_lambdadyn_init
-   use iounit
-   use keys
-   use mutant
-   use tinheader
+   use iounit, only: iout
+   use keys, only: keyline,nkey
+   use mutant, only: belambda,bplambda,bvlambda
+   use tinheader, only: ti_p
    implicit none
    integer i,next
    character*20 keyword
@@ -600,18 +595,17 @@ end
 !
 !
 subroutine def_lambdadyn
-   use atmtyp
-   use atoms
-   use domdec
-   use deriv
-   use keys
-   use inform
-   use iounit
-   use mutant
+   use domdec, only: nproc,nproctot,rank,ranktot
+   use parallel, only: get_domain_comm
+   use deriv, only: d2edlambda2,d2edlambdae2,d2edlambdav2,&
+      &dlambdaelambda,dlambdavlambda
+   use inform, only: app_id,iprint,pimd_a,verbose
+   use iounit, only: iout
    use mpi
-   use moldyn
-   use potent
-   use tinheader
+   use moldyn, only: step_c
+   use mutant, only: belambda,bplambda,bvlambda,elambda,lambda,nmut,tlambda,vlambda
+   use potent, only: use_OSRW,use_lambdadyn
+   use tinheader, only: ti_p
    implicit none
    integer ierr
    logical disp
@@ -624,7 +618,7 @@ subroutine def_lambdadyn
       else
         rank_ = rank
         nproc_ = nproc
-        COMM_ = COMM_TINKER
+        COMM_ = get_domain_comm()
       end if
 
 !     checks if the intervall bounds for vlambda and elambda are consistent
@@ -707,17 +701,16 @@ subroutine def_lambdadyn
 end
 
 subroutine upload_device_mutate
-   use charge
-   use cflux
-   use chgpen
-   use chgtrn
-   use domdec,only: rank
-   use inform,only: deb_Path
-   use mpole
-   use mutant
-   use polar
-   use potent
-   use tors
+   use charge, only: pchg,pchg0
+   use cflux, only: abflx,aflx,bflx
+   use chgpen, only: pcore,pval,pval0
+   use chgtrn, only: chgct
+   use inform, only: deb_Path
+   use mpole, only: mono0,pole
+   use mutant, only: mut,mutInt,normalize_vcouple,vcouple
+   use polar, only: polarity
+   use potent, only: use_charge,use_chgflx,use_chgtrn,use_mpole,use_polar,use_tors,use_vdw
+   use tors, only: tors1,tors2,tors3,tors4,tors5,tors6
 #ifdef _OPENACC
 #endif
    implicit none
@@ -754,11 +747,10 @@ subroutine upload_device_mutate
 end subroutine
 
 subroutine dealloc_shared_mutate
-   use domdec,only:rank
-   use inform,only:deb_Path
-   use mutant
-   use tinMemory
-   use sizes ,only:tinkerdebug
+   use inform, only: deb_Path
+   use mutant, only: class0,class1,imut,mut,mutInt,type0,type1,winclass0,&
+      &winclass1,winimut,winmut,winmutInt,wintype0,wintype1
+   use tinMemory, only: mhostacc,shmem_request
    implicit none
 
 12 format(2x,'dealloc_shared_mutate')
@@ -778,11 +770,10 @@ end subroutine
 !     parameter arrays
 !
 subroutine alloc_shared_mutate
-   use atoms
-   use domdec
-   use mutant
-   use mpi
-   use tinMemory
+   use atoms, only: n
+   use mutant, only: class0,class1,imut,mut,mutInt,type0,type1,winclass0,&
+      &winclass1,winimut,winmut,winmutInt,wintype0,wintype1
+   use tinMemory, only: mhostacc,shmem_request
    implicit none
 !
    if (associated(imut).and.n.eq.size(imut)) return

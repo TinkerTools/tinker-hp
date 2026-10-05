@@ -40,6 +40,7 @@ subroutine esmd1
    use atoms
    use deriv
    use domdec
+   use parallel, only: get_domain_comm
    use energi
    use esmd1_inl
    use inform    ,only: deb_Path
@@ -129,13 +130,13 @@ subroutine esmd1
             buffers(6) = stock_dedz
             buffers(7) = curmtotcom
             tagmpi = rank+1
-            call MPI_ISEND(buffers,7,MPI_TPREC,0,tagmpi,COMM_TINKER,&
+            call MPI_ISEND(buffers,7,MPI_TPREC,0,tagmpi,get_domain_comm(),&
                &reqsend,ierr)
             call MPI_WAIT(reqsend,status,ierr)
          else if (rank.eq.0) then
             tagmpi = smdprocprint+1
             call MPI_IRECV(buffer,7,MPI_TPREC,smdprocprint,tagmpi,&
-               &COMM_TINKER,reqrec,ierr)
+               &get_domain_comm(),reqrec,ierr)
             call MPI_WAIT(reqrec,status,ierr)
             cur_xcom = buffer(1)
             cur_ycom = buffer(2)
@@ -253,13 +254,13 @@ subroutine esmd1
             buffers(6) = stock_dedz
             buffers(7) = curmtotcom
             tagmpi = rank+1
-            call MPI_ISEND(buffers,7,MPI_TPREC,0,tagmpi,COMM_TINKER,&
+            call MPI_ISEND(buffers,7,MPI_TPREC,0,tagmpi,get_domain_comm(),&
                &reqsend,ierr)
             call MPI_WAIT(reqsend,status,ierr)
          else if (rank.eq.0) then
             tagmpi = smdprocprint+1
             call MPI_IRECV(buffer,7,MPI_TPREC,smdprocprint,tagmpi,&
-               &COMM_TINKER,reqrec,ierr)
+               &get_domain_comm(),reqrec,ierr)
             call MPI_WAIT(reqrec,status,ierr)
             cur_xcom = buffer(1)
             cur_ycom = buffer(2)

@@ -200,8 +200,10 @@ module inducepcg_s_mod
    parameter(precnd1=0)
 end module
 subroutine inducepcg_shortrealgpu(matvec,nrhs,precnd,ef,mu)
+   use parallel, only: get_direct_comm
    use atmlst
    use domdec
+   use parallel, only: get_domain_comm
    use ewald
    use inform     ,only: deb_Path,abort,minmaxone,app_id,dynamic_a
    use inducepcg_s_mod
@@ -266,7 +268,7 @@ subroutine inducepcg_shortrealgpu(matvec,nrhs,precnd,ef,mu)
       &write(*,'(3x,a)') 'inducepcg_shortrealgpu'
 
    ips_call   = ips_call + 1
-   commloc    = merge(comm_dir,COMM_TINKER,use_pmecore)
+   commloc    = merge(get_direct_comm(),get_domain_comm(),use_pmecore)
    npoleloc_e = npoleloc
    gbuff1     =  0.0_re_p
 
@@ -697,6 +699,7 @@ end subroutine
 subroutine inducejac_shortrealgpu(matvec,nrhs,dodiis,ef,mu)
    use atmlst
    use domdec
+   use parallel, only: get_domain_comm
    use ewald
    use iounit
    use math
@@ -794,7 +797,7 @@ subroutine inducejac_shortrealgpu(matvec,nrhs,dodiis,ef,mu)
       end do
 !
       call MPI_IALLREDUCE(MPI_IN_PLACE,rnorm(1),nrhs,MPI_TPREC,&
-         &MPI_SUM,COMM_TINKER,reqnorm,ierr)
+         &MPI_SUM,get_domain_comm(),reqnorm,ierr)
       if (dodiis) then
          ind = 0
          do i = 1, npoleloc
@@ -810,7 +813,7 @@ subroutine inducejac_shortrealgpu(matvec,nrhs,dodiis,ef,mu)
 !         Compute Pulay's Matrix and extrapolate
 !
          call diis(ndismx,3*nrhs*npoleloc,xdiis,ediis,&
-            &bmat,nmat,reqdiis,COMM_TINKER)
+            &bmat,nmat,reqdiis,get_domain_comm())
 !
          do i = 1, 2*nmat-3
             call MPI_WAIT(reqdiis(i),status,ierr)

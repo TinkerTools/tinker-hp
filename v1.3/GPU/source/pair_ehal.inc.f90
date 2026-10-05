@@ -24,7 +24,7 @@ M_subroutine&
    &,ver,fea)
 !$acc routine
 #if  defined(TINKER_CUF) && (defined(SINGLE)||defined(MIXED))
-use utilcu    ,only: f_sqrt
+use libm, only: f_sqrt=>TINKERHP_LIBM_SQRT
 #endif
 use tinheader ,only: ti_p,re_p
 implicit none
@@ -132,7 +132,7 @@ M_subroutine&
    &,ver,fea)
 !$acc routine
 #if  defined(TINKER_CUF) && (defined(SINGLE)||defined(MIXED))
-use utilcu    ,only: f_sqrt
+use libm, only: f_sqrt=>TINKERHP_LIBM_SQRT
 #endif
 use tinheader ,only: ti_p,re_p,one1
 implicit none

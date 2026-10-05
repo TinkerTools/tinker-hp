@@ -16,6 +16,7 @@
 !
 #include "tinker_macro.h"
 subroutine kmpole(init,istep)
+   use parallel, only: get_host_comm
    use sizes
    use atmlst
    use atmtyp
@@ -681,13 +682,13 @@ subroutine kmpole(init,istep)
       if (use_mpole .and. .not.use_polar .and. .not.use_chgtrn)&
          &call chkpole(.true.)
 !
-230   call MPI_BARRIER(hostcomm,ierr)
-      call MPI_BCAST(npole,1,MPI_INT,0,hostcomm,ierr)
-      call MPI_BCAST(nZ_Onlyglob, 1,    MPI_INT,0,hostcomm,ierr)
-      call MPI_BCAST(ncp,1,MPI_INT,0,hostcomm,ierr)
+230   call MPI_BARRIER(get_host_comm(),ierr)
+      call MPI_BCAST(npole,1,MPI_INT,0,get_host_comm(),ierr)
+      call MPI_BCAST(nZ_Onlyglob, 1,    MPI_INT,0,get_host_comm(),ierr)
+      call MPI_BCAST(ncp,1,MPI_INT,0,get_host_comm(),ierr)
 
       if (.not. use_polar)&
-         &call MPI_BCAST(nZ_Onlyglob,1,MPI_INT,0,hostcomm,ierr)
+         &call MPI_BCAST(nZ_Onlyglob,1,MPI_INT,0,get_host_comm(),ierr)
       !TODO 1.2 Why xaxis need to be allocatable
 !
 !       Update use_mpole switch
@@ -786,8 +787,9 @@ subroutine FromPolaxe2Ipolaxe
 end subroutine
 
 subroutine upload_device_mpole
+   use parallel, only: get_host_comm
    use chgpen
-   use domdec ,only: rank,hostcomm&
+   use domdec ,only: rank&
       &,bufbegpole,domlenpole,domlenpolerec
    use inform ,only: deb_Path
    use mpi    ,only: MPI_BARRIER
@@ -802,7 +804,7 @@ subroutine upload_device_mpole
 #ifdef _OPENACC
 12 format(2x,'upload_device_mpole')
    if(deb_Path) print 12
-   call MPI_BARRIER(hostcomm,ierr)
+   call MPI_BARRIER(get_host_comm(),ierr)
 #endif
 !$acc update device(nbpole,polsiz &
 !$acc       ,ipole,xaxis,yaxis,zaxis &

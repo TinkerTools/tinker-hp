@@ -115,7 +115,7 @@ contains
    end subroutine
 
    module subroutine allreduceen(epot)
-      use domdec, only: COMM_TINKER, nproc, ndir
+      use domdec, only: nproc, ndir
       use inter
       use mpi
       use parallel, only: reduce_sum, reduction_all
@@ -249,6 +249,7 @@ contains
 !
 module subroutine reduceen(epot)
    use domdec
+   use parallel, only: get_domain_comm, get_direct_comm
    use inter
    use inform    ,only: deb_Energy
    use mdevice   ,only: reciprocal_work,sync_work
@@ -271,9 +272,9 @@ module subroutine reduceen(epot)
 
    call timer_enter(timer_reduceen)
    if (use_pmecore) then
-      commloc = comm_dir
+      commloc = get_direct_comm()
    else
-      commloc = COMM_TINKER
+      commloc = get_domain_comm()
    end if
 !$acc data create(buffer1,buffer2,vir_copy) &
 !$acc     present_or_copy(epot) &

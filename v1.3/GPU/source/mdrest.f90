@@ -20,6 +20,7 @@ subroutine mdrest (istep)
    use atoms
    use bound
    use domdec
+   use parallel, only: get_domain_comm
    use group
    use inform
    use iounit
@@ -67,9 +68,9 @@ subroutine mdrest (istep)
       end do
    end do
    call MPI_ALLREDUCE(MPI_IN_PLACE,vtot,3,MPI_TPREC,MPI_SUM,&
-      &COMM_TINKER,ierr)
+      &get_domain_comm(),ierr)
    call MPI_ALLREDUCE(MPI_IN_PLACE,totmass,1,MPI_TPREC,MPI_SUM,&
-      &COMM_TINKER,ierr)
+      &get_domain_comm(),ierr)
 !
 !     compute translational kinetic energy of overall system
 !
@@ -94,11 +95,11 @@ subroutine mdrest (istep)
          ztot = ztot + z(iglob)*weigh
       end do
       call MPI_ALLREDUCE(MPI_IN_PLACE,xtot,1,MPI_TPREC,MPI_SUM,&
-         &COMM_TINKER,ierr)
+         &get_domain_comm(),ierr)
       call MPI_ALLREDUCE(MPI_IN_PLACE,ytot,1,MPI_TPREC,MPI_SUM,&
-         &COMM_TINKER,ierr)
+         &get_domain_comm(),ierr)
       call MPI_ALLREDUCE(MPI_IN_PLACE,ztot,1,MPI_TPREC,MPI_SUM,&
-         &COMM_TINKER,ierr)
+         &get_domain_comm(),ierr)
       xtot = xtot / totmass
       ytot = ytot / totmass
       ztot = ztot / totmass
@@ -119,7 +120,7 @@ subroutine mdrest (istep)
             &v(1,iglob))*weigh
       end do
       call MPI_ALLREDUCE(MPI_IN_PLACE,mang,3,MPI_TPREC,MPI_SUM,&
-         &COMM_TINKER,ierr)
+         &get_domain_comm(),ierr)
 !
       mang(1) = mang(1) - (ytot*vtot(3)-ztot*vtot(2))*totmass
       mang(2) = mang(2) - (ztot*vtot(1)-xtot*vtot(3))*totmass
@@ -147,17 +148,17 @@ subroutine mdrest (istep)
          zz = zz + zdel*zdel*weigh
       end do
       call MPI_ALLREDUCE(MPI_IN_PLACE,xx,1,MPI_TPREC,MPI_SUM,&
-         &COMM_TINKER,ierr)
+         &get_domain_comm(),ierr)
       call MPI_ALLREDUCE(MPI_IN_PLACE,xy,1,MPI_TPREC,MPI_SUM,&
-         &COMM_TINKER,ierr)
+         &get_domain_comm(),ierr)
       call MPI_ALLREDUCE(MPI_IN_PLACE,xz,1,MPI_TPREC,MPI_SUM,&
-         &COMM_TINKER,ierr)
+         &get_domain_comm(),ierr)
       call MPI_ALLREDUCE(MPI_IN_PLACE,yy,1,MPI_TPREC,MPI_SUM,&
-         &COMM_TINKER,ierr)
+         &get_domain_comm(),ierr)
       call MPI_ALLREDUCE(MPI_IN_PLACE,yz,1,MPI_TPREC,MPI_SUM,&
-         &COMM_TINKER,ierr)
+         &get_domain_comm(),ierr)
       call MPI_ALLREDUCE(MPI_IN_PLACE,zz,1,MPI_TPREC,MPI_SUM,&
-         &COMM_TINKER,ierr)
+         &get_domain_comm(),ierr)
       tensor(1,1) = yy + zz
       tensor(2,1) = -xy
       tensor(3,1) = -xz
@@ -234,6 +235,7 @@ subroutine mdrestgpu (istep)
    use atoms
    use bound
    use domdec
+   use parallel, only: get_domain_comm
    use group
    use inform
    use iounit
@@ -329,9 +331,9 @@ subroutine mdrestgpu (istep)
 !$acc end serial
 !$acc wait
       call MPI_ALLREDUCE(MPI_IN_PLACE,vtot,3,MPI_RPREC,MPI_SUM,&
-         &COMM_TINKER,ierr)
+         &get_domain_comm(),ierr)
       call MPI_ALLREDUCE(MPI_IN_PLACE,totmass,1,MPI_RPREC,MPI_SUM,&
-         &COMM_TINKER,ierr)
+         &get_domain_comm(),ierr)
 
 
 !$acc serial async deviceptr(vtot,vtot1,vtot2,vtot3,totmass,etrans)
@@ -357,11 +359,11 @@ subroutine mdrestgpu (istep)
          ztot = ztot + z(iglob)*weigh
       end do
       call MPI_ALLREDUCE(MPI_IN_PLACE,xtot,1,MPI_TPREC,MPI_SUM,&
-         &COMM_TINKER,ierr)
+         &get_domain_comm(),ierr)
       call MPI_ALLREDUCE(MPI_IN_PLACE,ytot,1,MPI_TPREC,MPI_SUM,&
-         &COMM_TINKER,ierr)
+         &get_domain_comm(),ierr)
       call MPI_ALLREDUCE(MPI_IN_PLACE,ztot,1,MPI_TPREC,MPI_SUM,&
-         &COMM_TINKER,ierr)
+         &get_domain_comm(),ierr)
       xtot = xtot / totmass
       ytot = ytot / totmass
       ztot = ztot / totmass
@@ -382,7 +384,7 @@ subroutine mdrestgpu (istep)
             &v(1,iglob))*weigh
       end do
       call MPI_ALLREDUCE(MPI_IN_PLACE,mang,3,MPI_TPREC,MPI_SUM,&
-         &COMM_TINKER,ierr)
+         &get_domain_comm(),ierr)
 !
       mang(1) = mang(1) - (ytot*vtot(3)-ztot*vtot(2))*totmass
       mang(2) = mang(2) - (ztot*vtot(1)-xtot*vtot(3))*totmass
@@ -410,17 +412,17 @@ subroutine mdrestgpu (istep)
          zz = zz + zdel*zdel*weigh
       end do
       call MPI_ALLREDUCE(MPI_IN_PLACE,xx,1,MPI_TPREC,MPI_SUM,&
-         &COMM_TINKER,ierr)
+         &get_domain_comm(),ierr)
       call MPI_ALLREDUCE(MPI_IN_PLACE,xy,1,MPI_TPREC,MPI_SUM,&
-         &COMM_TINKER,ierr)
+         &get_domain_comm(),ierr)
       call MPI_ALLREDUCE(MPI_IN_PLACE,xz,1,MPI_TPREC,MPI_SUM,&
-         &COMM_TINKER,ierr)
+         &get_domain_comm(),ierr)
       call MPI_ALLREDUCE(MPI_IN_PLACE,yy,1,MPI_TPREC,MPI_SUM,&
-         &COMM_TINKER,ierr)
+         &get_domain_comm(),ierr)
       call MPI_ALLREDUCE(MPI_IN_PLACE,yz,1,MPI_TPREC,MPI_SUM,&
-         &COMM_TINKER,ierr)
+         &get_domain_comm(),ierr)
       call MPI_ALLREDUCE(MPI_IN_PLACE,zz,1,MPI_TPREC,MPI_SUM,&
-         &COMM_TINKER,ierr)
+         &get_domain_comm(),ierr)
       tensor(1,1) = yy + zz
       tensor(2,1) = -xy
       tensor(3,1) = -xz

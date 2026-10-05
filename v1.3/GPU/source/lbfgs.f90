@@ -44,6 +44,7 @@
 #include "tinker_precision.h"
 subroutine lbfgs (n,x0,minimum,grdmin,fgvalue,optsave)
    use domdec
+   use parallel, only: get_domain_comm
    use inform
    use iounit
    use keys
@@ -248,9 +249,9 @@ subroutine lbfgs (n,x0,minimum,grdmin,fgvalue,optsave)
    ! Since PGI 20.4 Implicit Wait has been removed at compile
 !$acc wait
    call MPI_ALLREDUCE(MPI_IN_PLACE,g_norm,1,MPI_RPREC,MPI_SUM,&
-      &COMM_TINKER,ierr)
+      &get_domain_comm(),ierr)
    call MPI_ALLREDUCE(MPI_IN_PLACE,g_rms,1,MPI_RPREC,MPI_SUM,&
-      &COMM_TINKER,ierr)
+      &get_domain_comm(),ierr)
    g_norm  = sqrt(g_norm)
    g_rms   = sqrt(g_rms) / rms
    f_move  = 0.5_re_p * stpmax * g_norm
@@ -326,7 +327,7 @@ subroutine lbfgs (n,x0,minimum,grdmin,fgvalue,optsave)
 !$acc wait
 !$acc host_data use_device(alpha)
             call MPI_ALLREDUCE(MPI_IN_PLACE,alpha(k),1,MPI_RPREC,&
-               &MPI_SUM,COMM_TINKER,ierr)
+               &MPI_SUM,get_domain_comm(),ierr)
 !$acc end host_data
          end if
 !$acc serial async
@@ -363,7 +364,7 @@ subroutine lbfgs (n,x0,minimum,grdmin,fgvalue,optsave)
          if (nproc.gt.1) then
 !$acc host_data use_device(beta)
             call MPI_ALLREDUCE(MPI_IN_PLACE,beta,1,MPI_RPREC,&
-               &MPI_SUM,COMM_TINKER,ierr)
+               &MPI_SUM,get_domain_comm(),ierr)
 !$acc end host_data
          end if
 !$acc serial async present(beta)
@@ -419,9 +420,9 @@ subroutine lbfgs (n,x0,minimum,grdmin,fgvalue,optsave)
 !$acc wait
       if (nproc.gt.1) then
          call MPI_ALLREDUCE(MPI_IN_PLACE,ys,1,MPI_RPREC,&
-            &MPI_SUM,COMM_TINKER,ierr)
+            &MPI_SUM,get_domain_comm(),ierr)
          call MPI_ALLREDUCE(MPI_IN_PLACE,yy,1,MPI_RPREC,&
-            &MPI_SUM,COMM_TINKER,ierr)
+            &MPI_SUM,get_domain_comm(),ierr)
       end if
       gamma = abs(ys/yy)
 !$acc serial async
@@ -446,7 +447,7 @@ subroutine lbfgs (n,x0,minimum,grdmin,fgvalue,optsave)
 !$acc wait
       if (nproc.gt.1) then
          call MPI_ALLREDUCE(MPI_IN_PLACE,x_move,1,MPI_RPREC,&
-            &MPI_SUM,COMM_TINKER,ierr)
+            &MPI_SUM,get_domain_comm(),ierr)
       end if
       x_move = sqrt(x_move) / rms
       if (coordtype .eq. 'INTERNAL') then
@@ -467,7 +468,7 @@ subroutine lbfgs (n,x0,minimum,grdmin,fgvalue,optsave)
 
       if (nproc.gt.1) then
          call MPI_ALLREDUCE(MPI_IN_PLACE,g_rms,1,MPI_RPREC,&
-            &MPI_SUM,COMM_TINKER,ierr)
+            &MPI_SUM,get_domain_comm(),ierr)
       end if
       g_rms = sqrt(g_rms) / rms
 !

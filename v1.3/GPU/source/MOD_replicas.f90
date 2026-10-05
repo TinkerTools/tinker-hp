@@ -11,7 +11,6 @@
 !
 !     nreps: number of replicas
 !     rank_reploc: index of the local replica
-!     COMM_ROOT2ROOT: root to roor communicator
 !     use_repls: logical flag to determine if multiple replicas are used
 !     lambdastart: starting values of lambda for multiple replicas lambda dyn
 !
@@ -21,7 +20,6 @@ module replicas
    implicit none
    integer :: nreps
    integer :: rank_reploc
-   integer :: COMM_ROOT2ROOT
    logical :: use_reps
    real(t_p), allocatable :: lambdastart(:)
    save

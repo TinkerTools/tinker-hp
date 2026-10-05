@@ -16,9 +16,9 @@ module echgtrncu
    use sizes    ,only: maxgrp
    use tinheader,only: zeror,oner
    use tinTypes ,only: real3,mdyn3_r
-   use utilcu   ,only: f_abs
+   use libm, only: f_abs=>TINKERHP_LIBM_ABS
 #if TINKER_SINGLE_PREC + TINKER_MIXED_PREC
-   use utilcu   ,only: f_sqrt,f_exp
+   use libm, only: f_sqrt=>TINKERHP_LIBM_SQRT,f_exp=>TINKERHP_LIBM_EXP
 #endif
    use reduction,only: RED_BUFF_SIZE
    private

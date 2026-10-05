@@ -267,6 +267,7 @@ end
 subroutine inducepcg_pme2vec(matvec,nrhs,precnd,ef,mu,murec)
    use atmlst
    use domdec
+   use parallel, only: get_domain_comm
    use ewald
    use iounit
    use math
@@ -411,7 +412,7 @@ subroutine inducepcg_pme2vec(matvec,nrhs,precnd,ef,mu,murec)
       ggold(k) = sum(res(:,k,:)*zr(:,k,:))
    end do
    call MPI_IALLREDUCE(MPI_IN_PLACE,ggold(1),nrhs,MPI_TPREC,MPI_SUM,&
-      &COMM_TINKER,req1,ierr)
+      &get_domain_comm(),req1,ierr)
 !
 !     MPI : begin sending
 !
@@ -464,7 +465,7 @@ subroutine inducepcg_pme2vec(matvec,nrhs,precnd,ef,mu,murec)
          gg(k) = sum(pp(:,k,1:npoleloc)*h(:,k,1:npoleloc))
       end do
       call MPI_IALLREDUCE(MPI_IN_PLACE,gg(1),nrhs,MPI_TPREC,MPI_SUM,&
-         &COMM_TINKER,req2,ierr)
+         &get_domain_comm(),req2,ierr)
       call MPI_WAIT(req2,status,ierr)
       do k = 1, nrhs
          if (gg(k).eq.zero) return
@@ -495,9 +496,9 @@ subroutine inducepcg_pme2vec(matvec,nrhs,precnd,ef,mu,murec)
 !new    end do
       end do
       call MPI_IALLREDUCE(MPI_IN_PLACE,ggnew(1),nrhs,MPI_TPREC,&
-         &MPI_SUM,COMM_TINKER,req3,ierr)
+         &MPI_SUM,get_domain_comm(),req3,ierr)
       call MPI_IALLREDUCE(MPI_IN_PLACE,ene(1),nrhs,MPI_TPREC,MPI_SUM,&
-         &COMM_TINKER,req4,ierr)
+         &get_domain_comm(),req4,ierr)
       call MPI_WAIT(req3,status,ierr)
       call MPI_WAIT(req4,status,ierr)
       resnrm = zero
@@ -582,6 +583,7 @@ end
 subroutine inducejac_pme2vec(matvec,nrhs,dodiis,ef,mu,murec)
    use atmlst
    use domdec
+   use parallel, only: get_domain_comm
    use ewald
    use iounit
    use math
@@ -721,7 +723,7 @@ subroutine inducejac_pme2vec(matvec,nrhs,dodiis,ef,mu,murec)
       end do
 !
       call MPI_IALLREDUCE(MPI_IN_PLACE,rnorm(1),nrhs,MPI_TPREC,&
-         &MPI_SUM,COMM_TINKER,reqnorm,ierr)
+         &MPI_SUM,get_domain_comm(),reqnorm,ierr)
       if (dodiis) then
          ind = 0
          do i = 1, npoleloc
@@ -737,7 +739,7 @@ subroutine inducejac_pme2vec(matvec,nrhs,dodiis,ef,mu,murec)
 !         Compute Pulay's Matrix and extrapolate
 !
          call diis(ndismx,3*nrhs*npoleloc,xdiis,ediis,&
-            &bmat,nmat,reqdiis,COMM_TINKER)
+            &bmat,nmat,reqdiis,get_domain_comm())
 !
          do i = 1, 2*nmat-3
             call MPI_WAIT(reqdiis(i),status,ierr)
@@ -937,6 +939,7 @@ end
 subroutine commfieldvec(nrhs,ef)
    use atoms
    use domdec
+   use parallel, only: get_domain_comm, get_direct_comm
    use mpole
    use potent
    use mpi
@@ -949,9 +952,9 @@ subroutine commfieldvec(nrhs,ef)
    real(t_p), allocatable :: buffer(:,:,:,:)
 !
    if (use_pmecore) then
-      commloc = comm_dir
+      commloc = get_direct_comm()
    else
-      commloc = COMM_TINKER
+      commloc = get_domain_comm()
    end if
 !
    allocate (buffer(3,nrhs,max(npoleloc,1),n_send1))

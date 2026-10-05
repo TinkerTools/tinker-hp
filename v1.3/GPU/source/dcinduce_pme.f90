@@ -17,6 +17,7 @@ subroutine dcinduce_pme
    use atmlst
    use divcon
    use domdec
+   use parallel, only: get_domain_comm
    use ewald
    use iounit
    use math
@@ -69,7 +70,7 @@ subroutine dcinduce_pme
 !
 !     allocate some memory and clear the arrays:
 !
-   call MPI_BARRIER(COMM_TINKER,ierr)
+   call MPI_BARRIER(get_domain_comm(),ierr)
 !
    if (rank.le.ndir-1) then
       allocate (mu(3,nrhs,max(1,npolebloc)))
@@ -300,6 +301,7 @@ end
 
 
 subroutine inducedc_pme(matvec,nrhs,dodiis,ef,mu,murec)
+   use parallel, only: get_domain_comm, get_direct_comm
    use atmlst
    use divcon
    use domdec
@@ -497,7 +499,7 @@ subroutine inducedc_pme(matvec,nrhs,dodiis,ef,mu,murec)
 !
       end if
       call MPI_IALLREDUCE(MPI_IN_PLACE,rnorm(1),nrhs,MPI_TPREC,&
-         &MPI_SUM,COMM_TINKER,reqnorm,ierr)
+         &MPI_SUM,get_domain_comm(),reqnorm,ierr)
 
       if (rank.le.ndir-1) then
          if (dodiis) then
@@ -519,7 +521,7 @@ subroutine inducedc_pme(matvec,nrhs,dodiis,ef,mu,murec)
                   &bmat,nmat)
             else
                call diis(ndismx,3*nrhs*npoleloc,xdiis,ediis,&
-                  &bmat,nmat,reqdiis,comm_dir)
+                  &bmat,nmat,reqdiis,get_direct_comm())
                do i = 1, 2*nmat-3
                   call MPI_WAIT(reqdiis(i),status,ierr)
                end do
@@ -2200,6 +2202,7 @@ end
 subroutine commfield2(nrhs,ef)
    use atoms
    use domdec
+   use parallel, only: get_domain_comm, get_direct_comm
    use mpole
    use potent
    use mpi
@@ -2211,9 +2214,9 @@ subroutine commfield2(nrhs,ef)
    real(t_p), allocatable :: buffer(:,:,:,:)
 !
    if (use_pmecore) then
-      commloc = comm_dir
+      commloc = get_direct_comm()
    else
-      commloc = COMM_TINKER
+      commloc = get_domain_comm()
    end if
 !
    allocate (buffer(3,nrhs,max(npoleloc,1),n_send1))
@@ -2266,6 +2269,7 @@ end
 subroutine commfield2short(nrhs,ef)
    use atoms
    use domdec
+   use parallel, only: get_domain_comm, get_direct_comm
    use mpole
    use potent
    use mpi
@@ -2277,9 +2281,9 @@ subroutine commfield2short(nrhs,ef)
    real(t_p), allocatable :: buffer(:,:,:,:)
 !
    if (use_pmecore) then
-      commloc = comm_dir
+      commloc = get_direct_comm()
    else
-      commloc = COMM_TINKER
+      commloc = get_domain_comm()
    end if
 
    allocate (buffer(3,nrhs,max(npoleloc,1),n_send1))

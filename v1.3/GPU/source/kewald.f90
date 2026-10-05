@@ -22,6 +22,7 @@ subroutine kewald
    use chunks
    use cutoff
    use domdec
+   use parallel, only: get_domain_comm, get_recip_comm
    use ewald
    use fft
    use inform
@@ -371,47 +372,47 @@ subroutine kewald
          call fft_setup(nrec,rank_bis,istart1,iend1,isize1,&
             &jstart1,jend1,jsize1,kstart1,kend1,ksize1,&
             &istart2,iend2,isize2,jstart2,jend2,jsize2,&
-            &kstart2,kend2,ksize2,nfft1,nfft2,nfft3,comm_rec,ngrid1,&
+            &kstart2,kend2,ksize2,nfft1,nfft2,nfft3,get_recip_comm(),ngrid1,&
             &ngrid2)
       end if
       do iproc = 0, nrec-1
          call MPI_BCAST(istart1(iproc+1),1,MPI_INT,iproc+ndir,&
-            &COMM_TINKER,ierr)
+            &get_domain_comm(),ierr)
          call MPI_BCAST(iend1(iproc+1),1,MPI_INT,iproc+ndir,&
-            &COMM_TINKER,ierr)
+            &get_domain_comm(),ierr)
          call MPI_BCAST(isize1(iproc+1),1,MPI_INT,iproc+ndir,&
-            &COMM_TINKER,ierr)
+            &get_domain_comm(),ierr)
          call MPI_BCAST(jstart1(iproc+1),1,MPI_INT,iproc+ndir,&
-            &COMM_TINKER,ierr)
+            &get_domain_comm(),ierr)
          call MPI_BCAST(jend1(iproc+1),1,MPI_INT,iproc+ndir,&
-            &COMM_TINKER,ierr)
+            &get_domain_comm(),ierr)
          call MPI_BCAST(jsize1(iproc+1),1,MPI_INT,iproc+ndir,&
-            &COMM_TINKER,ierr)
+            &get_domain_comm(),ierr)
          call MPI_BCAST(kstart1(iproc+1),1,MPI_INT,iproc+ndir,&
-            &COMM_TINKER,ierr)
+            &get_domain_comm(),ierr)
          call MPI_BCAST(kend1(iproc+1),1,MPI_INT,iproc+ndir,&
-            &COMM_TINKER,ierr)
+            &get_domain_comm(),ierr)
          call MPI_BCAST(ksize1(iproc+1),1,MPI_INT,iproc+ndir,&
-            &COMM_TINKER,ierr)
+            &get_domain_comm(),ierr)
 !
          call MPI_BCAST(istart2(iproc+1),1,MPI_INT,iproc+ndir,&
-            &COMM_TINKER,ierr)
+            &get_domain_comm(),ierr)
          call MPI_BCAST(iend2(iproc+1),1,MPI_INT,iproc+ndir,&
-            &COMM_TINKER,ierr)
+            &get_domain_comm(),ierr)
          call MPI_BCAST(isize2(iproc+1),1,MPI_INT,iproc+ndir,&
-            &COMM_TINKER,ierr)
+            &get_domain_comm(),ierr)
          call MPI_BCAST(jstart2(iproc+1),1,MPI_INT,iproc+ndir,&
-            &COMM_TINKER,ierr)
+            &get_domain_comm(),ierr)
          call MPI_BCAST(jend2(iproc+1),1,MPI_INT,iproc+ndir,&
-            &COMM_TINKER,ierr)
+            &get_domain_comm(),ierr)
          call MPI_BCAST(jsize2(iproc+1),1,MPI_INT,iproc+ndir,&
-            &COMM_TINKER,ierr)
+            &get_domain_comm(),ierr)
          call MPI_BCAST(kstart2(iproc+1),1,MPI_INT,iproc+ndir,&
-            &COMM_TINKER,ierr)
+            &get_domain_comm(),ierr)
          call MPI_BCAST(kend2(iproc+1),1,MPI_INT,iproc+ndir,&
-            &COMM_TINKER,ierr)
+            &get_domain_comm(),ierr)
          call MPI_BCAST(ksize2(iproc+1),1,MPI_INT,iproc+ndir,&
-            &COMM_TINKER,ierr)
+            &get_domain_comm(),ierr)
       end do
 !$acc update device(istart1,iend1,jstart1,jend1,kstart1,kend1, &
 !$acc istart2,iend2,isize2,jstart2,jend2,jsize2,kstart2,kend2, &
@@ -441,7 +442,7 @@ subroutine kewald
       call fft_setup(nproc,rank,istart1,iend1,isize1,&
          &jstart1,jend1,jsize1,kstart1,kend1,ksize1,&
          &istart2,iend2,isize2,jstart2,jend2,jsize2,&
-         &kstart2,kend2,ksize2,nfft1,nfft2,nfft3,COMM_TINKER,&
+         &kstart2,kend2,ksize2,nfft1,nfft2,nfft3,get_domain_comm(),&
          &ngrid1,ngrid2)
 !       do iproc = 0, nproc-1
 !         call MPI_BCAST(istart1(iproc+1),1,MPI_INT,iproc,
@@ -484,41 +485,41 @@ subroutine kewald
 !       end do
 
       call MPI_AllGather (MPI_IN_PLACE,1,MPI_DATATYPE_NULL,&
-         &istart1,1,MPI_INT,COMM_TINKER,ierr)
+         &istart1,1,MPI_INT,get_domain_comm(),ierr)
       call MPI_AllGather (MPI_IN_PLACE,1,MPI_DATATYPE_NULL,&
-         &iend1  ,1,MPI_INT,COMM_TINKER,ierr)
+         &iend1  ,1,MPI_INT,get_domain_comm(),ierr)
       call MPI_AllGather (MPI_IN_PLACE,1,MPI_DATATYPE_NULL,&
-         &isize1 ,1,MPI_INT,COMM_TINKER,ierr)
+         &isize1 ,1,MPI_INT,get_domain_comm(),ierr)
       call MPI_AllGather (MPI_IN_PLACE,1,MPI_DATATYPE_NULL,&
-         &jstart1,1,MPI_INT,COMM_TINKER,ierr)
+         &jstart1,1,MPI_INT,get_domain_comm(),ierr)
       call MPI_AllGather (MPI_IN_PLACE,1,MPI_DATATYPE_NULL,&
-         &jend1  ,1,MPI_INT,COMM_TINKER,ierr)
+         &jend1  ,1,MPI_INT,get_domain_comm(),ierr)
       call MPI_AllGather (MPI_IN_PLACE,1,MPI_DATATYPE_NULL,&
-         &jsize1 ,1,MPI_INT,COMM_TINKER,ierr)
+         &jsize1 ,1,MPI_INT,get_domain_comm(),ierr)
       call MPI_AllGather (MPI_IN_PLACE,1,MPI_DATATYPE_NULL,&
-         &kstart1,1,MPI_INT,COMM_TINKER,ierr)
+         &kstart1,1,MPI_INT,get_domain_comm(),ierr)
       call MPI_AllGather (MPI_IN_PLACE,1,MPI_DATATYPE_NULL,&
-         &kend1  ,1,MPI_INT,COMM_TINKER,ierr)
+         &kend1  ,1,MPI_INT,get_domain_comm(),ierr)
       call MPI_AllGather (MPI_IN_PLACE,1,MPI_DATATYPE_NULL,&
-         &ksize1 ,1,MPI_INT,COMM_TINKER,ierr)
+         &ksize1 ,1,MPI_INT,get_domain_comm(),ierr)
       call MPI_AllGather (MPI_IN_PLACE,1,MPI_DATATYPE_NULL,&
-         &istart2,1,MPI_INT,COMM_TINKER,ierr)
+         &istart2,1,MPI_INT,get_domain_comm(),ierr)
       call MPI_AllGather (MPI_IN_PLACE,1,MPI_DATATYPE_NULL,&
-         &iend2  ,1,MPI_INT,COMM_TINKER,ierr)
+         &iend2  ,1,MPI_INT,get_domain_comm(),ierr)
       call MPI_AllGather (MPI_IN_PLACE,1,MPI_DATATYPE_NULL,&
-         &isize2 ,1,MPI_INT,COMM_TINKER,ierr)
+         &isize2 ,1,MPI_INT,get_domain_comm(),ierr)
       call MPI_AllGather (MPI_IN_PLACE,1,MPI_DATATYPE_NULL,&
-         &jstart2,1,MPI_INT,COMM_TINKER,ierr)
+         &jstart2,1,MPI_INT,get_domain_comm(),ierr)
       call MPI_AllGather (MPI_IN_PLACE,1,MPI_DATATYPE_NULL,&
-         &jend2  ,1,MPI_INT,COMM_TINKER,ierr)
+         &jend2  ,1,MPI_INT,get_domain_comm(),ierr)
       call MPI_AllGather (MPI_IN_PLACE,1,MPI_DATATYPE_NULL,&
-         &jsize2 ,1,MPI_INT,COMM_TINKER,ierr)
+         &jsize2 ,1,MPI_INT,get_domain_comm(),ierr)
       call MPI_AllGather (MPI_IN_PLACE,1,MPI_DATATYPE_NULL,&
-         &kstart2,1,MPI_INT,COMM_TINKER,ierr)
+         &kstart2,1,MPI_INT,get_domain_comm(),ierr)
       call MPI_AllGather (MPI_IN_PLACE,1,MPI_DATATYPE_NULL,&
-         &kend2  ,1,MPI_INT,COMM_TINKER,ierr)
+         &kend2  ,1,MPI_INT,get_domain_comm(),ierr)
       call MPI_AllGather (MPI_IN_PLACE,1,MPI_DATATYPE_NULL,&
-         &ksize2 ,1,MPI_INT,COMM_TINKER,ierr)
+         &ksize2 ,1,MPI_INT,get_domain_comm(),ierr)
 
 !$acc update device(istart1,iend1,jstart1,jend1,kstart1,kend1, &
 !$acc istart2,iend2,isize2,jstart2,jend2,jsize2,kstart2,kend2, &

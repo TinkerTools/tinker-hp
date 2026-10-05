@@ -48,6 +48,7 @@ subroutine echarge3c
    use charge
    use chgpot
    use domdec
+   use parallel, only: get_domain_comm
    use ewald
    use energi
    use inform
@@ -121,11 +122,11 @@ subroutine echarge3c
             zd = zd + pchg(iichg)*z(iglob)
          end do
          call MPI_ALLREDUCE(MPI_IN_PLACE,xd,1,MPI_REAL8,MPI_SUM,&
-            &COMM_TINKER,ierr)
+            &get_domain_comm(),ierr)
          call MPI_ALLREDUCE(MPI_IN_PLACE,yd,1,MPI_REAL8,MPI_SUM,&
-            &COMM_TINKER,ierr)
+            &get_domain_comm(),ierr)
          call MPI_ALLREDUCE(MPI_IN_PLACE,zd,1,MPI_REAL8,MPI_SUM,&
-            &COMM_TINKER,ierr)
+            &get_domain_comm(),ierr)
          e = (2.0d0/3.0d0) * f * (pi/volbox) * (xd*xd+yd*yd+zd*zd)
          if (rank.eq.0) then
             ec = ec + e
@@ -387,6 +388,7 @@ subroutine ecrecip
    use charge
    use chgpot
    use domdec
+   use parallel, only: get_domain_comm, get_recip_comm
    use energi
    use ewald
    use fft
@@ -415,11 +417,11 @@ subroutine ecrecip
    if (use_pmecore) then
       nprocloc = nrec
       rankloc = rank_bis
-      commloc = comm_rec
+      commloc = get_recip_comm()
    else
       nprocloc = nproc
       rankloc = rank
-      commloc = COMM_TINKER
+      commloc = get_domain_comm()
    end if
 !
 !     return if the Ewald coefficient is zero

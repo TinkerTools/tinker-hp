@@ -20,6 +20,7 @@ end module
 subroutine drivermpi
    use atoms
    use domdec
+   use parallel, only: create_domain_subcommunicators
    use iounit
    use potent
    use mpi
@@ -27,9 +28,7 @@ subroutine drivermpi
 #endif
    use tinMemory
    implicit none
-   integer iproc, ierr
-   integer total_group, direct_group, rec_group
-   integer, allocatable :: direct_rank(:)
+   integer ierr
 !
    ndir = nproc - nrec
 !
@@ -111,27 +110,8 @@ subroutine drivermpi
 !     build the two mpi groups for the computation of the multipole interactions
 !     (direct and reciprocal space) and associated communicators
 !
-      allocate (direct_rank(0:nproc-1))
-      call MPI_Comm_group(COMM_TINKER, total_group, ierr)
-      do iproc = 0, ndir - 1
-         direct_rank(iproc) = iproc
-      end do
-      call MPI_Group_incl(total_group,ndir,direct_rank,&
-         &direct_group,ierr)
-      call MPI_Group_excl(total_group,ndir,direct_rank,&
-         &rec_group,ierr)
-      call MPI_Comm_create(COMM_TINKER,direct_group,comm_dir,ierr)
-      call MPI_Comm_create(COMM_TINKER,rec_group,comm_rec,ierr)
-      call MPI_Group_free(direct_group,ierr)
-      call MPI_Group_free(rec_group,ierr)
-      call MPI_Group_free(total_group,ierr)
-      if (rank.le.ndir-1) then
-         call MPI_COMM_RANK(comm_dir,rank_bis,ierr)
-      else
-         call MPI_COMM_RANK(comm_rec,rank_bis,ierr)
-      end if
+      call create_domain_subcommunicators(ndir, rank_bis)
 !$acc update device(rank_bis)
-      deallocate (direct_rank)
    end if
 #ifdef _OPENACC
 #endif
@@ -1372,6 +1352,7 @@ subroutine ddpme3d
    use cell
    use cutoff
    use domdec
+   use parallel, only: get_domain_comm
    use inform
    use iounit
    use keys
@@ -1561,9 +1542,9 @@ subroutine ddpme3d
    end if
 
    if (nproc.gt.1) then
-      call MPI_Bcast(scala,1,MPI_RPREC,0,COMM_TINKER,ierr)
-      call MPI_Bcast(scalb,1,MPI_RPREC,0,COMM_TINKER,ierr)
-      call MPI_Bcast(scalc,1,MPI_RPREC,0,COMM_TINKER,ierr)
+      call MPI_Bcast(scala,1,MPI_RPREC,0,get_domain_comm(),ierr)
+      call MPI_Bcast(scalb,1,MPI_RPREC,0,get_domain_comm(),ierr)
+      call MPI_Bcast(scalc,1,MPI_RPREC,0,get_domain_comm(),ierr)
    end if
 
    if (ranktot.eq.0.and.tinkerdebug.gt.0) then
@@ -2237,6 +2218,7 @@ subroutine ddbuild(cut,nrecep,precep,init)
 end
 
 subroutine AtomDebRepart(ierr)
+   use parallel, only: get_domain_comm, get_direct_comm, get_recip_comm
    use atoms
    use domdec
    use mpi
@@ -2246,11 +2228,11 @@ subroutine AtomDebRepart(ierr)
    integer comm_d,comm_r
 
    if (use_pmecore) then
-      comm_d = comm_dir
-      comm_r = comm_rec
+      comm_d = get_direct_comm()
+      comm_r = get_recip_comm()
    else
-      comm_d = COMM_TINKER
-      comm_r = COMM_TINKEr
+      comm_d = get_domain_comm()
+      comm_r = get_domain_comm()
    end if
 
    call MPI_AllReduce(nloc,nd,1,MPI_INT,MPI_SUM,comm_d,ierr)
@@ -2495,6 +2477,7 @@ subroutine ddpme3dnptaniso(scale,istep)
    use boxes
    use cutoff
    use domdec
+   use parallel, only: get_domain_comm, get_direct_comm
    use neigh
    use potent
    use mpi
@@ -2518,11 +2501,11 @@ subroutine ddpme3dnptaniso(scale,istep)
 !c
    if (use_pmecore) then
       nprocloc = ndir
-      commloc  = comm_dir
+      commloc  = get_direct_comm()
       rankloc  = rank_bis
    else
       nprocloc = nproc
-      commloc  = COMM_TINKER
+      commloc  = get_domain_comm()
       rankloc  = rank
    end if
 !

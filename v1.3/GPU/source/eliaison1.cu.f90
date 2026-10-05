@@ -23,7 +23,7 @@ module eliaisoncu
    use math     ,only: sqrtpi,radian
    use tinheader,only: ti_p
 #if ~ TINKER_DOUBLE_PREC
-   use utilcu   ,only: f_sqrt,f_exp
+   use libm, only: f_sqrt=>TINKERHP_LIBM_SQRT,f_exp=>TINKERHP_LIBM_EXP
 #endif
    use reduction,only: RED_BUFF_SIZE
    integer lia_Gs,lia_Bd

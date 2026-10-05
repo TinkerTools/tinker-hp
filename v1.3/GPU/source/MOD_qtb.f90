@@ -1654,9 +1654,10 @@ contains
       &,nneig_recep, n_data_recv, iglob_recv, pneig_recep&
       &,nneig_send , n_data_send, iglob_send, pneig_send&
       &,max_atoms_recv, max_atoms_send )
+      use parallel, only: get_domain_comm
       use atomsMirror
       use mpi
-      use domdec, only: nproc,COMM_TINKER
+      use domdec, only: nproc
       use spectra
       use inform, only: deb_Path
       use beads
@@ -1828,7 +1829,7 @@ contains
             nneig_r=nneig_r+1
             call MPI_Irecv(data_recv(1,1,1,1,ineighbor)&
                &,nseg_comm*3*n_data_recv(ineighbor)*nbeads&
-               &,MPI_REAL4, pneig_recep(ineighbor), 2, COMM_TINKER&
+               &,MPI_REAL4, pneig_recep(ineighbor), 2, get_domain_comm()&
                &,req_data_recv(nneig_r), ierr)
          endif
       end do
@@ -1839,7 +1840,7 @@ contains
             nneig_s=nneig_s+1
             call MPI_Isend(data_send(1,1,1,1,ineighbor)&
                &,nseg_comm*3*n_data_send(ineighbor)*nbeads&
-               &,MPI_REAL4, pneig_send(ineighbor), 2, COMM_TINKER&
+               &,MPI_REAL4, pneig_send(ineighbor), 2, get_domain_comm()&
                &,req_data_send(nneig_s), ierr)
          endif
       end do
@@ -2593,6 +2594,7 @@ contains
       use spectra
       use mpi
       use domdec
+      use parallel, only: get_domain_comm
       use units
       implicit none
       real(r_p), intent(in) :: mCvv_in(:,:,:)
@@ -2670,7 +2672,7 @@ contains
          endif
       endif
 
-      CALL MPI_BCAST(corr_fact_qtb,3,MPI_RPREC,0,COMM_TINKER,ierr)
+      CALL MPI_BCAST(corr_fact_qtb,3,MPI_RPREC,0,get_domain_comm(),ierr)
       if(maxval(abs(corr_fact_qtb-corr_fact_prev))<thr) then
          isame=isame+1
       else

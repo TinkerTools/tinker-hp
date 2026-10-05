@@ -170,6 +170,10 @@ set(TINKERHP_2DECOMP_MODULE_DIR "${TINKERHP_MODULE_DIR}/2decomp_fft")
 set(TINKERHP_NVIDIA_GPU_FLAG
   "-gpu=${TINKERHP_NVIDIA_FORTRAN_ARCH_LIST},cuda${TINKERHP_DETECTED_CUDA_VERSION},unroll"
 )
+if(TINKERHP_NVFORTRAN_OPT_LEVEL_NORMALIZED STREQUAL "O0")
+  # NVHPC 24.7 emits invalid NVVM debug metadata for O0 OpenACC code.
+  string(APPEND TINKERHP_NVIDIA_GPU_FLAG ",nodebug")
+endif()
 
 if(TINKERHP_PRECISION STREQUAL "MIXED")
   string(APPEND TINKERHP_NVIDIA_GPU_FLAG ",fastmath")
@@ -798,6 +802,12 @@ if(BUILD_TESTING)
     COMMAND "${Python3_EXECUTABLE}" -m unittest discover
       -s "${CMAKE_SOURCE_DIR}/tests"
       -p test_runtime_refactor_oracle.py
+  )
+  add_test(
+    NAME tinkerhp-generated-dependency-closure
+    COMMAND "${CMAKE_COMMAND}"
+      -DTINKERHP_BUILD_DIR=${CMAKE_BINARY_DIR}
+      -P "${CMAKE_SOURCE_DIR}/cmake/TinkerHPGeneratedDependencyValidation.cmake"
   )
   add_test(
     NAME tinkerhp-cmake-configuration-contract
@@ -1748,6 +1758,10 @@ if(BUILD_TESTING)
             --mpi-layout auto
             --feature FPA
             --dynamic-energy-threshold 1e-4
+            --dynamic-parallel-initial-threshold 8.1e-7
+            --dynamic-parallel-tail-threshold 4.3e-6
+            --dynamic-energy-acceptance-ratio 0.43
+            --dynamic-parallel-start-threshold 5e-8
             --fixture-dir "${CMAKE_SOURCE_DIR}/examples"
             --key bench6_r.key
             --primary-xyz bench6.xyz

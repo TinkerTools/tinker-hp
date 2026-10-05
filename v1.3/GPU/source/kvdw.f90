@@ -17,6 +17,7 @@
 !
 #include "tinker_macro.h"
 subroutine kvdw(init,istep)
+   use parallel, only: get_host_comm
    use atmlst
    use atmtyp
    use atoms
@@ -318,7 +319,7 @@ subroutine kvdw(init,istep)
          jvt(nvt) = 1
 220      continue
       end do
-1000  call MPI_BARRIER(hostcomm,ierr)
+1000  call MPI_BARRIER(get_host_comm(),ierr)
 !
 !       perform dynamic allocation of some local arrays
 !
@@ -643,8 +644,9 @@ subroutine kvdw(init,istep)
 end
 
 subroutine compress_vdwData
+   use parallel, only: get_host_comm
    use atoms  ,only: n
-   use domdec ,only: hostrank,hostcomm
+   use domdec ,only: hostrank
    use mpi
    use tinMemory ,only:shmem_request,mhostacc
    use sizes     ,only: maxclass
@@ -686,7 +688,7 @@ subroutine compress_vdwData
    end do
 
 30 continue
-   call MPI_BCAST(nvdwclass,1,MPI_INT,0,hostcomm,ierr)
+   call MPI_BCAST(nvdwclass,1,MPI_INT,0,get_host_comm(),ierr)
    ! Allocate memory according to number of classes
    call shmem_request(radmin_c  ,winradmin_c  ,[nvdwclass**2],&
       &config=mhostacc)
@@ -722,7 +724,7 @@ subroutine compress_vdwData
       end do
    end if
 
-   call mpi_barrier(hostcomm,ierr)
+   call mpi_barrier(get_host_comm(),ierr)
 !$acc update device(jvdw_c,radmin_c,radmin4_c,epsilon_c,epsilon4_c)
 end subroutine
 
@@ -895,8 +897,9 @@ end
 
 
 subroutine upload_device_kvdw
+   use parallel, only: get_host_comm
    use atoms ,only: n
-   use domdec,only: rank,hostcomm
+   use domdec,only: rank
    use couple,only: i12
 #ifdef _OPENACC
    use ehal1cu,only: attach_vdwcu_data
@@ -912,7 +915,7 @@ subroutine upload_device_kvdw
 #ifdef _OPENACC
 12 format(2x,'upload_device_vdw')
    if (deb_Path) print 12
-   call MPI_BARRIER(hostcomm,ierr)
+   call MPI_BARRIER(get_host_comm(),ierr)
 #endif
 !$acc update device(jvdw)
 !$acc update device(radmin,radmin4,epsilon,epsilon4)

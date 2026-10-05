@@ -16,7 +16,7 @@ module parallel
       &capture_halo_layout, refresh_domain_layout, release_halo_layout, check_domain_layout, activate_domain, &
       &deactivate_domain, release_migration_workspace, migrate_atoms_legacy, polar_post_comm_legacy, &
       &polar_finish_legacy, &
-      &active_domain, &
+      &active_domain, active_platform, &
       &polar_post_dip_comm_legacy, polar_finish_dip_comm_legacy, &
       &polar_post_receives_direct_legacy, polar_post_sends_direct_legacy, &
       &polar_finish_direct_legacy, polar_post_receives_dip_legacy, &
@@ -49,6 +49,8 @@ module parallel
    type :: domain_t
       ! Noncopyable owner; reset_topology releases and restores its state explicitly.
       integer :: communicator = MPI_COMM_NULL
+      integer :: direct_comm = MPI_COMM_NULL
+      integer :: recip_comm = MPI_COMM_NULL
       integer :: size = 0
       integer :: rank = 0
       integer :: nproc = 0, nloc = 0
@@ -129,6 +131,7 @@ module parallel
    integer, parameter :: reduction_root = 1, reduction_all = 2
 
    type(domain_t), pointer, save :: active_domain => null()
+   type(parallel_t), pointer, save :: active_platform => null()
    type(comm_opt_t) :: comm_opt
 
 
@@ -283,6 +286,11 @@ module parallel
       module subroutine deactivate_domain(platform)
          type(parallel_t), target, intent(inout) :: platform
       end subroutine deactivate_domain
+
+      module subroutine create_domain_subcommunicators(direct_count, process_rank)
+         integer, intent(in) :: direct_count
+         integer, intent(out) :: process_rank
+      end subroutine create_domain_subcommunicators
 
       module subroutine check_domain_layout()
       end subroutine check_domain_layout
@@ -661,6 +669,54 @@ contains
       type(parallel_t), intent(in) :: platform
       root_exchange_handle = platform%root_exchange%communicator
    end function root_exchange_handle
+
+   integer function get_domain_comm()
+      if (associated(active_platform)) then
+         get_domain_comm = active_platform%domain%communicator
+      else
+         get_domain_comm = MPI_COMM_NULL
+      end if
+   end function get_domain_comm
+
+   integer function get_host_comm()
+      if (associated(active_platform)) then
+         get_host_comm = active_platform%host%communicator
+      else
+         get_host_comm = MPI_COMM_NULL
+      end if
+   end function get_host_comm
+
+   integer function get_replica_comm()
+      if (associated(active_platform)) then
+         get_replica_comm = active_platform%replica%communicator
+      else
+         get_replica_comm = MPI_COMM_NULL
+      end if
+   end function get_replica_comm
+
+   integer function get_root_comm()
+      if (associated(active_platform)) then
+         get_root_comm = active_platform%root_exchange%communicator
+      else
+         get_root_comm = MPI_COMM_NULL
+      end if
+   end function get_root_comm
+
+   integer function get_direct_comm()
+      if (associated(active_platform)) then
+         get_direct_comm = active_platform%domain%direct_comm
+      else
+         get_direct_comm = MPI_COMM_NULL
+      end if
+   end function get_direct_comm
+
+   integer function get_recip_comm()
+      if (associated(active_platform)) then
+         get_recip_comm = active_platform%domain%recip_comm
+      else
+         get_recip_comm = MPI_COMM_NULL
+      end if
+   end function get_recip_comm
 
    subroutine extend_tp(values, components, halo, channel)
       real(t_p), intent(inout) :: values(*)

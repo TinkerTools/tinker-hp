@@ -15,12 +15,13 @@
 module kchgflx_inl
   contains
   subroutine host_distribute(nelem,off,n)
+  use parallel, only: get_host_comm
   use domdec
   use mpi
   implicit none
   integer nelem,off,n
   integer nhost,i,left
-  call MPI_COMM_SIZE(hostcomm,nhost,i)
+  call MPI_COMM_SIZE(get_host_comm(),nhost,i)
   if (nhost.eq.1) then
      n    = nelem
      off  = 0
@@ -36,6 +37,7 @@ module kchgflx_inl
 end module
 
 subroutine kchgflx
+   use parallel, only: get_host_comm
    use sizes
    use angle
    use atmlst
@@ -274,9 +276,9 @@ subroutine kchgflx
          end if
       end do
    end do
-100 call MPI_BARRIER(hostcomm,ierr)
-   call MPI_BCAST(nbflx,1,MPI_INT,0,hostcomm,ierr)
-   call MPI_BCAST(naflx,1,MPI_INT,0,hostcomm,ierr)
+100 call MPI_BARRIER(get_host_comm(),ierr)
+   call MPI_BCAST(nbflx,1,MPI_INT,0,get_host_comm(),ierr)
+   call MPI_BCAST(naflx,1,MPI_INT,0,get_host_comm(),ierr)
 !
 !     turn off bond and angle charge flux term if not used
 !

@@ -368,8 +368,9 @@ end
 !                 before call to fft_frontmpi
 !
 subroutine commGridFront( qgrid,rule )
+   use parallel, only: get_domain_comm, get_recip_comm
    use domdec  ,only: nproc,nrec_recep,nrec_send,rank,prec_send,prec_recep&
-      &,COMM_TINKER,comm_rec
+      &
    use mdevice ,only: reciprocal_work
    use mpi
    use inform
@@ -402,9 +403,9 @@ subroutine commGridFront( qgrid,rule )
    end if
    call timer_enter(timer_recreccomm)
    if (use_pmecore) then
-      commloc  = comm_rec
+      commloc  = get_recip_comm()
    else
-      commloc  = COMM_TINKER
+      commloc  = get_domain_comm()
    end if
    decomp1d = GridDecomp1d.and.(2*nfloor.lt.n3mpimax)
 
@@ -468,8 +469,9 @@ end subroutine
 !                 after call to fft_frontmpi
 !
 subroutine commGridBack( qgrid,rule )
+   use parallel, only: get_domain_comm, get_recip_comm
    use domdec  ,only: nproc,nrec_recep,nrec_send,rank,prec_send,prec_recep&
-      &,COMM_TINKER,comm_rec
+      &
    use mdevice ,only: reciprocal_work
    use mpi
    use pme     ,only: GridDecomp1d
@@ -499,9 +501,9 @@ subroutine commGridBack( qgrid,rule )
    end if
    call timer_enter(timer_recreccomm)
    if (use_pmecore) then
-      commloc  = comm_rec
+      commloc  = get_recip_comm()
    else
-      commloc  = COMM_TINKER
+      commloc  = get_domain_comm()
    end if
    decomp1d = GridDecomp1d.and.(2*nfloor.lt.n3mpimax)
 

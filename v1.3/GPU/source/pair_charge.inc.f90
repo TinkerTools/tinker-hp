@@ -13,9 +13,9 @@ use tinheader ,only: ti_p
 use math      ,only: sqrtpi
 use tintypes  ,only: real3,mdyn3_r
 #ifdef TINKER_CUF
-use utilcu ,only: f_erfc
+use libm, only: f_erfc=>TINKERHP_LIBM_ERFC
 #  if defined(SINGLE)||defined(MIXED)
-use utilcu ,only: f_sqrt,f_exp
+use libm, only: f_sqrt=>TINKERHP_LIBM_SQRT,f_exp=>TINKERHP_LIBM_EXP
 #  endif
 #endif
 implicit none
@@ -120,9 +120,10 @@ use tinheader ,only: ti_p
 use math      ,only: sqrtpi
 use tintypes  ,only: real3,mdyn3_r
 #ifdef TINKER_CUF
-use utilcu ,only: f_erfc,f_inv
+use libm, only: f_erfc=>TINKERHP_LIBM_ERFC
+use cudadevice, only: f_inv=>TINKERHP_DEVICE_INV
 #  if defined(SINGLE)||defined(MIXED)
-use utilcu ,only: f_sqrt,f_exp
+use libm, only: f_sqrt=>TINKERHP_LIBM_SQRT,f_exp=>TINKERHP_LIBM_EXP
 #  endif
 #endif
 implicit none

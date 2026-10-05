@@ -747,6 +747,7 @@ subroutine ecrecip1gpu
    use chgpot
    use deriv
    use domdec
+   use parallel, only: get_domain_comm, get_recip_comm
    use energi
    use ewald
    use fft
@@ -806,11 +807,11 @@ subroutine ecrecip1gpu
 !
    if (use_pmecore) then
       nprocloc = nrec
-      commloc  = comm_rec
+      commloc  = get_recip_comm()
       rankloc  = rank_bis
    else
       nprocloc = nproc
-      commloc  = COMM_TINKER
+      commloc  = get_domain_comm()
       rankloc  = rank
    end if
 !

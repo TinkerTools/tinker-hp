@@ -57,6 +57,23 @@ cmake --build --preset gpu-fpa-make
 Use the matching name for configuration and build. `cmake --list-presets`
 shows the complete public catalog.
 
+## Tests are opt-in for public presets
+
+Public configure presets produce a test-free configuration by default. The
+existing public test presets remain available when tests are explicitly
+enabled in the same binary directory:
+
+```bash
+cmake --preset gpu-double
+cmake -S . -B build/gpu-double -DBUILD_TESTING=ON
+cmake --build --preset gpu-double
+ctest --preset gpu-double
+```
+
+Developer presets from `CMakeUserPresets.json` enable tests automatically. An
+explicit `BUILD_TESTING` value in an existing build directory follows normal
+CMake cache semantics.
+
 ## Shared core linking
 
 `TINKERHP_LINK_MODE` accepts `STATIC` (the default) and `SHARED`. Shared mode

@@ -47,6 +47,7 @@ subroutine empole1c
    use chgpot
    use deriv
    use domdec
+   use parallel, only: get_domain_comm
    use energi
    use ewald
    use inform
@@ -256,11 +257,11 @@ subroutine empole1c
                zd = zd + rpole(4,iipole) + rpole(1,iipole)*z(iglob)
             end do
             call MPI_ALLREDUCE(MPI_IN_PLACE,xd,1,MPI_REAL8,MPI_SUM,&
-            &COMM_TINKER,ierr)
+            &get_domain_comm(),ierr)
             call MPI_ALLREDUCE(MPI_IN_PLACE,yd,1,MPI_REAL8,MPI_SUM,&
-            &COMM_TINKER,ierr)
+            &get_domain_comm(),ierr)
             call MPI_ALLREDUCE(MPI_IN_PLACE,zd,1,MPI_REAL8,MPI_SUM,&
-            &COMM_TINKER,ierr)
+            &get_domain_comm(),ierr)
             term = (2.0d0/3.0d0) * f * (pi/volbox)
             if (rank.eq.0) then
                em = em + term*(xd*xd+yd*yd+zd*zd)
@@ -303,17 +304,17 @@ subroutine empole1c
                zq = zq + rpole(1,iipole)*z(iglob)
             end do
             call MPI_ALLREDUCE(MPI_IN_PLACE,xd,1,MPI_REAL8,MPI_SUM,&
-            &COMM_TINKER,ierr)
+            &get_domain_comm(),ierr)
             call MPI_ALLREDUCE(MPI_IN_PLACE,yd,1,MPI_REAL8,MPI_SUM,&
-            &COMM_TINKER,ierr)
+            &get_domain_comm(),ierr)
             call MPI_ALLREDUCE(MPI_IN_PLACE,zd,1,MPI_REAL8,MPI_SUM,&
-            &COMM_TINKER,ierr)
+            &get_domain_comm(),ierr)
             call MPI_ALLREDUCE(MPI_IN_PLACE,xq,1,MPI_REAL8,MPI_SUM,&
-            &COMM_TINKER,ierr)
+            &get_domain_comm(),ierr)
             call MPI_ALLREDUCE(MPI_IN_PLACE,yq,1,MPI_REAL8,MPI_SUM,&
-            &COMM_TINKER,ierr)
+            &get_domain_comm(),ierr)
             call MPI_ALLREDUCE(MPI_IN_PLACE,zq,1,MPI_REAL8,MPI_SUM,&
-            &COMM_TINKER,ierr)
+            &get_domain_comm(),ierr)
             if (rank.eq.0) then
                xv = xd * xq
                yv = yd * yq
@@ -348,6 +349,8 @@ end
 !     mesh Ewald summation energy and gradient due to multipoles
 !
 subroutine emrecip1
+   use parallel, only: get_domain_comm
+   use parallel, only: get_recip_comm
    use atmlst
    use atoms
    use bound
@@ -409,11 +412,11 @@ subroutine emrecip1
 !
    if (use_pmecore) then
       nprocloc = nrec
-      commloc  = comm_rec
+      commloc  = get_recip_comm()
       rankloc  = rank_bis
    else
       nprocloc = nproc
-      commloc  = COMM_TINKER
+      commloc  = get_domain_comm()
       rankloc  = rank
    end if
 !

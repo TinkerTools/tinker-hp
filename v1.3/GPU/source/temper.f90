@@ -27,6 +27,7 @@
 !
 #include "tinker_macro.h"
 subroutine temper (dt,eksum,ekin,temp)
+   use parallel, only: get_domain_comm
    use atoms
    use atmlst
    use atmtyp
@@ -126,7 +127,7 @@ subroutine temper (dt,eksum,ekin,temp)
       if (nproc.ne.1) then
 !$acc wait
 !$acc host_data use_device(scale)
-         call MPI_BCAST(scale,1,MPI_RPREC,0,COMM_TINKER,ierr)
+         call MPI_BCAST(scale,1,MPI_RPREC,0,get_domain_comm(),ierr)
 !$acc end host_data
       end if
 !        if(rank.eq.0) print*,scale,pick

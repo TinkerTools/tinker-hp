@@ -48,13 +48,82 @@ module subroutine activate_domain(platform)
    type(parallel_t), target, intent(inout) :: platform
 
    active_domain => platform%domain
+   active_platform => platform
 end subroutine activate_domain
 
 module subroutine deactivate_domain(platform)
    type(parallel_t), target, intent(inout) :: platform
 
    if (associated(active_domain, platform%domain)) nullify(active_domain)
+   if (associated(active_platform, platform)) nullify(active_platform)
 end subroutine deactivate_domain
+
+module subroutine create_domain_subcommunicators(direct_count, process_rank)
+   integer, intent(in) :: direct_count
+   integer, intent(out) :: process_rank
+   integer :: total_group, direct_group, reciprocal_group, ierr, i
+   integer, allocatable :: direct_ranks(:)
+
+   if (.not.associated(active_platform)) then
+      call abort_on_mpi_error(MPI_ERR_COMM, 'parallel platform is not active')
+      return
+   end if
+   if (direct_count < 0 .or. direct_count > active_platform%domain%size) then
+      call abort_on_mpi_error(MPI_ERR_ARG, 'invalid direct-space communicator size')
+      return
+   end if
+   if (active_platform%domain%direct_comm /= MPI_COMM_NULL) then
+      call MPI_Comm_free(active_platform%domain%direct_comm, ierr)
+      call abort_on_mpi_error(ierr, 'MPI_Comm_free(direct communicator)')
+   end if
+   if (active_platform%domain%recip_comm /= MPI_COMM_NULL) then
+      call MPI_Comm_free(active_platform%domain%recip_comm, ierr)
+      call abort_on_mpi_error(ierr, 'MPI_Comm_free(reciprocal communicator)')
+   end if
+
+   allocate(direct_ranks(active_platform%domain%size))
+   call MPI_Comm_group(active_platform%domain%communicator, total_group, ierr)
+   call abort_on_mpi_error(ierr, 'MPI_Comm_group(domain communicator)')
+   do i = 1, direct_count
+      direct_ranks(i) = i - 1
+   end do
+   call MPI_Group_incl(total_group, direct_count, direct_ranks, direct_group, ierr)
+   call abort_on_mpi_error(ierr, 'MPI_Group_incl(direct ranks)')
+   call MPI_Group_excl(total_group, direct_count, direct_ranks, reciprocal_group, ierr)
+   call abort_on_mpi_error(ierr, 'MPI_Group_excl(reciprocal ranks)')
+   call MPI_Comm_create(active_platform%domain%communicator, direct_group, &
+      &active_platform%domain%direct_comm, ierr)
+   call abort_on_mpi_error(ierr, 'MPI_Comm_create(direct communicator)')
+   call MPI_Comm_create(active_platform%domain%communicator, reciprocal_group, &
+      &active_platform%domain%recip_comm, ierr)
+   call abort_on_mpi_error(ierr, 'MPI_Comm_create(reciprocal communicator)')
+   call MPI_Group_free(direct_group, ierr)
+   call abort_on_mpi_error(ierr, 'MPI_Group_free(direct group)')
+   call MPI_Group_free(reciprocal_group, ierr)
+   call abort_on_mpi_error(ierr, 'MPI_Group_free(reciprocal group)')
+   call MPI_Group_free(total_group, ierr)
+   call abort_on_mpi_error(ierr, 'MPI_Group_free(total group)')
+   deallocate(direct_ranks)
+
+   if (active_platform%domain%rank < direct_count) then
+      call MPI_Comm_rank(active_platform%domain%direct_comm, process_rank, ierr)
+      call abort_on_mpi_error(ierr, 'MPI_Comm_rank(direct communicator)')
+   else
+      call MPI_Comm_rank(active_platform%domain%recip_comm, process_rank, ierr)
+      call abort_on_mpi_error(ierr, 'MPI_Comm_rank(reciprocal communicator)')
+   end if
+end subroutine create_domain_subcommunicators
+
+subroutine abort_on_mpi_error(error_code, operation)
+   integer, intent(in) :: error_code
+   character(*), intent(in) :: operation
+   integer :: abort_error
+
+   if (error_code == MPI_SUCCESS) return
+   write(*,'(A,I0,2A)') 'MPI failure (', error_code, ') in ', trim(operation)
+   call MPI_Abort(MPI_COMM_WORLD, error_code, abort_error)
+   error stop 'MPI operation failed'
+end subroutine abort_on_mpi_error
 
 module subroutine polar_set_finish_failure_legacy(enabled)
    logical, intent(in) :: enabled
@@ -105,9 +174,9 @@ module subroutine gather_positions()
 
 !$acc host_data use_device(global_indices,positions)
    call MPI_Allgatherv(MPI_IN_PLACE,1,MPI_DATATYPE_NULL,global_indices,domlen, &
-      &send_offsets,MPI_INT,COMM_TINKER,ierr)
+      &send_offsets,MPI_INT,get_domain_comm(),ierr)
    call MPI_Allgatherv(MPI_IN_PLACE,1,MPI_DATATYPE_NULL,positions,receive_sizes, &
-      &receive_offsets,MPI_RPREC,COMM_TINKER,ierr)
+      &receive_offsets,MPI_RPREC,get_domain_comm(),ierr)
 !$acc end host_data
 
 !$acc parallel loop default(present)
@@ -505,7 +574,7 @@ module subroutine polar_post_recdir_receive_legacy(ticket, nrhs, buffer, channel
       if (peer.ne.rank) then
          tag = nproc*rank + peer + 1
          call MPI_IRECV(buffer(1,1,bufbeg1(peer+1)), &
-            &3*nrhs*buflen1(peer+1),MPI_TPREC,peer,tag,COMM_TINKER, &
+            &3*nrhs*buflen1(peer+1),MPI_TPREC,peer,tag,get_domain_comm(), &
             &ticket%recdir_recv_req(i),ierr)
       end if
    end do
@@ -547,7 +616,7 @@ module subroutine polar_post_recdir_send_legacy(ticket, nrhs, values, buffer, ch
       if (peer.ne.rank) then
          tag = nproc*peer + rank + 1
          call MPI_ISEND(buffer(1,1,bufbeg2(peer+1)), &
-            &3*nrhs*buflen2(peer+1),MPI_TPREC,peer,tag,COMM_TINKER, &
+            &3*nrhs*buflen2(peer+1),MPI_TPREC,peer,tag,get_domain_comm(), &
             &ticket%recdir_send_req(i),ierr)
       end if
    end do
@@ -608,13 +677,13 @@ subroutine post_group_comm(nrhs, values, recv_req, send_req)
       if (i.ne.rank+1) then
          tag = nproc*rank + i
          call MPI_IRECV(values(1,1,bufbegpolegroup(i)), &
-            &3*nrhs*domlenpolegroup(i),MPI_TPREC,i-1,tag,COMM_TINKER,recv_req(i),ierr)
+            &3*nrhs*domlenpolegroup(i),MPI_TPREC,i-1,tag,get_domain_comm(),recv_req(i),ierr)
       end if
    end do
    do i = 1, nproc
       if (i.ne.rank+1) then
          tag = nproc*(i-1) + rank + 1
-         call MPI_ISEND(values,3*nrhs*npolelocgroup,MPI_TPREC,i-1,tag,COMM_TINKER,send_req(i),ierr)
+         call MPI_ISEND(values,3*nrhs*npolelocgroup,MPI_TPREC,i-1,tag,get_domain_comm(),send_req(i),ierr)
       end if
    end do
 !$acc end host_data
@@ -1623,8 +1692,8 @@ subroutine check_reduction(visibility, root, root_rank, communicator, process_ra
       process_rank = active_domain%rank
       process_count = active_domain%size
    else
-      if (COMM_TINKER == MPI_COMM_NULL .or. nproc <= 0) error stop 'parallel domain is not active'
-      communicator = COMM_TINKER
+      if (get_domain_comm() == MPI_COMM_NULL .or. nproc <= 0) error stop 'parallel domain is not active'
+      communicator = get_domain_comm()
       process_rank = rank
       process_count = nproc
    end if
@@ -1745,7 +1814,7 @@ module subroutine commrecdirfields(rule,efrec,ef,buffermpi1,buffermpi2,&
             tag = nproc*rank + proc + 1
             call MPI_IRECV(buffermpi1(1,bufbeg1(proc+1)),&
                &10*buflen1(proc+1),&
-               &MPI_TPREC,proc,tag,COMM_TINKER,reqrecdirrec(i),ierr)
+               &MPI_TPREC,proc,tag,get_domain_comm(),reqrecdirrec(i),ierr)
          end if
       end do
    else if (rule.eq.1) then
@@ -1763,7 +1832,7 @@ module subroutine commrecdirfields(rule,efrec,ef,buffermpi1,buffermpi2,&
          if (proc.ne.rank) then
             tag = nproc*proc + rank + 1
             call MPI_ISEND(buffermpi2(1,bufbeg2(proc+1)),&
-               &10*buflen2(proc+1),MPI_TPREC,proc,tag,COMM_TINKER,&
+               &10*buflen2(proc+1),MPI_TPREC,proc,tag,get_domain_comm(),&
                &reqrecdirsend(i),ierr)
          end if
       end do
@@ -1827,7 +1896,7 @@ module subroutine commrecdirfieldsgpu(rule,efrec,ef,buffermpi1,buffermpi2&
 !$acc host_data use_device(buffermpi1)
             call MPI_IRECV(buffermpi1(1,bufbeg1(proc+1)),&
                &10*buflen1(proc+1),MPI_TPREC,proc,tag,&
-               &COMM_TINKER,reqrecdirrec(i),ierr)
+               &get_domain_comm(),reqrecdirrec(i),ierr)
 !$acc end host_data
          end if
       end do
@@ -1855,7 +1924,7 @@ module subroutine commrecdirfieldsgpu(rule,efrec,ef,buffermpi1,buffermpi2&
 !$acc host_data use_device(buffermpi2)
             call MPI_ISEND(buffermpi2(1,bufbeg2(proc+1)),&
                &10*buflen2(proc+1),MPI_TPREC,proc,tag,&
-               &COMM_TINKER,reqrecdirsend(i),ierr)
+               &get_domain_comm(),reqrecdirsend(i),ierr)
 !$acc end host_data
          end if
       end do
@@ -1913,7 +1982,7 @@ module subroutine commrecdirsolv(nrhs,rule,dipfieldbis,dipfield,&
             tag = nproc*rank + proc + 1
             call MPI_IRECV(buffermpi1(1,1,bufbeg1(proc+1)),&
                &3*nrhs*buflen1(proc+1),&
-               &MPI_TPREC,proc,tag,COMM_TINKER,reqrecdirrec(i),ierr)
+               &MPI_TPREC,proc,tag,get_domain_comm(),reqrecdirrec(i),ierr)
          end if
       end do
    else if (rule.eq.1) then
@@ -1934,7 +2003,7 @@ module subroutine commrecdirsolv(nrhs,rule,dipfieldbis,dipfield,&
             tag = nproc*proc + rank + 1
             call MPI_ISEND(buffermpi2(1,1,bufbeg2(proc+1)),&
                &3*nrhs*buflen2(proc+1),&
-               &MPI_TPREC,proc,tag,COMM_TINKER,reqrecdirsend(i),ierr)
+               &MPI_TPREC,proc,tag,get_domain_comm(),reqrecdirsend(i),ierr)
          end if
       end do
    else if (rule.eq.2) then
@@ -1996,7 +2065,7 @@ module subroutine commrecdirsolvgpu(nrhs,rule,dipfieldbis,dipfield,&
 !$acc host_data use_device(buffermpi1)
             call MPI_IRECV(buffermpi1(1,1,bufbeg1(proc+1)),&
                &3*nrhs*buflen1(proc+1),MPI_TPREC,proc,tag,&
-               &COMM_TINKER,reqrecdirrec(i),ierr)
+               &get_domain_comm(),reqrecdirrec(i),ierr)
 !$acc end host_data
          end if
       end do
@@ -2027,11 +2096,11 @@ module subroutine commrecdirsolvgpu(nrhs,rule,dipfieldbis,dipfield,&
 !$acc host_data use_device(buffermpi2)
             call MPI_ISEND(buffermpi2(1,1,bufbeg2(proc+1)),&
                &3*nrhs*buflen2(proc+1),MPI_TPREC,proc,tag,&
-               &COMM_TINKER,reqrecdirsend(i),ierr)
+               &get_domain_comm(),reqrecdirsend(i),ierr)
 !$acc end host_data
          end if
       end do
-      if (tinkerdebug.gt.0) call MPI_BARRIER(hostcomm,ierr)
+      if (tinkerdebug.gt.0) call MPI_BARRIER(get_host_comm(),ierr)
       if (deb_Path) write(*,42) 'commrecdirsolvgpu   '
    else if (rule.eq.2) then
       do i = 1, nrecdir_recep1
@@ -2059,7 +2128,7 @@ module subroutine commrecdirsolvgpu(nrhs,rule,dipfieldbis,dipfield,&
          end if
       end do
 !$acc wait
-      if (tinkerdebug.gt.0) call MPI_BARRIER(hostcomm,ierr)
+      if (tinkerdebug.gt.0) call MPI_BARRIER(get_host_comm(),ierr)
       if (deb_Path) write(*,43) 'commrecdirsolvgpu   '
    else
       if (rank.eq.0) write(iout,1000)
@@ -2102,7 +2171,7 @@ subroutine commdirdirgpu(nrhs,rule,mu,reqrec1,reqsend1)
 !$acc host_data use_device(mu)
          call MPI_IRECV(mu(1,1,ibufbeg),3*nrhs*idomlen&
             &,MPI_TPREC,p_recep1(i),tag0&
-            &,COMM_TINKER,reqrec1(i),ierr)
+            &,get_domain_comm(),reqrec1(i),ierr)
 !$acc end host_data
       end do
    else if (rule.eq.1) then
@@ -2113,10 +2182,10 @@ subroutine commdirdirgpu(nrhs,rule,mu,reqrec1,reqsend1)
 !$acc host_data use_device(mu)
          call MPI_ISEND(mu,3*nrhs*npoleloc&
             &,MPI_TPREC,p_send1(i),tag0&
-            &,COMM_TINKER,reqsend1(i),ierr)
+            &,get_domain_comm(),reqsend1(i),ierr)
 !$acc end host_data
       end do
-      if (tinkerdebug.gt.0) call MPI_BARRIER(hostcomm,ierr)
+      if (tinkerdebug.gt.0) call MPI_BARRIER(get_host_comm(),ierr)
       if (deb_Path) write(*,42) 'commdirdirgpu       '
    else if (rule.eq.2) then
       do i = 1, n_send1
@@ -2125,7 +2194,7 @@ subroutine commdirdirgpu(nrhs,rule,mu,reqrec1,reqsend1)
       do i = 1, n_recep1
          call MPI_WAIT(reqrec1(i),status,ierr)
       end do
-      if (tinkerdebug.gt.0) call MPI_BARRIER(hostcomm,ierr)
+      if (tinkerdebug.gt.0) call MPI_BARRIER(get_host_comm(),ierr)
       if (deb_Path) write(*,43) 'commdirdirgpu       '
    else
       if (rank.eq.0) write(iout,1000)
@@ -2155,13 +2224,13 @@ subroutine commdirdir(nrhs,rule,mu,reqrec,reqsend)
          tag = nproc*rank + p_recep1(i) + 1
          call MPI_IRECV(mu(1,1,bufbegpole(p_recep1(i)+1)),&
             &3*nrhs*domlen(p_recep1(i)+1),MPI_TPREC,p_recep1(i),&
-            &tag,COMM_TINKER,reqrec(i),ierr)
+            &tag,get_domain_comm(),reqrec(i),ierr)
       end do
    else if (rule.eq.1) then
       do i = 1, n_send1
          tag = nproc*p_send1(i) + rank + 1
          call MPI_ISEND(mu,3*nrhs*npoleloc,&
-            &MPI_TPREC,p_send1(i),tag,COMM_TINKER,&
+            &MPI_TPREC,p_send1(i),tag,get_domain_comm(),&
             &reqsend(i),ierr)
       end do
    else if (rule.eq.2) then
@@ -2209,7 +2278,7 @@ subroutine commdirdirshort(nrhs,rule,mu,reqrec1,reqsend1)
          ibufbeg = bufbegpole(p_recepshort1(i)+1)
          call MPI_IRECV(mu(1,1,ibufbeg),&
             &3*nrhs*domlenpole(p_recepshort1(i)+1),MPI_TPREC,&
-            &p_recepshort1(i),tag,COMM_TINKER,reqrec1(i),ierr)
+            &p_recepshort1(i),tag,get_domain_comm(),reqrec1(i),ierr)
       end do
 !$acc end host_data
    else if (rule.eq.1) then
@@ -2218,11 +2287,11 @@ subroutine commdirdirshort(nrhs,rule,mu,reqrec1,reqsend1)
       do i = 1, n_sendshort1
          tag = nproc*p_sendshort1(i) + rank + 1
          call MPI_ISEND(mu,3*nrhs*npoleloc,&
-            &MPI_TPREC,p_sendshort1(i),tag,COMM_TINKER,&
+            &MPI_TPREC,p_sendshort1(i),tag,get_domain_comm(),&
             &reqsend1(i),ierr)
       end do
 !$acc end host_data
-      if (tinkerdebug.gt.0) call MPI_BARRIER(hostcomm,ierr)
+      if (tinkerdebug.gt.0) call MPI_BARRIER(get_host_comm(),ierr)
       if (deb_Path) write(*,42) 'commdirdirshort     '
    else if (rule.eq.2) then
       do i = 1, n_recepshort1
@@ -2231,7 +2300,7 @@ subroutine commdirdirshort(nrhs,rule,mu,reqrec1,reqsend1)
       do i = 1, n_sendshort1
          call mpi_wait(reqsend1(i),status,ierr)
       end do
-      if (tinkerdebug.gt.0) call MPI_BARRIER(hostcomm,ierr)
+      if (tinkerdebug.gt.0) call MPI_BARRIER(get_host_comm(),ierr)
       if (deb_Path) write(*,43) 'commdirdirshort     '
    else
       if (rank.eq.0) write(iout,1000)
@@ -2257,9 +2326,9 @@ module subroutine commfield(nrhs,ef)
 !
    call timer_enter( timer_polfieldcomm )
    if (use_pmecore) then
-      commloc = comm_dir
+      commloc = get_direct_comm()
    else
-      commloc = COMM_TINKER
+      commloc = get_domain_comm()
    end if
 !
    allocate (buffer(3,nrhs,max(npoleloc,1),n_send1))
@@ -2332,7 +2401,7 @@ module subroutine commfieldgpu(nrhs,ef)
    if ( comm_opt%skip_direct ) return
    if (n_send1.gt.0.or.n_recep1.gt.0) then
       call timer_enter( timer_polfieldcomm )
-      if (tinkerdebug.gt.0) call MPI_BARRIER(hostcomm,ierr)
+      if (tinkerdebug.gt.0) call MPI_BARRIER(get_host_comm(),ierr)
       if (deb_Path) write(*,41) 'commfieldgpu        '
 !        if (btest(tinkerdebug,0).and.nproc.eq.4) then
 !22         format('_domlenpole ',I5,I7,3x,5I7,' _')
@@ -2340,9 +2409,9 @@ module subroutine commfieldgpu(nrhs,ef)
 !        end if
 
       if (use_pmecore) then
-         commloc = comm_dir
+         commloc = get_direct_comm()
       else
-         commloc = COMM_TINKER
+         commloc = get_domain_comm()
       end if
 
       call prmem_request(buffer,3,nrhs,max(npoleloc,1),n_send1,async=.false.)
@@ -2389,7 +2458,7 @@ module subroutine commfieldgpu(nrhs,ef)
 
 !$acc wait(direct_work%queue)
       call prmem_request(buffer,0,0,0,0,async=.false.)
-      if (tinkerdebug.gt.0) call MPI_BARRIER(hostcomm,ierr)
+      if (tinkerdebug.gt.0) call MPI_BARRIER(get_host_comm(),ierr)
       if (deb_Path) write(*,43) 'commfieldgpu        '
       call timer_exit( timer_polfieldcomm,quiet_timers )
    end if
@@ -2421,7 +2490,7 @@ module subroutine commfieldshort(nrhs,ef)
 43 format(7x,'<< ',A20,   3x)
 
    call timer_enter( timer_polfieldcomm )
-   if (tinkerdebug.gt.0) call MPI_BARRIER(hostcomm,ierr)
+   if (tinkerdebug.gt.0) call MPI_BARRIER(get_host_comm(),ierr)
    if (deb_Path) write(*,41) 'commfieldshort      '
 !        if (btest(tinkerdebug,0).and.nproc.eq.4) then
 !22         format('_',A6,I5,3x,5I7,'_ ')
@@ -2429,9 +2498,9 @@ module subroutine commfieldshort(nrhs,ef)
 !        end if
 
    if (use_pmecore) then
-      commloc = comm_dir
+      commloc = get_direct_comm()
    else
-      commloc = COMM_TINKER
+      commloc = get_domain_comm()
    end if
 !
    call prmem_request(buffer,3,nrhs,max(npoleloc,1),n_sendshort1,&
@@ -2484,7 +2553,7 @@ module subroutine commfieldshort(nrhs,ef)
 !$acc wait(default_work%queue)
    call prmem_request(buffer,0,0,0,0,async=.false.)
 
-   if (tinkerdebug.gt.0) call MPI_BARRIER(hostcomm,ierr)
+   if (tinkerdebug.gt.0) call MPI_BARRIER(get_host_comm(),ierr)
    if (deb_Path) write(*,43) 'commfieldshort      '
    call timer_exit( timer_polfieldcomm,quiet_timers )
 end subroutine commfieldshort
@@ -2541,7 +2610,7 @@ module subroutine commpot(pot,rule)
       tag = nproc*rank + p_recep(i) + 1
       call MPI_IRECV(buffer(bufbeg(p_recep(i)+1)),&
          &domlen(p_recep(i)+1),&
-         &MPI_REAL8,p_recep(i),tag,COMM_TINKER,reqrec(i),ierr)
+         &MPI_REAL8,p_recep(i),tag,get_domain_comm(),reqrec(i),ierr)
    end do
 !
 !     MPI : move in buffer
@@ -2555,7 +2624,7 @@ module subroutine commpot(pot,rule)
    do i = 1, n_send
       tag = nproc*p_send(i) + rank + 1
       call MPI_ISEND(buffers,nloc,&
-         &MPI_REAL8,p_send(i),tag,COMM_TINKER,&
+         &MPI_REAL8,p_send(i),tag,get_domain_comm(),&
          &reqsend(i),ierr)
    end do
 !
@@ -2636,7 +2705,7 @@ module subroutine commpotsum(pot,rule)
    do i = 1, n_send
       tag = nproc*rank + p_send(i) + 1
       call MPI_IRECV(buffer(1,i),nloc,MPI_REAL8,p_send(i),&
-         &tag,COMM_TINKER,reqrec(i),ierr)
+         &tag,get_domain_comm(),reqrec(i),ierr)
    end do
 !
 !     MPI : begin sending
@@ -2645,7 +2714,7 @@ module subroutine commpotsum(pot,rule)
       tag = nproc*p_recep(i) + rank + 1
       call MPI_ISEND(buffers(bufbeg(p_recep(i)+1)),&
          &domlen(p_recep(i)+1),&
-         &MPI_REAL8,p_recep(i),tag,COMM_TINKER,&
+         &MPI_REAL8,p_recep(i),tag,get_domain_comm(),&
          &reqsend(i),ierr)
    end do
 !
@@ -2703,7 +2772,7 @@ module subroutine commpotrec(pot,potrec)
    do i = 1, nrecdir_send1
       tag = nproc*rank + precdir_send1(i) + 1
       call MPI_IRECV(buffer(1,i),nloc,&
-         &MPI_REAL8,precdir_send1(i),tag,COMM_TINKER,reqrec(i),ierr)
+         &MPI_REAL8,precdir_send1(i),tag,get_domain_comm(),reqrec(i),ierr)
    end do
 !
 !     Move in array
@@ -2723,7 +2792,7 @@ module subroutine commpotrec(pot,potrec)
       tag = nproc*precdir_recep1(i) + rank + 1
       call MPI_ISEND(buffers(bufbeg(precdir_recep1(i)+1)),&
          &domlen(precdir_recep1(i)+1),&
-         &MPI_REAL8,precdir_recep1(i),tag,COMM_TINKER,reqsend(i),ierr)
+         &MPI_REAL8,precdir_recep1(i),tag,get_domain_comm(),reqsend(i),ierr)
    end do
 !
    do i = 1, nrecdir_send1
@@ -2781,7 +2850,7 @@ module subroutine commchgflx(pdelta)
    do i = 1, nbig_send
       tag = nproc*rank + pbig_send(i) + 1
       call MPI_IRECV(buffer(1,i),nloc,MPI_TPREC,pbig_send(i),&
-         &tag,COMM_TINKER,reqrec(i),ierr)
+         &tag,get_domain_comm(),reqrec(i),ierr)
    end do
 !
 !     MPI : begin sending
@@ -2790,7 +2859,7 @@ module subroutine commchgflx(pdelta)
       tag = nproc*pbig_recep(i) + rank + 1
       call MPI_ISEND(buffers(bufbeg(pbig_recep(i)+1)),&
          &domlen(pbig_recep(i)+1),&
-         &MPI_TPREC,pbig_recep(i),tag,COMM_TINKER,&
+         &MPI_TPREC,pbig_recep(i),tag,get_domain_comm(),&
          &reqsend(i),ierr)
    end do
 !
@@ -2821,7 +2890,7 @@ module subroutine commchgflx(pdelta)
       tag = nproc*rank + pbig_recep(i) + 1
       call MPI_IRECV(buffer2(bufbeg(pbig_recep(i)+1)),&
          &domlen(pbig_recep(i)+1),&
-         &MPI_TPREC,pbig_recep(i),tag,COMM_TINKER,reqrec(i),ierr)
+         &MPI_TPREC,pbig_recep(i),tag,get_domain_comm(),reqrec(i),ierr)
    end do
 !
 !     MPI : move in buffer
@@ -2836,7 +2905,7 @@ module subroutine commchgflx(pdelta)
    do i = 1, nbig_send
       tag = nproc*pbig_send(i) + rank + 1
       call MPI_ISEND(buffers,nloc,&
-         &MPI_TPREC,pbig_send(i),tag,COMM_TINKER,&
+         &MPI_TPREC,pbig_send(i),tag,get_domain_comm(),&
          &reqsend(i),ierr)
    end do
 !
@@ -2888,7 +2957,7 @@ subroutine commrecdirdip(nrhs,rule,diprec,dip,buffermpimu1,&
          if (proc.ne.rank) then
             tag = nproc*rank + proc + 1
             call MPI_IRECV(buffermpimu2(1,1,bufbeg2(proc+1)),3*nrhs&
-               &*buflen2(proc+1),MPI_TPREC,proc,tag,COMM_TINKER,&
+               &*buflen2(proc+1),MPI_TPREC,proc,tag,get_domain_comm(),&
                &req2rec(i),ierr)
          end if
       end do
@@ -2908,7 +2977,7 @@ subroutine commrecdirdip(nrhs,rule,diprec,dip,buffermpimu1,&
          if (proc.ne.rank) then
             tag = nproc*proc + rank + 1
             call MPI_ISEND(buffermpimu1(1,1,bufbeg1(proc+1)),3*nrhs&
-               &*buflen1(proc+1),MPI_TPREC,proc,tag,COMM_TINKER,&
+               &*buflen1(proc+1),MPI_TPREC,proc,tag,get_domain_comm(),&
                &req2send(i),ierr)
          end if
       end do
@@ -2968,7 +3037,7 @@ subroutine commrecdirdipgpu(nrhs,rule,diprec,dip,buffermpimu1,&
 !$acc host_data use_device(buffermpimu2)
             call MPI_IRECV(buffermpimu2(1,1,bufbeg2(proc+1)),&
                &3*nrhs*buflen2(proc+1),MPI_TPREC,proc,tag,&
-               &COMM_TINKER,req2rec(i),ierr)
+               &get_domain_comm(),req2rec(i),ierr)
 !$acc end host_data
          end if
       end do
@@ -2998,11 +3067,11 @@ subroutine commrecdirdipgpu(nrhs,rule,diprec,dip,buffermpimu1,&
 !$acc host_data use_device(buffermpimu1)
             call MPI_ISEND(buffermpimu1(1,1,bufbeg1(proc+1)),&
                &3*nrhs*buflen1(proc+1),MPI_TPREC,proc,tag,&
-               &COMM_TINKER,req2send(i),ierr)
+               &get_domain_comm(),req2send(i),ierr)
 !$acc end host_data
          end if
       end do
-      if (tinkerdebug.gt.0) call MPI_BARRIER(hostcomm,ierr)
+      if (tinkerdebug.gt.0) call MPI_BARRIER(get_host_comm(),ierr)
       if (deb_Path) write(*,42) 'commrecdirdipgpu    '
    else if (rule.eq.2) then
       do i = 1, nrecdir_send1
@@ -3028,7 +3097,7 @@ subroutine commrecdirdipgpu(nrhs,rule,diprec,dip,buffermpimu1,&
          end if
       end do
 !$acc wait
-      if (tinkerdebug.gt.0) call MPI_BARRIER(hostcomm,ierr)
+      if (tinkerdebug.gt.0) call MPI_BARRIER(get_host_comm(),ierr)
       if (deb_Path) write(*,43) 'commrecdirdipgpu    '
    else
       if (rank.eq.0) write(iout,1000)
@@ -3071,11 +3140,11 @@ module subroutine commposrec
 !
    if (use_pmecore) then
       nprocloc = nrec
-      commloc  = comm_rec
+      commloc  = get_recip_comm()
       rankloc  = rank_bis
    else
       nprocloc = nproc
-      commloc  = COMM_TINKER
+      commloc  = get_domain_comm()
       rankloc  = rank
    end if
 !
@@ -3097,7 +3166,7 @@ module subroutine commposrec
          tag = nproc*rank + precdir_recep2(i) + 1
          call MPI_IRECV(buffer(1,bufbeg(precdir_recep2(i)+1)),&
             &3*domlen(precdir_recep2(i)+1),MPI_RPREC,&
-            &precdir_recep2(i),tag,COMM_TINKER,reqrec(i),ierr)
+            &precdir_recep2(i),tag,get_domain_comm(),reqrec(i),ierr)
       end if
    end do
 !
@@ -3118,7 +3187,7 @@ module subroutine commposrec
       if (precdir_send2(i).ne.rank) then
          tag = nproc*precdir_send2(i) + rank + 1
          call MPI_ISEND(buffers,3*nloc,MPI_RPREC,precdir_send2(i),&
-            &tag,COMM_TINKER,reqsend(i),ierr)
+            &tag,get_domain_comm(),reqsend(i),ierr)
       end if
    end do
 
@@ -3465,14 +3534,14 @@ module subroutine sendallpos
       if (iproc.ne.rank) then
          tag = nproc*rank + iproc + 1
          call MPI_IRECV(domlen(iproc+1),1,MPI_INT,iproc,tag,&
-            &COMM_TINKER,reqrec(iproc+1),ierr)
+            &get_domain_comm(),reqrec(iproc+1),ierr)
       end if
    end do
    do iproc = 0, nproc-1
       if (iproc.ne.rank) then
          tag = nproc*iproc + rank + 1
          call MPI_ISEND(domlen(rank+1),1,MPI_INT,iproc,tag,&
-            &COMM_TINKER,reqsend(iproc+1),ierr)
+            &get_domain_comm(),reqsend(iproc+1),ierr)
       end if
    end do
    do iproc = 0, nproc-1
@@ -3502,7 +3571,7 @@ module subroutine sendallpos
       if (iproc.ne.rank) then
          tag = nproc*rank + iproc + 1
          call MPI_IRECV(glob(bufbeg(iproc+1)),domlen(iproc+1),MPI_INT,&
-            &iproc,tag,COMM_TINKER,reqrec(iproc+1),ierr)
+            &iproc,tag,get_domain_comm(),reqrec(iproc+1),ierr)
       end if
    end do
 !$acc wait
@@ -3510,7 +3579,7 @@ module subroutine sendallpos
       if (iproc.ne.rank) then
          tag = nproc*iproc + rank + 1
          call MPI_ISEND(glob,domlen(rank+1),MPI_INT,iproc,tag,&
-            &COMM_TINKER,reqsend(iproc+1),ierr)
+            &get_domain_comm(),reqsend(iproc+1),ierr)
       end if
    end do
 !$acc end host_data
@@ -3529,14 +3598,14 @@ module subroutine sendallpos
       if (iproc.ne.rank) then
          tag = nproc*rank + iproc + 1
          call MPI_IRECV(postemp(1,bufbeg(iproc+1)),3*domlen(iproc+1),&
-            &MPI_RPREC,iproc,tag,COMM_TINKER,reqrec(iproc+1),ierr)
+            &MPI_RPREC,iproc,tag,get_domain_comm(),reqrec(iproc+1),ierr)
       end if
    end do
    do iproc = 0, nproc-1
       if (iproc.ne.rank) then
          tag = nproc*iproc + rank + 1
          call MPI_ISEND(postemp,3*nloc,MPI_RPREC,iproc,tag,&
-            &COMM_TINKER,reqsend(iproc+1),ierr)
+            &get_domain_comm(),reqsend(iproc+1),ierr)
       end if
    end do
 !$acc end host_data
@@ -3615,14 +3684,14 @@ module subroutine sendvecmin(xx)
       if (iproc.ne.rank) then
          tag = nproc*rank + iproc + 1
          call MPI_IRECV(domlen(iproc+1),1,MPI_INT,iproc,tag,&
-            &COMM_TINKER,reqrec(iproc+1),ierr)
+            &get_domain_comm(),reqrec(iproc+1),ierr)
       end if
    end do
    do iproc = 0, nproc-1
       if (iproc.ne.rank) then
          tag = nproc*iproc + rank + 1
          call MPI_ISEND(domlen(rank+1),1,MPI_INT,iproc,tag,&
-            &COMM_TINKER,reqsend(iproc+1),ierr)
+            &get_domain_comm(),reqsend(iproc+1),ierr)
       end if
    end do
    do iproc = 0, nproc-1
@@ -3652,7 +3721,7 @@ module subroutine sendvecmin(xx)
       if (iproc.ne.rank) then
          tag = nproc*rank + iproc + 1
          call MPI_IRECV(glob(bufbeg(iproc+1)),domlen(iproc+1),MPI_INT,&
-            &iproc,tag,COMM_TINKER,reqrec(iproc+1),ierr)
+            &iproc,tag,get_domain_comm(),reqrec(iproc+1),ierr)
       end if
    end do
 !$acc wait
@@ -3660,7 +3729,7 @@ module subroutine sendvecmin(xx)
       if (iproc.ne.rank) then
          tag = nproc*iproc + rank + 1
          call MPI_ISEND(glob,domlen(rank+1),MPI_INT,iproc,tag,&
-            &COMM_TINKER,reqsend(iproc+1),ierr)
+            &get_domain_comm(),reqsend(iproc+1),ierr)
       end if
    end do
 !$acc end host_data
@@ -3678,14 +3747,14 @@ module subroutine sendvecmin(xx)
       if (iproc.ne.rank) then
          tag = nproc*rank + iproc + 1
          call MPI_IRECV(temp(1,bufbeg(iproc+1)),3*domlen(iproc+1),&
-            &MPI_RPREC,iproc,tag,COMM_TINKER,reqrec(iproc+1),ierr)
+            &MPI_RPREC,iproc,tag,get_domain_comm(),reqrec(iproc+1),ierr)
       end if
    end do
    do iproc = 0, nproc-1
       if (iproc.ne.rank) then
          tag = nproc*iproc + rank + 1
          call MPI_ISEND(temp,3*nloc,MPI_RPREC,iproc,tag,&
-            &COMM_TINKER,reqsend(iproc+1),ierr)
+            &get_domain_comm(),reqsend(iproc+1),ierr)
       end if
    end do
    do iproc = 0, nproc-1
@@ -3753,12 +3822,12 @@ module subroutine orderbuffer(init)
    do iproc = 1, nbig_recep
       tag = nproc*rank + pbig_recep(iproc) + 1
       call MPI_IRECV(domlen(pbig_recep(iproc)+1),1,MPI_INT,&
-         &pbig_recep(iproc),tag,COMM_TINKER,reqrec(iproc),ierr)
+         &pbig_recep(iproc),tag,get_domain_comm(),reqrec(iproc),ierr)
    end do
    do iproc = 1, nbig_send
       tag = nproc*pbig_send(iproc) + rank + 1
       call MPI_ISEND(domlen(rank+1),1,MPI_INT,pbig_send(iproc),tag,&
-         &COMM_TINKER,reqsend(iproc),ierr)
+         &get_domain_comm(),reqsend(iproc),ierr)
    end do
    do iproc = 1, nbig_recep
       call MPI_WAIT(reqrec(iproc),status,ierr)
@@ -3773,14 +3842,14 @@ module subroutine orderbuffer(init)
       if (precdir_recep2(iproc).ne.rank) then
          tag = nproc*rank + precdir_recep2(iproc) + 1
          call MPI_IRECV(domlen(precdir_recep2(iproc)+1),1,MPI_INT,&
-            &precdir_recep2(iproc),tag,COMM_TINKER,reqrec(iproc),ierr)
+            &precdir_recep2(iproc),tag,get_domain_comm(),reqrec(iproc),ierr)
       end if
    end do
    do iproc = 1, nrecdir_send2
       if (precdir_send2(iproc).ne.rank) then
          tag = nproc*precdir_send2(iproc) + rank + 1
          call MPI_ISEND(domlen(rank+1),1,MPI_INT,precdir_send2(iproc),&
-            &tag,COMM_TINKER,reqsend(iproc),ierr)
+            &tag,get_domain_comm(),reqsend(iproc),ierr)
       end if
    end do
    do iproc = 1, nrecdir_recep2
@@ -3847,12 +3916,12 @@ module subroutine orderbuffer(init)
       tag = nproc*rank + pbig_recep(iproc) + 1
       call MPI_IRECV(glob(bufbeg(pbig_recep(iproc)+1)),&
          &domlen(pbig_recep(iproc)+1),MPI_INT,pbig_recep(iproc),tag,&
-         &COMM_TINKER,reqrec(iproc),ierr)
+         &get_domain_comm(),reqrec(iproc),ierr)
    end do
    do iproc = 1, nbig_send
       tag = nproc*pbig_send(iproc) + rank + 1
       call MPI_ISEND(glob,domlen(rank+1),MPI_INT,pbig_send(iproc),&
-         &tag,COMM_TINKER,reqsend(iproc),ierr)
+         &tag,get_domain_comm(),reqsend(iproc),ierr)
    end do
    do iproc = 1, nbig_recep
       call MPI_WAIT(reqrec(iproc),status,ierr)
@@ -3877,14 +3946,14 @@ module subroutine orderbuffer(init)
          tag = nproc*rank + precdir_recep2(iproc) + 1
          call MPI_IRECV(glob(bufbeg(precdir_recep2(iproc)+1)),&
             &domlen(precdir_recep2(iproc)+1),MPI_INT,&
-            &precdir_recep2(iproc),tag,COMM_TINKER,reqrec(iproc),ierr)
+            &precdir_recep2(iproc),tag,get_domain_comm(),reqrec(iproc),ierr)
       end if
    end do
    do iproc = 1, nrecdir_send2
       if (precdir_send2(iproc).ne.rank) then
          tag = nproc*precdir_send2(iproc) + rank + 1
          call MPI_ISEND(glob,domlen(rank+1),MPI_INT,&
-            &precdir_send2(iproc),tag,COMM_TINKER,reqsend(iproc),ierr)
+            &precdir_send2(iproc),tag,get_domain_comm(),reqsend(iproc),ierr)
       end if
    end do
    do iproc = 1, nrecdir_recep2
@@ -3915,7 +3984,7 @@ module subroutine orderbuffer(init)
    deallocate (ind1temp)
    deallocate (counttemp)
 
-   if (tinkerdebug.gt.0) call MPI_BARRIER(hostcomm,ierr)
+   if (tinkerdebug.gt.0) call MPI_BARRIER(get_host_comm(),ierr)
    if (deb_Path) write(*,*) '   << orderbuffer'
 end subroutine orderbuffer
 
@@ -3945,12 +4014,12 @@ module subroutine orderbuffer_gpu(init)
    ! doesn't exceed a certain amount
    ! Consider using classical method with more than 64 MPI process
 
-   if (tinkerdebug.gt.0) call MPI_BARRIER(hostcomm,ierr)
+   if (tinkerdebug.gt.0) call MPI_BARRIER(get_host_comm(),ierr)
    if (deb_Path) write(*,*) '   >> orderbuffer_gpu',init
    ! Get domlen values of all processes
    call MPI_IAllgather( MPI_IN_PLACE, 1, MPI_DATATYPE_NULL,&
       &domlen      , 1, MPI_INT,&
-      &COMM_TINKER,reqsend(1), ierr )
+      &get_domain_comm(),reqsend(1), ierr )
    call MPI_WAIT(reqsend(1),status,ierr)
 
    if (init) then
@@ -4008,13 +4077,13 @@ module subroutine orderbuffer_gpu(init)
       tag = nproc*rank + pbig_recep(iproc) + 1
       call MPI_IRECV(glob(bufbeg(pbig_recep(iproc)+1))&
          &,domlen(pbig_recep(iproc)+1),MPI_INT&
-         &,pbig_recep(iproc),tag,COMM_TINKER,reqrec(iproc),ierr)
+         &,pbig_recep(iproc),tag,get_domain_comm(),reqrec(iproc),ierr)
    end do
 !$acc wait
    do iproc = 1, nbig_send
       tag = nproc*pbig_send(iproc) + rank + 1
       call MPI_ISEND(glob,domlen(rank+1),MPI_INT&
-         &,pbig_send(iproc),tag,COMM_TINKER,reqsend(iproc),ierr)
+         &,pbig_send(iproc),tag,get_domain_comm(),reqsend(iproc),ierr)
    end do
 !$acc end host_data
    do iproc = 1, nbig_recep
@@ -4032,14 +4101,14 @@ module subroutine orderbuffer_gpu(init)
          tag = nproc*rank + precdir_recep2(iproc) + 1
          call MPI_IRECV(glob(bufbeg(precdir_recep2(iproc)+1))&
             &,domlen(precdir_recep2(iproc)+1),MPI_INT&
-            &,precdir_recep2(iproc),tag,COMM_TINKER,reqrec(iproc),ierr)
+            &,precdir_recep2(iproc),tag,get_domain_comm(),reqrec(iproc),ierr)
       end if
    end do
    do iproc = 1, nrecdir_send2
       if (precdir_send2(iproc).ne.rank) then
          tag = nproc*precdir_send2(iproc) + rank + 1
          call MPI_ISEND(glob,domlen(rank+1),MPI_INT&
-            &,precdir_send2(iproc),tag,COMM_TINKER,reqsend(iproc),ierr)
+            &,precdir_send2(iproc),tag,get_domain_comm(),reqsend(iproc),ierr)
       end if
    end do
 !$acc end host_data
@@ -4084,7 +4153,7 @@ module subroutine orderbuffer_gpu(init)
    end do
 !$acc end data
 
-   if (tinkerdebug.gt.0) call MPI_BARRIER(hostcomm,ierr)
+   if (tinkerdebug.gt.0) call MPI_BARRIER(get_host_comm(),ierr)
    if (deb_Path) write(*,*) '   << orderbuffer_gpu'
 end subroutine orderbuffer_gpu
 !
@@ -4115,11 +4184,11 @@ module subroutine orderbufferrec
    if (use_pmecore) then
       nprocloc = nrec
       rankloc  = rank_bis
-      commloc  = comm_rec
+      commloc  = get_recip_comm()
    else
       nprocloc = nproc
       rankloc  = rank
-      commloc  = COMM_TINKER
+      commloc  = get_domain_comm()
    end if
 !
 !      ind1temp = 0
@@ -4276,11 +4345,11 @@ module subroutine orderbufrec_gpu
    if (use_pmecore) then
       nprocloc = nrec
       rankloc = rank_bis
-      commloc = comm_rec
+      commloc = get_recip_comm()
    else
       nprocloc = nproc
       rankloc = rank
-      commloc = COMM_TINKER
+      commloc = get_domain_comm()
    end if
 !
 
@@ -4421,7 +4490,7 @@ module subroutine orderbufrec_gpu
             &,' nlocrec reduction',I8,'.ne. natoms',I9)
          print 48, reqsend(1),n
       end if
-      call MPI_BARRIER(hostcomm,ierr)
+      call MPI_BARRIER(get_host_comm(),ierr)
 
       count=0
 !$acc wait

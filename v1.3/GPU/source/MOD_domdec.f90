@@ -15,18 +15,14 @@
 !     nydd = number of subdivisions along the y axis
 !     nzdd = number of subdivisions along the z axis
 !
-!     COMM_TINKER local MPI communicator in which a dynamic, analyze, testgrad or minimize run
-!      will take place
+!     domain communicator is owned by parallel%domain and exposed through parallel queries
 !     nproc     number of MPI processes during a dynamic, analyze, testgrad or minimize run
-!     rank      rank of the current MPI process within COMM_TINKER
-!     rank_bis  rank of the current MPI process within comm_dir or comm_rec
+!     rank      rank of the current MPI process within the domain communicator
+!     rank_bis  rank of the current MPI process within the direct or reciprocal communicator
 !     nrec      number of processes assigned to the computation of reciprocal space contribution
 !     ndir      number of processes assigned to the computation of direct space contribution
-!     comm_rec  MPI group communicator associated to the reciprocal space
-!     comm_dir  MPI group communicator associated to the direct space
 !     nthread   number of threads to be used with OpenMP
-!     hostcomm  MPI group communicator associated to processes within a node
-!     hostrank rank of the current MPI process within hostcomm
+!     hostrank rank of the current MPI process within the host communicator
 !
 !     n_recep1  number of MPI process to receive positions from to compute electrostatic interactions
 !     n_send1  number of MPI process to send positions to to compute electrostatic interactions
@@ -124,10 +120,10 @@ module domdec
    integer,parameter:: masterRank=0
    integer nxdd,nydd,nzdd
    integer nproctot,ranktot
-   integer,target:: COMM_TINKER,nproc,rank
-   integer nproc_polymer,rank_polymer,COMM_POLYMER
-   integer rank_bis,nthread,nrec,ndir,comm_rec,comm_dir
-   integer hostrank,hostcomm
+   integer,target:: nproc,rank
+   integer nproc_polymer,rank_polymer
+   integer rank_bis,nthread,nrec,ndir
+   integer hostrank
    integer n_recep1, n_send1, nrec_recep,nrec_send
    integer n_recep2, n_send2, nrecdir_recep,nrecdir_send
    integer nrecdir_recep2,nrecdir_send2

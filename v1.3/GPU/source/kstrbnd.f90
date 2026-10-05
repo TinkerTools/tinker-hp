@@ -248,7 +248,8 @@ subroutine kstrbnd(init)
 end subroutine
 
 subroutine upload_device_kstrbnd
-   use domdec,only: rank,hostcomm
+   use parallel, only: get_host_comm
+   use domdec,only: rank
    use fields,only:forcefield
    use inform,only:deb_Path
    use kstbnd
@@ -261,7 +262,7 @@ subroutine upload_device_kstrbnd
 #ifdef _OPENACC
 12 format(2x,'upload_device_kstrbnd')
    if(deb_Path) print 12
-   call MPI_BARRIER(hostcomm,ierr)
+   call MPI_BARRIER(get_host_comm(),ierr)
 #endif
 
 !$acc update device(isb,sbk)

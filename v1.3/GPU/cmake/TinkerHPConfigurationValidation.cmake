@@ -118,6 +118,7 @@ function(tinkerhp_assert_shared_colvars_acceptance_registration)
   execute_process(
     COMMAND "${CMAKE_COMMAND}" -S "${TINKERHP_SOURCE_DIR}" -B "${build_dir}" -G Ninja
       -DTINKERHP_INTERNAL_VALIDATE_ONLY=ON
+      -DBUILD_TESTING=ON
       -DCMAKE_C_COMPILER=gcc
       -DCMAKE_CXX_COMPILER=g++
       -DCMAKE_Fortran_COMPILER=gfortran
@@ -682,6 +683,10 @@ function(tinkerhp_assert_parallel_bench6_fpa_registration name fpa parallel expe
       "--mpi-ranks\" \"2\""
       "--feature\" \"FPA\""
       "--dynamic-energy-threshold\" \"1e-4\""
+      "--dynamic-parallel-initial-threshold\" \"8.1e-7\""
+      "--dynamic-parallel-tail-threshold\" \"4.3e-6\""
+      "--dynamic-energy-acceptance-ratio\" \"0.43\""
+      "--dynamic-parallel-start-threshold\" \"5e-8\""
       "--dynamic-temperature-target\" \"300\""
       "bench6_r.fpa.dyn.ref"
       "bench6\" \"50\" \"2\" \"20\" \"2\" \"300\" \"-k\" \"bench6_r"
@@ -850,14 +855,14 @@ target_compile_definitions(conditional_modules PRIVATE _CUDA _OPENACC)
 ]=])
   file(WRITE "${source_dir}/cuda_provider.F90" [=[
 #ifdef _CUDA
-module utilcu
-end module utilcu
+module cuda_utility_fixture
+end module cuda_utility_fixture
 #endif
 ]=])
   file(WRITE "${source_dir}/cuda_consumer.F90" [=[
 module echargecu
 #ifdef _CUDA
-use utilcu
+use cuda_utility_fixture
 #endif
 end module echargecu
 ]=])
@@ -893,7 +898,7 @@ end module empolegpu
 
   file(READ "${build_dir}/CMakeFiles/conditional_modules.dir/depend.make" dependencies)
   foreach(expected
-      "cuda_consumer.F90.o: CMakeFiles/conditional_modules.dir/utilcu.mod.stamp"
+      "cuda_consumer.F90.o: CMakeFiles/conditional_modules.dir/cuda_utility_fixture.mod.stamp"
       "openacc_consumer.F90.o: CMakeFiles/conditional_modules.dir/utilacc.mod.stamp")
     string(FIND "${dependencies}" "${expected}" dependency_index)
     if(dependency_index EQUAL -1)
@@ -973,7 +978,7 @@ function(tinkerhp_assert_compatibility_make_submodule_classification)
       "RunCUFC=fortran-cuda"
       "GPUFLAGS=OPENACC_FLAGS"
       "CUFFLAGS=CUDA_FORTRAN_FLAGS"
-      mdstate.gpu.o cuf.MOD_util.o
+      mdstate.gpu.o
     WORKING_DIRECTORY "${fixture_dir}"
     RESULT_VARIABLE result
     OUTPUT_VARIABLE legacy_output
@@ -983,8 +988,7 @@ function(tinkerhp_assert_compatibility_make_submodule_classification)
     message(FATAL_ERROR "Compatibility Make legacy filename fixture failed: ${error}")
   endif()
   foreach(expected
-      "OPENACC_FLAGS -I${TINKERHP_SOURCE_DIR}/source -c ${TINKERHP_SOURCE_DIR}/source/mdstate.gpu.f90"
-      "CUDA_FORTRAN_FLAGS -I${TINKERHP_SOURCE_DIR}/source -c ${TINKERHP_SOURCE_DIR}/source/MOD_util.cu.f90 -o cuf.MOD_util.o")
+      "OPENACC_FLAGS -I${TINKERHP_SOURCE_DIR}/source -c ${TINKERHP_SOURCE_DIR}/source/mdstate.gpu.f90")
     string(FIND "${legacy_output}" "${expected}" expected_index)
     if(expected_index EQUAL -1)
       message(FATAL_ERROR "Compatibility Make no longer supports the legacy filename rule: ${expected}")
@@ -1132,6 +1136,14 @@ function(tinkerhp_assert_preset_cache name variable expected)
   string(JSON actual GET "${presets}" configurePresets ${index} cacheVariables ${variable})
   if(NOT actual STREQUAL expected)
     message(FATAL_ERROR "${name} has ${variable}=${actual}, expected ${expected}")
+  endif()
+endfunction()
+
+function(tinkerhp_assert_preset_binary_dir name)
+  tinkerhp_find_preset_index(index configurePresets ${name})
+  string(JSON actual GET "${presets}" configurePresets ${index} binaryDir)
+  if(NOT actual STREQUAL "\${sourceDir}/build/${name}")
+    message(FATAL_ERROR "${name} has binary directory ${actual}")
   endif()
 endfunction()
 
@@ -1518,6 +1530,79 @@ function(tinkerhp_assert_invalid_link_mode_rejected)
   endif()
 endfunction()
 
+function(tinkerhp_assert_testing_mode name override expected)
+  set(build_dir "${TINKERHP_VALIDATION_DIR}/${name}")
+  file(REMOVE_RECURSE "${build_dir}")
+  set(command
+    "${CMAKE_COMMAND}" -S "${TINKERHP_SOURCE_DIR}" -B "${build_dir}" -G Ninja
+    -DTINKERHP_INTERNAL_VALIDATE_ONLY=ON
+    -DCMAKE_C_COMPILER=gcc
+    -DCMAKE_CXX_COMPILER=g++
+    -DCMAKE_Fortran_COMPILER=gfortran
+    -DTINKERHP_PRECISION=MIXED
+  )
+  if(NOT override STREQUAL "")
+    list(APPEND command "-DBUILD_TESTING=${override}")
+  endif()
+  execute_process(COMMAND ${command} RESULT_VARIABLE result)
+  if(NOT result EQUAL 0)
+    message(FATAL_ERROR "${name} configuration failed")
+  endif()
+
+  set(test_file "${build_dir}/CTestTestfile.cmake")
+  if(expected STREQUAL "ON")
+    if(NOT EXISTS "${test_file}")
+      message(FATAL_ERROR "${name} did not register CTest tests")
+    endif()
+  elseif(EXISTS "${test_file}")
+    message(FATAL_ERROR "${name} unexpectedly registered CTest tests")
+  endif()
+
+  file(READ "${build_dir}/build.ninja" ninja)
+  string(FIND "${ninja}" "tinkerhp-dynamic-cli-contract" target_index)
+  if(expected STREQUAL "ON" AND target_index EQUAL -1)
+    message(FATAL_ERROR "${name} did not create the test target")
+  elseif(expected STREQUAL "OFF" AND NOT target_index EQUAL -1)
+    message(FATAL_ERROR "${name} unexpectedly created the test target")
+  endif()
+endfunction()
+
+function(tinkerhp_assert_public_test_reconfigure)
+  set(build_dir "${TINKERHP_VALIDATION_DIR}/public-test-reconfigure")
+  file(REMOVE_RECURSE "${build_dir}")
+  set(command
+    "${CMAKE_COMMAND}" -S "${TINKERHP_SOURCE_DIR}" -B "${build_dir}" -G Ninja
+    -DTINKERHP_INTERNAL_VALIDATE_ONLY=ON
+    -DBUILD_TESTING=OFF
+    -DCMAKE_C_COMPILER=gcc
+    -DCMAKE_CXX_COMPILER=g++
+    -DCMAKE_Fortran_COMPILER=gfortran
+    -DTINKERHP_PRECISION=MIXED
+  )
+  execute_process(COMMAND ${command} RESULT_VARIABLE result)
+  if(NOT result EQUAL 0)
+    message(FATAL_ERROR "public test preset initial configuration failed")
+  endif()
+
+  list(APPEND command -DBUILD_TESTING=ON)
+  execute_process(COMMAND ${command} RESULT_VARIABLE result)
+  if(NOT result EQUAL 0)
+    message(FATAL_ERROR "public test preset reconfiguration failed")
+  endif()
+
+  if(NOT EXISTS "${build_dir}/CTestTestfile.cmake")
+    message(FATAL_ERROR "public test preset reconfiguration did not enable CTest")
+  endif()
+  execute_process(
+    COMMAND "${CMAKE_CTEST_COMMAND}" --test-dir "${build_dir}" -N
+    RESULT_VARIABLE result
+    OUTPUT_QUIET
+  )
+  if(NOT result EQUAL 0)
+    message(FATAL_ERROR "public test preset was not usable after reconfiguration")
+  endif()
+endfunction()
+
 file(READ "${TINKERHP_SOURCE_DIR}/CMakePresets.json" public_presets)
 set(presets "${public_presets}")
 foreach(name gpu-double gpu-fpa gpu-fpa-colvars gpu-fpa-nn gpu-fpa-nn-make)
@@ -1534,6 +1619,7 @@ tinkerhp_assert_preset_cache(gpu-double TINKERHP_ENABLE_COLVARS OFF)
 tinkerhp_assert_preset_cache(gpu-double TINKERHP_ENABLE_NN OFF)
 tinkerhp_assert_preset_cache(gpu-double TINKERHP_ENABLE_PLUMED OFF)
 tinkerhp_assert_preset_cache(gpu-double TINKERHP_LINK_MODE STATIC)
+tinkerhp_assert_preset_cache(gpu-double BUILD_TESTING OFF)
 
 tinkerhp_assert_preset_metadata(
   gpu-fpa "GPU Native Arch fpa Static Core Ninja" gpu-double)
@@ -1602,7 +1688,13 @@ foreach(name
     gpu-sm75-fpa-shared-colvars-make
     gpu-sm75-double-shared-make)
   tinkerhp_assert_user_preset_chain(${name})
+  tinkerhp_assert_preset_binary_dir(${name})
+  tinkerhp_assert_preset_cache(${name} BUILD_TESTING ON)
 endforeach()
+
+tinkerhp_assert_testing_mode(testing-default-off "" OFF)
+tinkerhp_assert_testing_mode(testing-explicit-on ON ON)
+tinkerhp_assert_public_test_reconfigure()
 
 tinkerhp_validate_configuration(double DOUBLE STATIC ON OFF OFF OFF OFF .gpu "" USE_DETERMINISTIC_REDUCTION)
 tinkerhp_validate_configuration(mixed-fpa MIXED STATIC ON ON OFF OFF OFF .fpa ORTHOGONAL_BOX_SHAPE_ONLY "")

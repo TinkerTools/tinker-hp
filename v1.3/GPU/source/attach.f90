@@ -17,6 +17,7 @@
 !
 #include "tinker_precision.h"
 subroutine attach
+   use parallel, only: get_host_comm
    use sizes
    use atoms
    use couple
@@ -157,7 +158,7 @@ subroutine attach
       end if
    end if
 
-   call MPI_BARRIER(hostcomm,ierr)
+   call MPI_BARRIER(get_host_comm(),ierr)
 !!$acc enter data copyin(n13(:),i13(:,:),n14(:),i14(:,:),
 !!$acc                  n15(:),i15(:,:))
 

@@ -9,7 +9,8 @@
 
 #include "tinker_macro.h"
 module timestat
-   use domdec, only: rank,nproc,nproctot,COMM_TINKER
+   use domdec, only: rank,nproc,nproctot
+   use parallel, only: get_domain_comm
    use mpi   , only: MPI_Wtime, MPI_COMM_WORLD, MPI_REAL8&
       &, MPI_SUM, MPI_MAX, MPI_MIN, MPI_ALLREDUCE&
       &, MPI_REDUCE, MPI_IN_PLACE
@@ -427,9 +428,9 @@ contains
       end do
 
       call MPI_REDUCE(t_comm,t_comm1,1,MPI_REAL8,MPI_MAX,0&
-         &,COMM_TINKER,ierr)
+         &,get_domain_comm(),ierr)
       call MPI_REDUCE(t_comm,t_comm2,1,MPI_REAL8,MPI_MIN,0&
-         &,COMM_TINKER,ierr)
+         &,get_domain_comm(),ierr)
 
       do i = 1,size(comp_timers)
          t_comp = t_comp + buffer(comp_timers(i),3)
@@ -438,9 +439,9 @@ contains
 !    &            buffer(comp_timers(i),3),t_comp
       end do
       call MPI_REDUCE(t_comp,tcomp1,1,MPI_REAL8,MPI_MAX,0&
-         &,COMM_TINKER,ierr)
+         &,get_domain_comm(),ierr)
       call MPI_REDUCE(t_comp,tcomp2,1,MPI_REAL8,MPI_MIN,0&
-         &,COMM_TINKER,ierr)
+         &,get_domain_comm(),ierr)
 
       t_timestep = buffer(timer_timestep,1)
       if (cfg.eq.ave_disp.and.rank.eq.0) then

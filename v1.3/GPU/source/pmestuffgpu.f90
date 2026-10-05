@@ -1119,12 +1119,13 @@ end subroutine
 !     get first derivatives of the reciprocal space energy
 !
 subroutine grid_pchg_force
+   use parallel, only: get_domain_comm, get_recip_comm
    use atmlst ,only: chgrecglob
    use boxes  ,only: recip
    use charge
    use chgpot
-   use domdec ,only: rank,rank_bis,nproc,nrec,ndir,comm_rec&
-      &,COMM_TINKER,nrec_send,locrec,prec_send,nbloc
+   use domdec ,only: rank,rank_bis,nproc,nrec,ndir&
+      &,nrec_send,locrec,prec_send,nbloc
    use deriv  ,only: decrec
    use fft
    use inform ,only: deb_Path
@@ -1146,11 +1147,11 @@ subroutine grid_pchg_force
 
    if (use_pmecore) then
       nprocloc = nrec
-      commloc  = comm_rec
+      commloc  = get_recip_comm()
       rankloc = rank_bis
    else
       nprocloc = nproc
-      commloc  = COMM_TINKER
+      commloc  = get_domain_comm()
       rankloc = rank
    end if
    if (deb_Path) write(*,'(3x,a)') "grid_pchg_force"
@@ -2329,12 +2330,13 @@ subroutine fphi_mpole_sitecu
 end subroutine
 
 subroutine grid_disp_forcecu
+   use parallel, only: get_domain_comm, get_recip_comm
    use atoms  ,only: n
    use atmlst ,only: disprecglob
    use boxes  ,only: recip
    use disp
-   use domdec ,only: rank,rank_bis,nproc,nrec,ndir,comm_rec&
-      &,COMM_TINKER,nrec_send,locrec,prec_send,nbloc
+   use domdec ,only: rank,rank_bis,nproc,nrec,ndir&
+      &,nrec_send,locrec,prec_send,nbloc
    use deriv  ,only: dedsprec
    use fft
    use inform ,only: deb_Path
@@ -2356,11 +2358,11 @@ subroutine grid_disp_forcecu
 
    if (use_pmecore) then
       nprocloc = nrec
-      commloc  = comm_rec
+      commloc  = get_recip_comm()
       rankloc  = rank_bis
    else
       nprocloc = nproc
-      commloc  = COMM_TINKER
+      commloc  = get_domain_comm()
       rankloc  = rank
    end if
    if (deb_Path) write(*,'(3x,a)') ' grid_disp_forcecu'
@@ -2409,13 +2411,14 @@ subroutine grid_disp_forcecu
 end subroutine
 
 subroutine grid_pchg_forcecu
+   use parallel, only: get_domain_comm, get_recip_comm
    use atoms  ,only: n
    use atmlst ,only: chgrecglob
    use boxes  ,only: recip
    use charge
    use chgpot
-   use domdec ,only: rank,rank_bis,nproc,nrec,ndir,comm_rec&
-      &,COMM_TINKER,nrec_send,locrec,prec_send,nbloc
+   use domdec ,only: rank,rank_bis,nproc,nrec,ndir&
+      &,nrec_send,locrec,prec_send,nbloc
    use deriv  ,only: decrec
    use fft
    use inform ,only: deb_Path
@@ -2437,11 +2440,11 @@ subroutine grid_pchg_forcecu
 
    if (use_pmecore) then
       nprocloc = nrec
-      commloc  = comm_rec
+      commloc  = get_recip_comm()
       rankloc = rank_bis
    else
       nprocloc = nproc
-      commloc  = COMM_TINKER
+      commloc  = get_domain_comm()
       rankloc  = rank
    end if
    if (deb_Path) write(*,'(3x,a)') 'grid_pchg_forcecu'

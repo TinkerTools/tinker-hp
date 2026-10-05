@@ -243,8 +243,9 @@ end
 !     Upload Pitors shared data parameters on Device
 !
 subroutine upload_device_kpitors
+   use parallel, only: get_host_comm
    use bond
-   use domdec,only: rank,hostcomm
+   use domdec,only: rank
    use kpitor
    use inform,only: deb_Path
    use mpi   ,only: MPI_BARRIER
@@ -258,7 +259,7 @@ subroutine upload_device_kpitors
 #ifdef _OPENACC
 12 format(2x,'upload_device_kpitors')
    if(deb_Path) print 12
-   call MPI_BARRIER(hostcomm,ierr)
+   call MPI_BARRIER(get_host_comm(),ierr)
 #endif
 
 #ifdef USE_NVSHMEM_CUDA

@@ -692,6 +692,7 @@ subroutine ecrecipgpu
    use charge
    use chgpot
    use domdec
+   use parallel, only: get_domain_comm, get_recip_comm
    use energi
    use ewald
    use fft
@@ -734,11 +735,11 @@ subroutine ecrecipgpu
    if (use_pmecore) then
       nprocloc = nrec
       rankloc = rank_bis
-      commloc = comm_rec
+      commloc = get_recip_comm()
    else
       nprocloc = nproc
       rankloc = rank
-      commloc = COMM_TINKER
+      commloc = get_domain_comm()
    end if
 !
 !     dynamic allocation of local arrays
@@ -747,7 +748,7 @@ subroutine ecrecipgpu
 
 !$acc data present(qgridin_2d,qgridout_2d,qfac_2d, &
 !$acc  kstart2,kend2,jstart2,jend2,istart2,iend2, &
-!$acc  bsmod1,bsmod2,bsmod3,use_bounds, &
+!$acc  bsmod1,bsmod2,bsmod3, &
 !$acc  octahedron,ecrec)
 !
 !     MPI : Begin reception

@@ -14,25 +14,26 @@
 !
 #include "tinker_precision.h"
 subroutine dcinduce_pmegpu
-   use atmlst
-   use divcon
-   use domdec
-   use ewald
-   use iounit
-   use math
-   use mpole
-   use parallel, only: polar_comm_t, polar_post_comm, polar_finish, &
-      &polar_post_dip_comm, polar_finish_dip_comm
-   use parallel, only: commrecdirfields, commrecdirfieldsgpu, commrecdirsolv, commrecdirsolvgpu
-   use parallel, only: commfield, commfieldgpu, commfieldshort
-   use pme
-   use polar
-   use polpot
+   use atmlst  , only: polerecglob, poleglob, poleglobnl
+   use divcon  , only: atmofst, clsttype, grplst, klst, km, kofst, maxdim, nocomdiis, npergrp, precomp, &
+                       ytab, zmat, zmatDn
+   use domdec  , only: bufbegpole, domlen, n_recep1, n_recepshort1, n_send1, n_sendshort1, ndir, nproc, &
+                       p_recep1, p_recepshort1, p_send1, p_sendshort1, rank
+   use ewald   , only: aewald
+   use iounit  , only: iout
+   use math    , only: sqrtpi
+   use mpole   , only: ipole, npolebloc, npoleloc, npolelocnl, npolerecloc, poleloc, pollist, rpole
+   use parallel, only: get_domain_comm, polar_comm_t, polar_post_comm, polar_finish, polar_post_dip_comm,&
+                 polar_finish_dip_comm, commrecdirfields, commrecdirfieldsgpu, commrecdirsolv, &
+                 commrecdirsolvgpu,  commfield, commfieldgpu, commfieldshort
+   use pme     , only: cphirec, fphirec
+   use polar   , only: npolar, polarity, uind, uinp
+   use polpot  , only: poleps, polalg, polgsf, politer, polprt
    use potent
-   use units
-   use uprior
-   use mpi
-   use tinheader
+   use uprior  , only: maxualt, nualt, use_pred
+   use mpi     , only: MPI_BARRIER, MPI_IALLREDUCE, MPI_IN_PLACE, MPI_IRECV, MPI_ISEND, MPI_STATUS_SIZE, &
+                 MPI_SUM, MPI_TPREC, MPI_WAIT, MPI_WTIME
+   use tinheader, only: ti_p
    implicit none
 !
 !     with separate cores for reciprocal part
@@ -70,7 +71,7 @@ subroutine dcinduce_pmegpu
 !
 !     allocate some memory and clear the arrays:
 !
-   call MPI_BARRIER(COMM_TINKER,ierr)
+   call MPI_BARRIER(get_domain_comm(),ierr)
 !
    if (rank.le.ndir-1) then
       allocate (mu(3,nrhs,max(1,npolebloc)))
@@ -283,22 +284,25 @@ end
 
 
 subroutine inducedc_pmegpu(matvec,nrhs,dodiis,ef,mu,murec)
-   use atmlst
-   use divcon
-   use domdec
-   use ewald
-   use iounit
-   use math
-   use mpole
+   use parallel, only: get_domain_comm, get_direct_comm
+   use atmlst  , only: poleglob
+   use divcon  , only: atmofst, clsttype, grplst, klst, km, kofst, maxdim, nocomdiis, &
+                       npergrp, precomp, ytab, zmat, zmatDn
+   use domdec  , only: ndir, nproc, rank
+   use ewald   , only: aewald
+   use iounit  , only: iout
+   use math    , only: sqrtpi
+   use mpole   , only: ipole, npolebloc, npoleloc, npolerecloc, poleloc
    use parallel, only: polar_comm_t, polar_post_comm, polar_finish, &
-      &polar_post_dip_comm, polar_finish_dip_comm
-   use parallel, only: commrecdirfields, commrecdirfieldsgpu, commrecdirsolv, commrecdirsolvgpu
-   use parallel, only: commfield, commfieldgpu, commfieldshort
-   use polar
-   use polpot
-   use timestat
-   use mpi
-   use tinheader
+                       polar_post_dip_comm, polar_finish_dip_comm, &
+                       commrecdirfields, commrecdirfieldsgpu, commrecdirsolv, &
+                       commrecdirsolvgpu, commfield, commfieldgpu, commfieldshort
+   use polar   , only: npolar, polarity, uind, uinp
+   use polpot  , only: poleps, polalg, polgsf, politer, polprt
+   use mpi     , only: MPI_IALLREDUCE, MPI_IN_PLACE, MPI_REQUEST_NULL, MPI_STATUS_SIZE, MPI_WAIT, &
+                  MPI_SUM, MPI_TPREC, MPI_WTIME
+   use tinheader, only: ti_p
+   use timestat , only: timerecdip, timerealdip
    implicit none
 !
 !     solves the polarizable dipoles linear equations by jacobi
@@ -491,7 +495,7 @@ subroutine inducedc_pmegpu(matvec,nrhs,dodiis,ef,mu,murec)
 !
       end if
       call MPI_IALLREDUCE(MPI_IN_PLACE,rnorm(1),nrhs,MPI_TPREC,&
-         &MPI_SUM,COMM_TINKER,reqnorm,ierr)
+         &MPI_SUM,get_domain_comm(),reqnorm,ierr)
 
       if (rank.le.ndir-1) then
          if (dodiis) then
@@ -513,7 +517,7 @@ subroutine inducedc_pmegpu(matvec,nrhs,dodiis,ef,mu,murec)
                   &bmat,nmat)
             else
                call diis(ndismx,3*nrhs*npoleloc,xdiis,ediis,&
-                  &bmat,nmat,reqdiis,comm_dir)
+                  &bmat,nmat,reqdiis,get_direct_comm())
                do i = 1, 2*nmat-3
                   call MPI_WAIT(reqdiis(i),status,ierr)
                end do
@@ -606,14 +610,13 @@ subroutine dc_factorgpu
 !     compute the direct space contribution to the electric field due to the current value
 !     of the induced dipoles
 !
-   use divcon
-   use domdec
+   use divcon, only: kofst, km, maxdim, npergrp, zmat, zmatDn
+   use domdec, only: rank
 #ifdef _OPENACC
    use interfaces ,only: cuPOTRF
    use mdevice    ,only: reciprocal_work
 #endif
    use tinMemory  ,only: prmem_request
-   use utils
    implicit none
    integer k,mdim,knd,kbeg,inf
 !     loop over the k blocks and perform a cholesky factorization
@@ -670,22 +673,16 @@ subroutine pc_dc_tmatxb_pmegpu(nrhs,dodiag,mu,efi)
 !     Compute the direct space contribution to the electric field due to the current value
 !     of the induced dipoles
 !
-   use atmlst
-   use atoms
-   use divcon
-   use domdec
-   use ewald
-   use group
-   use inform ,only: deb_Path
-   use math
-   use mpole
-   use neigh
-   use polar
-   use polgrp
-   use polpot
-   use sizes
-   use shunt
-   use tinheader
+   use atmlst   , only: poleglob, poleglobnl
+   use atoms    , only: x, y, z
+   use divcon   , only: grplst, ytab
+   use domdec   , only: loc
+   use inform   , only: deb_Path
+   use mpole    , only: ipole, npolebloc, npoleloc, npolelocnl, poleloc, pollist
+   use neigh    , only: elst, nelst
+   use polar    , only: polarity
+   use shunt    , only: cut2
+   use tinheader, only: ti_p
    implicit none
    integer i,nrhs,iglob,kglob,kbis,iipole,kkpole,kkpoleloc
    integer ipoleloc,l
@@ -822,11 +819,11 @@ end
 !     subroutine commfield : communicate some direct fields (Newton third law)
 !
 subroutine commfield2gpu(nrhs,ef)
-   use atoms
-   use domdec
-   use mpole
+   use domdec, only: bufbegpole, domlen, n_recep1, n_send1, nproc, p_recep1, p_send1, rank
+   use parallel, only: get_domain_comm, get_direct_comm
+   use mpole, only: npoleloc
    use potent
-   use mpi
+   use mpi, only: MPI_IALLREDUCE, MPI_IN_PLACE, MPI_STATUS_SIZE, MPI_SUM, MPI_TPREC, MPI_WAIT
    use mdevice ,only: direct_work
    use tinMemory,only: prmem_request
    implicit none
@@ -837,9 +834,9 @@ subroutine commfield2gpu(nrhs,ef)
    real(t_p), allocatable :: buffer(:,:,:,:)
 !
    if (use_pmecore) then
-      commloc = comm_dir
+      commloc = get_direct_comm()
    else
-      commloc = COMM_TINKER
+      commloc = get_domain_comm()
    end if
 !
    if (n_send1>0)&
@@ -894,12 +891,13 @@ end
 !     subroutine commfield : communicate some direct fields (Newton third law)
 !
 subroutine commfield2shortgpu(nrhs,ef)
-   use atoms
-   use domdec
-   use mpole
+   use domdec  , only: bufbegpole, domlen, n_recepshort1, n_sendshort1, nproc, p_recepshort1,&
+                 p_sendshort1, rank
+   use parallel, only: get_domain_comm, get_direct_comm
+   use mpole   , only: npoleloc
    use potent
-   use mpi
-   use mdevice ,only: direct_work
+   use mpi     , only: MPI_IALLREDUCE, MPI_IN_PLACE, MPI_STATUS_SIZE, MPI_SUM, MPI_TPREC, MPI_WAIT
+   use mdevice , only: direct_work
    use tinMemory,only: prmem_request
    implicit none
    integer nrhs,i,j,k,l,tag,status(MPI_STATUS_SIZE)
@@ -909,9 +907,9 @@ subroutine commfield2shortgpu(nrhs,ef)
    real(t_p), allocatable :: buffer(:,:,:,:)
 !
    if (use_pmecore) then
-      commloc = comm_dir
+      commloc = get_direct_comm()
    else
-      commloc = COMM_TINKER
+      commloc = get_domain_comm()
    end if
 
    if (n_sendshort1>0)&

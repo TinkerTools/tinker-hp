@@ -9,7 +9,7 @@
 
 attributes(device)&
    &mdyn_rtyp function tp2mdr( input )
-use utilcu,only: __tp2ll_rz
+use cudadevice, only: __tp2ll_rz=>__float2ll_rz
 implicit none
 real(t_p),intent(in):: input
 mdyn_rtyp,parameter :: frac_bits=_FRAC_BITS_F
@@ -18,7 +18,7 @@ end function
 
 attributes(device)&
    &mdyn_rtyp function rp2mdr( input )
-use utilcu,only: __rp2ll_rz
+use cudadevice, only: __rp2ll_rz=>__double2ll_rz
 implicit none
 real(r_p),intent(in):: input
 mdyn_rtyp,parameter :: frac_bits=_FRAC_BITS_F
@@ -27,7 +27,7 @@ end function
 
 attributes(device)&
    &ener_rtyp function tp2enr( input )
-use utilcu,only: __tp2ll_rz
+use cudadevice, only: __tp2ll_rz=>__float2ll_rz
 implicit none
 real(t_p),intent(in):: input
 ener_rtyp,parameter :: frac_bits=_FRAC_BITS_E
@@ -36,7 +36,7 @@ end function
 
 attributes(device)&
    &ener_rtyp function rp2enr( input )
-use utilcu,only: __rp2ll_rz
+use cudadevice, only: __rp2ll_rz=>__double2ll_rz
 implicit none
 real(r_p),intent(in):: input
 ener_rtyp,parameter :: frac_bits=_FRAC_BITS_E

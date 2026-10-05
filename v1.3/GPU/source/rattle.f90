@@ -392,6 +392,7 @@ subroutine initmpirattle
    use atmlst
    use atomsMirror
    use domdec
+   use parallel, only: get_domain_comm
    use freeze
    use mpole
    use mpi
@@ -472,14 +473,14 @@ subroutine initmpirattle
       if (pneig_send(i).ne.rank) then
          tag = nproc*rank + pneig_send(i) + 1
          call MPI_IRECV(buflenrat1(pneig_send(i)+1),1,MPI_INT,&
-            &pneig_send(i),tag,COMM_TINKER,reqrec(i),ierr)
+            &pneig_send(i),tag,get_domain_comm(),reqrec(i),ierr)
       end if
    end do
    do i = 1, nneig_recep
       if (pneig_recep(i).ne.rank) then
          tag = nproc*pneig_recep(i) + rank + 1
          call MPI_ISEND(buflenrat2(pneig_recep(i)+1),1,MPI_INT,&
-            &pneig_recep(i),tag,COMM_TINKER,reqsend(i),ierr)
+            &pneig_recep(i),tag,get_domain_comm(),reqsend(i),ierr)
       end if
    end do
 !
@@ -514,7 +515,7 @@ subroutine initmpirattle
          tag = nproc*rank + pneig_send(i) + 1
          call MPI_IRECV(bufrat1(bufbegrat1(pneig_send(i)+1)),&
             &buflenrat1(pneig_send(i)+1),&
-            &MPI_INT,pneig_send(i),tag,COMM_TINKER,reqrec(i),ierr)
+            &MPI_INT,pneig_send(i),tag,get_domain_comm(),reqrec(i),ierr)
       end if
    end do
    do i = 1, nneig_recep
@@ -522,7 +523,7 @@ subroutine initmpirattle
          tag = nproc*pneig_recep(i) + rank + 1
          call MPI_ISEND(bufrat2(bufbegrat2(pneig_recep(i)+1)),&
             &buflenrat2(pneig_recep(i)+1),MPI_INT,pneig_recep(i),tag,&
-            &COMM_TINKER,reqsend(i),ierr)
+            &get_domain_comm(),reqsend(i),ierr)
       end if
    end do
 !
@@ -550,6 +551,7 @@ end
 subroutine commrattleinit
    use atoms
    use domdec
+   use parallel, only: get_domain_comm
    use freeze
    use moldyn
    use mpi
@@ -575,7 +577,7 @@ subroutine commrattleinit
          tag = nproc*rank + proc + 1
          call MPI_IRECV(buffermpi1(1,bufbegrat2(proc+1)),&
             &9*buflenrat2(proc+1),&
-            &MPI_TPREC,proc,tag,COMM_TINKER,reqrec(i),ierr)
+            &MPI_TPREC,proc,tag,get_domain_comm(),reqrec(i),ierr)
       end if
    end do
 !
@@ -611,7 +613,7 @@ subroutine commrattleinit
       if (proc.ne.rank) then
          tag = nproc*proc + rank + 1
          call MPI_ISEND(buffermpi2(1,bufbegrat1(proc+1)),&
-            &9*buflenrat1(proc+1),MPI_TPREC,proc,tag,COMM_TINKER,&
+            &9*buflenrat1(proc+1),MPI_TPREC,proc,tag,get_domain_comm(),&
             &reqsend(i),ierr)
       end if
    end do
@@ -657,6 +659,7 @@ end
 subroutine commrattleend
    use atoms
    use domdec
+   use parallel, only: get_domain_comm
    use freeze
    use moldyn
    use mpi
@@ -681,7 +684,7 @@ subroutine commrattleend
          tag = nproc*rank + proc + 1
          call MPI_IRECV(buffermpi2(1,bufbegrat1(proc+1)),&
             &9*buflenrat1(proc+1),&
-            &MPI_TPREC,proc,tag,COMM_TINKER,reqrec(i),ierr)
+            &MPI_TPREC,proc,tag,get_domain_comm(),reqrec(i),ierr)
       end if
    end do
 !
@@ -717,7 +720,7 @@ subroutine commrattleend
       if (proc.ne.rank) then
          tag = nproc*proc + rank + 1
          call MPI_ISEND(buffermpi1(1,bufbegrat2(proc+1)),&
-            &9*buflenrat2(proc+1),MPI_TPREC,proc,tag,COMM_TINKER,&
+            &9*buflenrat2(proc+1),MPI_TPREC,proc,tag,get_domain_comm(),&
             &reqsend(i),ierr)
       end if
    end do

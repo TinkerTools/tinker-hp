@@ -19,7 +19,7 @@ M_subroutine &
 use tinheader ,only: one1
 use tintypes  ,only: real3
 #if defined(TINKER_CUF) && (defined(SINGLE)||defined(MIXED))
-use utilcu    ,only: f_sqrt
+use libm, only: f_sqrt=>TINKERHP_LIBM_SQRT
 #endif
 implicit none
 logical  ,intent(in ):: ulamdyn, ugrp
@@ -127,7 +127,7 @@ M_subroutine &
 use tinheader ,only: ti_p,re_p
 use tintypes  ,only: real3
 #if defined(TINKER_CUF) && (defined(SINGLE)||defined(MIXED))
-use utilcu    ,only: f_sqrt
+use libm, only: f_sqrt=>TINKERHP_LIBM_SQRT
 #endif
 implicit none
 logical  ,intent(in ):: ulamdyn, ugrp

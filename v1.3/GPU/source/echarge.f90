@@ -38,6 +38,7 @@ end
 !
 !
 subroutine echarge0c
+   use parallel, only: get_domain_comm
    use atmlst
    use atoms
    use bound
@@ -117,11 +118,11 @@ subroutine echarge0c
             zd = zd + pchg(iichg)*z(iglob)
          end do
          call MPI_ALLREDUCE(MPI_IN_PLACE,xd,1,MPI_REAL8,MPI_SUM,&
-            &COMM_TINKER,ierr)
+            &get_domain_comm(),ierr)
          call MPI_ALLREDUCE(MPI_IN_PLACE,yd,1,MPI_REAL8,MPI_SUM,&
-            &COMM_TINKER,ierr)
+            &get_domain_comm(),ierr)
          call MPI_ALLREDUCE(MPI_IN_PLACE,zd,1,MPI_REAL8,MPI_SUM,&
-            &COMM_TINKER,ierr)
+            &get_domain_comm(),ierr)
          e = (2.0d0/3.0d0) * f * (pi/volbox) * (xd*xd+yd*yd+zd*zd)
          if (rank.eq.0) then
             ec = ec + e

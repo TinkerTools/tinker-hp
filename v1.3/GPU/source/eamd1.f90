@@ -114,6 +114,7 @@ subroutine aMD (derivs,epot)
 end
 
 subroutine commforces_energy_aMD(energy,derivs)
+   use parallel, only: get_domain_comm, get_direct_comm
    use domdec
    use mamd
    use mpi
@@ -133,10 +134,10 @@ subroutine commforces_energy_aMD(energy,derivs)
 !     Communication of the total et
 !
    if (use_pmecore) then
-      commloc = comm_dir
+      commloc = get_direct_comm()
       if (ndir.eq.1.or.rank.gt.ndir-1) return
    else
-      commloc = COMM_TINKER
+      commloc = get_domain_comm()
       if (nproc.eq.1) return
    end if
 !

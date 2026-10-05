@@ -635,7 +635,8 @@ subroutine kimptor(init)
 end
 
 subroutine update_device_kimptor
-   use domdec,only: rank,hostcomm
+   use domdec,only: rank
+   use parallel, only: get_host_comm
    use imptor
    use inform
    use kitors
@@ -647,7 +648,7 @@ subroutine update_device_kimptor
 #ifdef _OPENACC
 12 format(2x,'update_device_kimptor')
    if (deb_Path) write(*,12)
-   call MPI_BARRIER(hostcomm,ierr)
+   call MPI_BARRIER(get_host_comm(),ierr)
 #endif
 !$acc update device(kti_sys)
 !$acc update device(iitors,itors1,itors2,itors3,nbimptor)

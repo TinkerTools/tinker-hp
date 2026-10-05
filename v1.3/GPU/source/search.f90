@@ -46,6 +46,7 @@
 subroutine search (n,f,g,x,p,f_move,angle,ncalls,&
    &fgvalue,status)
    use domdec
+   use parallel, only: get_domain_comm
    use linmin
    use inform    ,only: deb_Path
    use parallel, only: sendvecmin
@@ -123,9 +124,9 @@ subroutine search (n,f,g,x,p,f_move,angle,ncalls,&
    end do
 !$acc wait
    call MPI_ALLREDUCE(MPI_IN_PLACE,g_norm,1,MPI_RPREC,&
-      &MPI_SUM,COMM_TINKER,ierr)
+      &MPI_SUM,get_domain_comm(),ierr)
    call MPI_ALLREDUCE(MPI_IN_PLACE,s_norm,1,MPI_RPREC,&
-      &MPI_SUM,COMM_TINKER,ierr)
+      &MPI_SUM,get_domain_comm(),ierr)
    g_norm = sqrt(g_norm)
    s_norm = sqrt(s_norm)
 !
@@ -145,7 +146,7 @@ subroutine search (n,f,g,x,p,f_move,angle,ncalls,&
    end do
 !$acc wait
    call MPI_ALLREDUCE(MPI_IN_PLACE,sg_0,1,MPI_RPREC,&
-      &MPI_SUM,COMM_TINKER,ierr)
+      &MPI_SUM,get_domain_comm(),ierr)
 !
 !     check the angle between the search direction
 !     and the negative gradient vector
@@ -213,7 +214,7 @@ subroutine search (n,f,g,x,p,f_move,angle,ncalls,&
    end do
 !$acc wait
    call MPI_ALLREDUCE(MPI_IN_PLACE,sg_b,1,MPI_RPREC,&
-      &MPI_SUM,COMM_TINKER,ierr)
+      &MPI_SUM,get_domain_comm(),ierr)
 !
 !     scale stepsize if initial gradient change is too large
 !
@@ -314,7 +315,7 @@ subroutine search (n,f,g,x,p,f_move,angle,ncalls,&
    end do
 !$acc wait
    call MPI_ALLREDUCE(MPI_IN_PLACE,sg_c,1,MPI_RPREC,&
-      &MPI_SUM,COMM_TINKER,ierr)
+      &MPI_SUM,get_domain_comm(),ierr)
    if (abs(sg_c/sg_0) .le. cappa) then
       f = f_c
       if (status .eq. blank)  status = ' Success '

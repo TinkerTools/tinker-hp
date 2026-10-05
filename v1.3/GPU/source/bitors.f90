@@ -149,7 +149,8 @@ end
 subroutine upload_device_bitors
    use bitor
    use tortor
-   use domdec ,only: rank,hostcomm
+   use domdec ,only: rank
+   use parallel, only: get_host_comm
    use inform ,only: deb_Path
    use mpi    ,only: MPI_BARRIER
    use nvshmem
@@ -161,7 +162,7 @@ subroutine upload_device_bitors
 
 12 format(2x,'upload_device_bitors')
    if(deb_Path) print 12
-   call MPI_BARRIER(hostcomm,ierr)
+   call MPI_BARRIER(get_host_comm(),ierr)
 !$acc update device(nbbitors)
 !$acc update device(ibitor)
 !$acc enter data copyin(nbitorloc)

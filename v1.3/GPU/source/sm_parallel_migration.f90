@@ -61,6 +61,7 @@ subroutine reassign
    use bound
    use cell
    use domdec
+   use parallel, only: get_domain_comm, get_direct_comm
    use freeze
    use moldyn
    use neigh
@@ -100,11 +101,11 @@ subroutine reassign
    call timer_enter( timer_eneig )
    if (use_pmecore) then
       nprocloc = ndir
-      commloc  = comm_dir
+      commloc  = get_direct_comm()
       rankloc  = rank_bis
    else
       nprocloc = nproc
-      commloc  = COMM_TINKER
+      commloc  = get_domain_comm()
       rankloc  = rank
    end if
    allocate (glob1(n))
@@ -217,7 +218,7 @@ subroutine reassign
       proc = pneig_recep(i)
       tag = nprocloc*rankloc + proc + 1
       call MPI_IRECV(buffer(1,bufbeg4(proc+1)),10*buflen4(proc+1),&
-         &MPI_RPREC,proc,tag,COMM_TINKER,reqrec(i),ierr)
+         &MPI_RPREC,proc,tag,get_domain_comm(),reqrec(i),ierr)
    end do
 
    max_atoms_send=maxval(n_data_send)
@@ -247,7 +248,7 @@ subroutine reassign
       proc = pneig_send(i)
       tag = nprocloc*proc + rankloc + 1
       call MPI_ISEND(buffers(1,bufbeg3(proc+1)),10*buflen3(proc+1),&
-         &MPI_RPREC,proc,tag,COMM_TINKER,reqsend(i),ierr)
+         &MPI_RPREC,proc,tag,get_domain_comm(),reqsend(i),ierr)
    end do
    do i = 1, nneig_send
       proc = pneig_send(i)
@@ -293,7 +294,7 @@ subroutine reassign
          proc = pneig_recep(i)
          tag = nprocloc*rankloc + proc + 1
          call MPI_IRECV(buffer1(1,bufbeg4(proc+1)),4*buflen4(proc+1),&
-            &MPI_RPREC,proc,tag,COMM_TINKER,reqrec(i),ierr)
+            &MPI_RPREC,proc,tag,get_domain_comm(),reqrec(i),ierr)
       end do
       do i = 1, nneig_send
          proc = pneig_send(i)
@@ -312,7 +313,7 @@ subroutine reassign
          proc = pneig_send(i)
          tag = nprocloc*proc + rankloc + 1
          call MPI_ISEND(buffers1(1,bufbeg3(proc+1)),4*buflen3(proc+1),&
-            &MPI_RPREC,proc,tag,COMM_TINKER,reqsend(i),ierr)
+            &MPI_RPREC,proc,tag,get_domain_comm(),reqsend(i),ierr)
       end do
       do i = 1, nneig_send
          proc = pneig_send(i)
@@ -397,10 +398,11 @@ subroutine reassignrespa(ialt,nalt)
    use bound       ,only: use_bounds
    use boxes
    use cell
-   use domdec,only : nloc,nproc,glob,comm_dir,rank,rank_bis,ndir,nxdd,nydd,nzdd&
+   use domdec,only : nloc,nproc,glob,rank,rank_bis,ndir,nxdd,nydd,nzdd&
              ,xbegproc,ybegproc,zbegproc,xendproc,yendproc,zendproc&
              ,repart,repartrec,loc,locrec,domlen&
-             ,COMM_TINKER, nneig_send,nneig_recep,pneig_recep,pneig_send
+             ,nneig_send,nneig_recep,pneig_recep,pneig_send
+   use parallel, only: get_domain_comm, get_direct_comm
    use freeze   ,only : use_rattle
    use inform   ,only : deb_Path,tindPath
    use iso_c_binding
@@ -455,7 +457,7 @@ subroutine reassignrespa(ialt,nalt)
    if (ialt/=nalt) return
    if (use_pmecore) then
       nprocloc = ndir
-      commloc  = comm_dir
+      commloc  = get_direct_comm()
       rankloc  = rank_bis
       if (rank >= ndir) then
          call timer_enter( timer_eneig )
@@ -463,7 +465,7 @@ subroutine reassignrespa(ialt,nalt)
       end if
    else
       nprocloc = nproc
-      commloc  = COMM_TINKER
+      commloc  = get_domain_comm()
       rankloc  = rank
    end if
    if (nproc.eq.1) return
@@ -622,7 +624,7 @@ subroutine reassignrespa(ialt,nalt)
    do ineighbor = 1, nneig_send
       call MPI_Isend(iglob_send(1,ineighbor)&
          &,2*n_data_send(ineighbor)&
-         &,MPI_INT,   pneig_send(ineighbor), 0, COMM_TINKER,&
+         &,MPI_INT,   pneig_send(ineighbor), 0, get_domain_comm(),&
          &req_iglob_send(ineighbor), ierr)
    end do
 !$acc end host_data
@@ -630,7 +632,7 @@ subroutine reassignrespa(ialt,nalt)
    ! Probe for sizes
    n_data_recv(:) = 0
    do ineighbor = 1, nneig_recep
-      call MPI_Probe(pneig_recep(ineighbor), 0, COMM_TINKER,&
+      call MPI_Probe(pneig_recep(ineighbor), 0, get_domain_comm(),&
          &mpi_status1, ierr)
       call MPI_Get_count( mpi_status1, MPI_INT,&
          &n_data_recv(ineighbor), ierr )
@@ -662,10 +664,10 @@ subroutine reassignrespa(ialt,nalt)
 !$acc host_data use_device(iglob_recv,data_recv,data_send)
    do ineighbor = 1, nneig_recep
       call MPI_Irecv(iglob_recv(1,ineighbor),2*n_data_recv(ineighbor)&
-         &,MPI_INT, pneig_recep(ineighbor), 0, COMM_TINKER,&
+         &,MPI_INT, pneig_recep(ineighbor), 0, get_domain_comm(),&
          &req_iglob_recv(ineighbor), ierr)
       call MPI_Irecv(data_recv(1,ineighbor),9*n_data_recv(ineighbor)&
-         &,MPI_RPREC, pneig_recep(ineighbor), 1, COMM_TINKER,&
+         &,MPI_RPREC, pneig_recep(ineighbor), 1, get_domain_comm(),&
          &req_data_recv(ineighbor), ierr)
    end do
 
@@ -679,7 +681,7 @@ subroutine reassignrespa(ialt,nalt)
 
    do ineighbor = 1, nneig_send
       call MPI_Isend(data_send(1,ineighbor),9*n_data_send(ineighbor)&
-         &,MPI_RPREC, pneig_send(ineighbor), 1, COMM_TINKER,&
+         &,MPI_RPREC, pneig_send(ineighbor), 1, get_domain_comm(),&
          &req_data_send(ineighbor), ierr)
    end do
 !$acc end host_data
@@ -766,12 +768,12 @@ subroutine reassignrespa(ialt,nalt)
 !$acc host_data use_device(old_send, old_recv)
       do ineighbor = 1, nneig_send
          call MPI_Isend(old_send(1,ineighbor),3*n_data_send(ineighbor)&
-            &,MPI_TPREC, pneig_send(ineighbor), 0, COMM_TINKER,&
+            &,MPI_TPREC, pneig_send(ineighbor), 0, get_domain_comm(),&
             &req_data_send(ineighbor), ierr)
       end do
       do ineighbor = 1, nneig_recep
          call MPI_Irecv(old_recv(1,ineighbor),3*n_data_recv(ineighbor)&
-            &,MPI_TPREC, pneig_recep(ineighbor), 0, COMM_TINKER,&
+            &,MPI_TPREC, pneig_recep(ineighbor), 0, get_domain_comm(),&
             &req_data_recv(ineighbor), ierr)
       end do
 !$acc end host_data
@@ -826,12 +828,12 @@ subroutine reassignrespa(ialt,nalt)
 !$acc host_data use_device(aalt_send, aalt_recv)
       do ineighbor = 1, nneig_send 
         call MPI_Isend(aalt_send(1,ineighbor),6*n_data_send (ineighbor) &
-            &,MPI_TPREC, pneig_send(ineighbor), 0, COMM_TINKER, &
+            &,MPI_TPREC, pneig_send(ineighbor), 0, get_domain_comm(), &
             & req_data_send(ineighbor), ierr)
       end do
       do ineighbor = 1, nneig_recep
         call MPI_Irecv(aalt_recv(1,ineighbor),6*n_data_recv (ineighbor)&
-              & ,MPI_TPREC, pneig_recep(ineighbor), 0, COMM_TINKER,&
+              & ,MPI_TPREC, pneig_recep(ineighbor), 0, get_domain_comm(),&
               & req_data_recv(ineighbor), ierr)
       end do
 !$acc end host_data

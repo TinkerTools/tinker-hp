@@ -17,6 +17,7 @@
 !
 #include "tinker_macro.h"
 subroutine kbond
+   use parallel, only: get_host_comm
    use atmtyp
    use bond
    use domdec
@@ -536,7 +537,7 @@ subroutine kbond
 !
    if (nbond .eq. 0)  use_bond = .false.
 160 continue
-   call MPI_BARRIER(hostcomm,ierr)
+   call MPI_BARRIER(get_host_comm(),ierr)
    call upload_device_kbond
 end
 

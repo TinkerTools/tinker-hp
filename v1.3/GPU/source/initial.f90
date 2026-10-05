@@ -93,67 +93,13 @@ subroutine set_nproc()
 
 end subroutine set_nproc
 !
-!     subroutine initmpi
-!
-!     initialize local communicator and generate replicas if necessary
-!
-subroutine initmpi
-   use domdec
-   use inform
-   use mpi
-   use tinMemory,only: extra_alloc
-   use beads
-   use replicas
-   implicit none
-   integer ierr,iproc,ncomm,color
-
-   call set_nproc()
-
-   ! compute rank for spatial communicator
-   rank_reploc = int(ranktot/nproc)
-   ncomm       = int(nproctot/nproc)
-   if ((ncomm-nproc*nproctot).gt.0) ncomm = ncomm+1
-
-   ! split MPI_COMM_WORLD into spatial communicator COMM_TINKER
-   CALL MPI_Comm_split(MPI_COMM_WORLD,rank_reploc&
-           ,ranktot,COMM_TINKER,ierr)
-   call MPI_COMM_SIZE(COMM_TINKER,nproc,ierr)
-   call MPI_COMM_RANK(COMM_TINKER,rank,ierr)
-
-   CALL MPI_Comm_split_type(COMM_TINKER, MPI_COMM_TYPE_SHARED,0&
-           ,MPI_INFO_NULL, hostcomm,ierr)
-   CALL MPI_Comm_rank(hostcomm,hostrank,ierr)
-
-   call initDebugEnv
-
-   call initDevice
-
-   COMM_ROOT2ROOT = MPI_COMM_NULL
-
-   if (path_integral_md) then
-      ! create polymer communicator
-      CALL MPI_Comm_split(MPI_COMM_WORLD,rank,ranktot,COMM_POLYMER,ierr)
-      call MPI_COMM_SIZE(COMM_POLYMER,nproc_polymer,ierr)
-      call MPI_COMM_RANK(COMM_POLYMER,rank_polymer,ierr)
-
-   else !if(use_reps) then
-      ! create inter root communicator
-      color = 1
-      if (rank.eq.0) color = 0
-      call MPI_Comm_split(MPI_COMM_WORLD,color,ranktot,COMM_ROOT2ROOT,ierr)
-
-   endif
-
-   if (nproc.gt.1) extra_alloc=.true.
-
-end
-!
 !     Initialize GPU
 !
 subroutine initDevice(platform_ready)
    use deriv  ,only: delambdae,delambdav,delambdaesave,&
       &delambdavsave
-   use domdec ,only: nproc,rank,ranktot,hostcomm
+   use domdec ,only: nproc,rank,ranktot
+   use parallel, only: get_host_comm
    use energi
    use inter  ,only: einter
    use inform
@@ -182,7 +128,7 @@ subroutine initDevice(platform_ready)
    if (.not.platform_is_ready) then
       call init_legacy
    end if
-   call init_nvshmem(hostcomm)
+   call init_nvshmem(get_host_comm())
    !call mHalte
 !
 !     For Mpi debug purpose
@@ -196,7 +142,7 @@ subroutine initDevice(platform_ready)
             call sleep(2)
          end do
       end if
-      call MPI_BARRIER(hostcomm,ierr)
+      call MPI_BARRIER(get_host_comm(),ierr)
    end if
 
    call publish_warning

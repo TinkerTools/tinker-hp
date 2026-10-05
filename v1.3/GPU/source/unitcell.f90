@@ -154,8 +154,6 @@ subroutine unitcell
 !         dens = 0.75_ti_p
    end if
 !
-!$acc enter data copyin(use_bounds)
-!
 !$acc update device(orthogonal,xbox,ybox,zbox,&
 !$acc     alpha,beta,gamma,octahedron,triclinic,monoclinic)
 

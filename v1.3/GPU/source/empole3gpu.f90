@@ -77,6 +77,7 @@ subroutine empole3cgpu
    use boxes
    use chgpot
    use domdec
+   use parallel, only: get_domain_comm
    use empole3gpu_inl
    use energi
    use ewald
@@ -196,11 +197,11 @@ subroutine empole3cgpu
                zd     = zd + diz + rpole(1,iipole)*z(iglob)
             end do
             call MPI_ALLREDUCE(MPI_IN_PLACE,xd,1,MPI_TPREC,MPI_SUM,&
-               &COMM_TINKER,ierr)
+               &get_domain_comm(),ierr)
             call MPI_ALLREDUCE(MPI_IN_PLACE,yd,1,MPI_TPREC,MPI_SUM,&
-               &COMM_TINKER,ierr)
+               &get_domain_comm(),ierr)
             call MPI_ALLREDUCE(MPI_IN_PLACE,zd,1,MPI_TPREC,MPI_SUM,&
-               &COMM_TINKER,ierr)
+               &get_domain_comm(),ierr)
             if (rank.eq.0) then
                term = (2.0_ti_p/3.0_ti_p) * f * (pi/volbox)
                e  = term * (xd*xd+yd*yd+zd*zd)
@@ -262,6 +263,7 @@ subroutine elambdampole3cgpu
    use boxes
    use chgpot
    use domdec
+   use parallel, only: get_domain_comm
    use empole3gpu_inl
    use energi
    use ewald
@@ -417,11 +419,11 @@ subroutine elambdampole3cgpu
                zd     = zd + diz + rpole(1,iipole)*z(iglob)
             end do
             call MPI_ALLREDUCE(MPI_IN_PLACE,xd,1,MPI_TPREC,MPI_SUM,&
-               &COMM_TINKER,ierr)
+               &get_domain_comm(),ierr)
             call MPI_ALLREDUCE(MPI_IN_PLACE,yd,1,MPI_TPREC,MPI_SUM,&
-               &COMM_TINKER,ierr)
+               &get_domain_comm(),ierr)
             call MPI_ALLREDUCE(MPI_IN_PLACE,zd,1,MPI_TPREC,MPI_SUM,&
-               &COMM_TINKER,ierr)
+               &get_domain_comm(),ierr)
             if (rank.eq.0) then
                term = (2.0_ti_p/3.0_ti_p) * f * (pi/volbox)
                e  = term * (xd*xd+yd*yd+zd*zd)
@@ -965,6 +967,7 @@ subroutine emrecipgpu
    use boxes
    use chgpot
    use domdec
+   use parallel, only: get_domain_comm, get_recip_comm
    use energi
    use ewald
    use fft
@@ -1013,11 +1016,11 @@ subroutine emrecipgpu
    if (use_pmecore) then
       nprocloc = nrec
       rankloc  = rank_bis
-      commloc  =  comm_rec
+      commloc  =  get_recip_comm()
    else
       nprocloc = nproc
       rankloc  = rank
-      commloc  = COMM_TINKER
+      commloc  = get_domain_comm()
    end if
    f = electric / dielec
 !
@@ -1033,7 +1036,7 @@ subroutine emrecipgpu
 
 !$acc data present(polerecglob,rpole,kstart2,jstart2,istart2, &
 !$acc  bsmod1,bsmod2,bsmod3, &
-!$acc  repart,qgridin_2d,qgridout_2d,use_bounds,qfac_2d, &
+!$acc  repart,qgridin_2d,qgridout_2d,qfac_2d, &
 !$acc  octahedron,fmp,cmp, &
 !$acc  fphirec,cphirec)
 !

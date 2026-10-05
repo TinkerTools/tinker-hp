@@ -17,10 +17,10 @@ module pmestuffcu
    use math   ,only: pi
    use pme    ,only: maxorder
    use tinheader
-   use utilcu ,only: all_lanes
    use cellcu ,only: octahedron
    use reduction,only: RED_BUFF_SIZE
 
+   integer,parameter :: AllLanes=Z'ffffffff'
    integer,parameter ::  level=4
    integer,parameter ::  level1=2
    integer,parameter ::  PME_BLOCK_DIM=64
@@ -404,7 +404,7 @@ do impi = blockIdx%x, npolerecloc, gridDim%x
       end do
    end if
    if (blockDim%x>warpsize) then; call syncthreads
-   else;                          call syncwarp(all_lanes); endif
+   else;                          call syncwarp(AllLanes); endif
 !
 !       Three dimensional loop on the grid collapse by hand
 !
@@ -491,7 +491,7 @@ do impi = blockIdx%x, nionrecloc, gridDim%x
       theta3(i) = thetai3(i,impi)
    end do
    if (blockDim%x>warpsize) then; call syncthreads
-   else;                          call syncwarp(all_lanes); endif
+   else;                          call syncwarp(AllLanes); endif
    q         = pchg(kind_id(impi))
    offsetx   = 1 - ( igrid1 + grdoff - nlpts )
    offsety   = 1 - ( igrid2 + grdoff - nlpts )
@@ -692,7 +692,7 @@ do impi = blockIdx%x, npolerecloc, gridDim%x
       end do
    end if
    if (blockDim%x>warpsize) then; call syncthreads
-   else;                          call syncwarp(all_lanes); end if
+   else;                          call syncwarp(AllLanes); end if
 !
 !       Three dimensional loop on the grid collapse by hand
 !

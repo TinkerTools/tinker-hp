@@ -18,6 +18,7 @@
 !
 #include "tinker_precision.h"
 subroutine angles(init)
+   use parallel, only: get_host_comm
    use angle
    use atmlst
    use atoms
@@ -97,7 +98,7 @@ subroutine angles(init)
          end do
       end do
 
-      call MPI_BARRIER(hostcomm,i)
+      call MPI_BARRIER(get_host_comm(),i)
       nangle_pe=value_pe(nangle)
       call upload_device_angles
       call prmem_request(angleloc,nangle)

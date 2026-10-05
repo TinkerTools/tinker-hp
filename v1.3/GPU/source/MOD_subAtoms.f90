@@ -16,7 +16,8 @@ submodule(atomsMirror) subAtoms
    use atoms     , nr=>n,xr=>x,yr=>y,zr=>z&
       &, xor=>xold,yor=>yold,zor=>zold
    use cell
-   use domdec    ,only: rank,nproc,hostcomm,COMM_TINKER,nloc,nbloc,glob
+   use domdec    ,only: rank,nproc,nloc,nbloc,glob
+   use parallel, only: get_host_comm
    use deriv     ,only: ftot_l,tdes_l,de_tot,derivx,derivy,derivz
    use inform    ,only: deb_path,minmaxone
    use moldyn    ,only: v
@@ -405,7 +406,7 @@ contains
             write(0,66) rank,ierr
             __TINKER_FATAL__
          end if
-         call mpi_barrier(hostcomm,ierr)
+         call mpi_barrier(get_host_comm(),ierr)
       end if
 
    end subroutine

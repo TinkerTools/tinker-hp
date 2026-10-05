@@ -1293,6 +1293,7 @@ end
 !     between time steps
 !
 subroutine reassignpmevec(init)
+   use parallel, only: get_domain_comm
    use atoms
    use boxes
    use chunks
@@ -1718,7 +1719,7 @@ subroutine reassignpmevec(init)
          tag = nproc*rank + precdir_recep(i) + 1
          call MPI_IRECV(repartrec(bufbeg(precdir_recep(i)+1)),&
             &domlen(precdir_recep(i)+1),MPI_INT,precdir_recep(i),tag,&
-            &COMM_TINKER,req(tag),ierr)
+            &get_domain_comm(),req(tag),ierr)
       end if
    end do
 !
@@ -1726,7 +1727,7 @@ subroutine reassignpmevec(init)
       if (precdir_send(i).ne.rank) then
          tag = nproc*precdir_send(i) + rank + 1
          call MPI_ISEND(repartrec,&
-            &nloc,MPI_INT,precdir_send(i),tag,COMM_TINKER,&
+            &nloc,MPI_INT,precdir_send(i),tag,get_domain_comm(),&
             &req(tag),ierr)
       end if
    end do

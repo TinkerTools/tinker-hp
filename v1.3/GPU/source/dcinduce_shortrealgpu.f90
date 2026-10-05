@@ -159,6 +159,7 @@ subroutine dcinduce_shortrealgpu
 end
 
 subroutine inducedc_shortrealgpu(matvec,nrhs,dodiis,ef,mu)
+   use parallel, only: get_domain_comm
    use atmlst
    use divcon
    use domdec
@@ -301,7 +302,7 @@ subroutine inducedc_shortrealgpu(matvec,nrhs,dodiis,ef,mu)
 
 
       call MPI_IALLREDUCE(MPI_IN_PLACE,rnorm(1),nrhs,MPI_TPREC,&
-         &MPI_SUM,COMM_TINKER,reqnorm,ierr)
+         &MPI_SUM,get_domain_comm(),reqnorm,ierr)
 
       if (dodiis) then
          ind = 0
@@ -322,7 +323,7 @@ subroutine inducedc_shortrealgpu(matvec,nrhs,dodiis,ef,mu)
                &bmat,nmat)
          else
             call diis(ndismx,3*nrhs*npoleloc,xdiis,ediis,&
-               &bmat,nmat,reqdiis,COMM_TINKER)
+               &bmat,nmat,reqdiis,get_domain_comm())
             do i = 1, 2*nmat-3
                call MPI_WAIT(reqdiis(i),status,ierr)
             end do

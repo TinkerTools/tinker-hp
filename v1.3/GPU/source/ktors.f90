@@ -1224,7 +1224,8 @@ end
  ! absence of test on use_tors is due to facte that those
  ! datas are used for others torsions component
 subroutine upload_device_ktors
-   use domdec,only: rank,hostcomm
+   use parallel, only: get_host_comm
+   use domdec,only: rank
    use inform,only: deb_Path
    use mpi   ,only: MPI_BARRIER
    use nvshmem
@@ -1236,7 +1237,7 @@ subroutine upload_device_ktors
 #ifdef _OPENACC
 12 format(2x,'upload_device_ktors')
    if(deb_Path) print 12
-   call MPI_BARRIER(hostcomm,ierr)
+   call MPI_BARRIER(get_host_comm(),ierr)
 #endif
 
 #ifdef USE_NVSHMEM_CUDA

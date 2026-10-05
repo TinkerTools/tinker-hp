@@ -427,7 +427,8 @@ subroutine kimprop(init)
 end
 
 subroutine update_device_kimprop
-   use domdec,only: rank,hostcomm
+   use domdec,only: rank
+   use parallel, only: get_host_comm
    use improp
    use inform
    use kiprop
@@ -439,7 +440,7 @@ subroutine update_device_kimprop
 #ifdef _OPENACC
 12 format(2x,'update_device_kimprop')
    if (deb_Path) print 12
-   call MPI_BARRIER(hostcomm,ierr)
+   call MPI_BARRIER(get_host_comm(),ierr)
 #endif
 !$acc update device(kdi_sys)
 !$acc update device(iiprop,nbimprop,kprop,vprop)

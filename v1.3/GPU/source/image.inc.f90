@@ -12,7 +12,7 @@ M_subroutine  ctf_inl(xr,yr,zr)
 use tinheader,only:ti_p,prec_eps
 #ifdef TINKER_CUF
 use cellcu
-use utilcu,only: f_abs,f_sign
+use libm, only: f_abs=>TINKERHP_LIBM_ABS,f_sign=>TINKERHP_LIBM_SIGN
 #else
 use boxes
 use cell
@@ -29,7 +29,7 @@ M_subroutine  ftc_inl(xr,yr,zr)
 use tinheader,only:ti_p,prec_eps
 #ifdef TINKER_CUF
 use cellcu
-use utilcu,only: f_abs,f_sign
+use libm, only: f_abs=>TINKERHP_LIBM_ABS,f_sign=>TINKERHP_LIBM_SIGN
 #else
 use boxes
 use cell
@@ -46,7 +46,7 @@ M_subroutine image_orth_inl(xr,yr,zr)
 use tinheader,only:ti_p
 #ifdef TINKER_CUF
 use cellcu
-use utilcu,only: f_abs,f_sign
+use libm, only: f_abs=>TINKERHP_LIBM_ABS,f_sign=>TINKERHP_LIBM_SIGN
 #else
 use cell
 #endif
@@ -64,7 +64,7 @@ M_subroutine image_inl(xr,yr,zr)
 use tinheader,only:ti_p,prec_eps
 #ifdef TINKER_CUF
 use cellcu
-use utilcu,only: f_abs,f_floor,f_sign
+use libm, only: f_abs=>TINKERHP_LIBM_ABS,f_floor=>TINKERHP_LIBM_FLOOR,f_sign=>TINKERHP_LIBM_SIGN
 #else
 use boxes
 use cell
@@ -107,7 +107,7 @@ M_subroutine image1_inl(xr,yr,zr,info)
 use tinheader,only:ti_p,prec_eps
 #ifdef TINKER_CUF
 use cellcu
-use utilcu,only: f_abs,f_floor,f_sign
+use libm, only: f_abs=>TINKERHP_LIBM_ABS,f_floor=>TINKERHP_LIBM_FLOOR,f_sign=>TINKERHP_LIBM_SIGN
 #else
 use boxes
 use cell
@@ -164,7 +164,7 @@ M_subroutine&
 use tinheader,only:ti_p,re_p,prec_eps
 #ifdef TINKER_CUF
 use cellcu
-use utilcu,only: f_abs,f_sign
+use libm, only: f_abs=>TINKERHP_LIBM_ABS,f_sign=>TINKERHP_LIBM_SIGN
 #else
 use boxes
 use cell
@@ -227,7 +227,7 @@ M_subroutine&
 use tinheader,only:ti_p,prec_eps
 #ifdef TINKER_CUF
 use cellcu
-use utilcu,only: f_abs,f_sign
+use libm, only: f_abs=>TINKERHP_LIBM_ABS,f_sign=>TINKERHP_LIBM_SIGN
 #else
 use boxes
 use cell
@@ -261,7 +261,7 @@ subroutine image1d_inl(val,vcell,vcell2)
 !$acc routine seq
    use tinheader,only:ti_p,prec_eps
 #ifdef TINKER_CUF
-   use utilcu   ,only:f_floor,f_sign
+   use libm, only: f_floor=>TINKERHP_LIBM_FLOOR,f_sign=>TINKERHP_LIBM_SIGN
 #endif
    implicit none
    real(ti_p),intent(inout):: val

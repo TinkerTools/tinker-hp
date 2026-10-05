@@ -5,38 +5,58 @@
 !
 !     ###############################################################
 !     ##                                                           ##
-!     ##  submodule initialization_lifecycle  --  runtime setup      ##
+!     ##  submodule initialization_lifecycle  --  runtime setup    ##
 !     ##                                                           ##
 !     ###############################################################
 !
 #include "tinker_macro.h"
 submodule (initialization) initialization_lifecycle
+! NVFORTRAN 24.7 import-scope workaround for the internal compiler errors
+! recorded in issue 44: keep imports at submodule scope, narrow them with
+! ONLY, and retain only the broad passive potent namespace.
    use atoms , only: n
-   use beads , only: read_bead_config
-   use config, only: config_t, discover_key, discover_prm, apply_early_configuration, &
-                     apply_defaults_prm_key
+   use bath  , only: isobaric, isothermal
+   use beads , only: nbeads, nbeads_ctr, read_bead_config
+   use bound , only: use_bounds, use_polymer
+   use config, only: apply_defaults_prm_key, apply_early_configuration, config_t, discover_key, discover_prm, &
+                     publish_legacy_cli
    use cflux , only: release_cflux_workspaces
    use cutoff, only: use_ewald
-   use energi, only: delete_energi_on_device
+   use deriv , only: dotstgrad
+   use domdec, only: nproc, nproctot, nrec, nthread, ranktot
+   use energi, only: calc_e, delete_energi_on_device, etot_ave, etot_std
    use fft   , only: free_FFTgrid_p, fft_final, is_fftInit
-   use inform, only: app_id, analyze_a, analyze_beads_a, bar_a, dynamic_a, minimize_a, &
-                     pibar_a, pimd_a, radial_a, testgrad_a
+   use files , only: nprior
+   use inform, only: abort, analyze_a, analyze_beads_a, app_id, bar_a, debug, dynamic_a, iprint, iwrite, &
+                     minimize_a, n_fwriten, pibar_a, pimd_a, radial_a, silent, testgrad_a, verbose
    use interfaces, only: mechanic
-   use mdevice   , only: channel_t, direct_work, initialize_device, &
+   use iounit, only: input, iout
+   use keys  , only: nkey
+   use linmin, only: stpmax
+   use mdevice   , only: direct_work, initialize_device, &
                      recip_work => reciprocal_work, default_work, sync_work, finalize_device
-   use moldyn, only: a, aalt, aalt2, v
-   use mpi, only: MPI_COMM_NULL, MPI_Finalized, MPI_Initialized, MPI_SUCCESS
+   use minima, only: fctmin, maxiter, nextiter
+   use moldyn, only: a, aalt, aalt2, nalt, nalt2, stepfast, stepint, v
+   use mpi, only: MPI_COMM_NULL, MPI_COMM_RANK, MPI_COMM_SIZE, MPI_COMM_WORLD, MPI_Finalized, &
+                  MPI_Initialized, MPI_SUCCESS
+   use neigh, only: auto_lst, domlst, dovlst
+   use output, only: coordtype
+   use params, only: nprm
    use parallel, only: active_polar_tickets, construct_topology, configure_layout, release, host_handle, &
       &domain_handle, topology_classical, topology_polymer
    use pme, only: pme_device_ready, release_pme_device
    use polar, only: release_polar_workspace
-   use potent, only: use_charge, use_mpole, use_vdw
+   use precis, only: p_tiny => tiny, small, p_huge => huge
+   use potent
    use reduction, only: delete_reduction_buffers
    use status, only: clear_status, enrich_status, failed, set_status, status_invalid_argument, status_ok
    use structure, only: load_initial
    use tmatxb, only: release_tmatxb_workspace
-   use tinMemory, only: prmem_requestm, sd_prmem
+   use tinMemory, only: init_memhandle, prmem_requestm, sd_prmem
+   use tinheader, only: i_init
+   use timestat, only: initiate_timers, timer_enter, timer_prog
    use utils, only: set_to_zero2m
+   use uprior, only: polpred, use_pred
    use virial, only: delete_vir_device
 #ifdef _OPENACC
    use thrust, only: thrust_clear_cache_memory
@@ -48,30 +68,6 @@ submodule (initialization) initialization_lifecycle
 contains
 
    module subroutine initialize_defaults(raw_cli, status_value)
-      use atoms
-      use beads
-      use bath
-      use bound
-      use config, only: publish_legacy_cli
-      use deriv
-      use domdec
-      use energi
-      use files
-      use inform
-      use iounit
-      use keys
-      use linmin
-      use minima
-      use moldyn
-      use mpi
-      use neigh
-      use output
-      use params
-      use precis, only: p_tiny => tiny, small, p_huge => huge
-      use timestat
-      use tinMemory
-      use tinheader
-      use uprior
       implicit none
       type(raw_cli_t), intent(in) :: raw_cli
       type(status_t), intent(out) :: status_value
@@ -170,7 +166,7 @@ contains
       integer, intent(in), optional :: mode
       integer :: ierr
       integer :: topology_kind
-      logical :: mpi_ready, mpi_finalized, platform_ready, device_ready
+      logical :: mpi_ready, mpi_is_finalized, platform_ready, device_ready
       logical :: deferred
       external :: initDevice
 
@@ -188,8 +184,8 @@ contains
             'Common initialization requires MPI_Init')
          return
       end if
-      call MPI_Finalized(mpi_finalized, ierr)
-      if (ierr /= MPI_SUCCESS .or. mpi_finalized) then
+      call MPI_Finalized(mpi_is_finalized, ierr)
+      if (ierr /= MPI_SUCCESS .or. mpi_is_finalized) then
          call set_status(status_value, status_invalid_argument, &
             'Common initialization requires active MPI')
          return

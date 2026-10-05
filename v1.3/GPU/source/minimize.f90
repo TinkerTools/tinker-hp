@@ -45,6 +45,7 @@ program minimize
 end
 
 subroutine minimize_bis(raw_cli,status_value)
+   use parallel, only: get_domain_comm
    use atomsMirror
    use config, only: raw_cli_t, config_t
    use domdec
@@ -141,7 +142,7 @@ subroutine minimize_bis(raw_cli,status_value)
    call nextarg (string,exist)
    if (.not.exist) then
      if (ranktot.eq.0) write (iout,*) 'You Need To Enter RMS Gradient per Atom Criterion'
-     call MPI_BARRIER(COMM_TINKER,ierr)
+     call MPI_BARRIER(get_domain_comm(),ierr)
      __TINKER_FATAL__
    else
      read (string,*,err=20,end=20)  grdmin
@@ -251,7 +252,7 @@ subroutine minimize_bis(raw_cli,status_value)
 !      end do; end do
 
    call MPI_ALLREDUCE(MPI_IN_PLACE,gnorm,1,MPI_RPREC,&
-      &MPI_SUM,COMM_TINKER,ierr)
+      &MPI_SUM,get_domain_comm(),ierr)
    gnorm = sqrt(gnorm)
    grms  = gnorm / sqrt(real(3*n,r_p))
 !
