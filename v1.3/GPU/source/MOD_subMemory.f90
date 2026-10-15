@@ -31,6 +31,7 @@ submodule(tinMemory) subMemory
    use mdevice   ,only: reciprocal_work,sync_work
    use tinheader ,only: ti_p,re_p
    use vdw       ,only: nvdwlocnl
+   use lifecycle_observer, only: LifecycleSharedWindow, record_lifecycle_event
    implicit none
    integer(4) :: mv_realloc_i=0
    integer(mipk),parameter:: zero8=0_8
@@ -990,6 +991,7 @@ contains
 !$acc exit data delete(shArray)
          end if
          if (btest(configure,memhost)) then
+            call record_lifecycle_event(LifecycleSharedWindow)
             s_shmem = s_shmem - size(shArray)*szoTp
             CALL MPI_Win_shared_query(winarray, 0, windowsize,&
                &disp_unit, baseptr, ierr)

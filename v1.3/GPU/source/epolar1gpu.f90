@@ -642,8 +642,8 @@ subroutine epreal1cgpu
    if (use_chgflx) then
       call accumulate(pot,1,halo_large,channel=direct_work)
       call extend(pot,1,halo_neighbour,channel=direct_work)
-      call dcflux2(pot,de_ws1,direct_work%queue)
-      call adflux2(de_ws1,dep,direct_work%queue)
+      call dcflux2(pot,de_ws1,channel=direct_work)
+      call adflux2(de_ws1,dep,channel=direct_work)
       call mem_set(pot,zeror,int(nbloc,mipk),direct_work%stream)
    end if
 !
@@ -1861,7 +1861,7 @@ subroutine eprecip1gpu
    integer ntot,nff
    integer nf1,nf2,nf3
    integer kstat2,ked2,istat2,ied2,jstat2,jed2
-   integer nprocloc,commloc,rankloc,proc
+   integer nprocloc,rankloc,proc
    integer(mipk) siz8
    real(t_p) eterm,f
    real(t_p) r1,r2,r3
@@ -1888,11 +1888,9 @@ subroutine eprecip1gpu
 
    if (use_pmecore) then
       nprocloc = nrec
-      commloc  = get_recip_comm()
       rankloc  = rank_bis
    else
       nprocloc = nproc
-      commloc  = get_domain_comm()
       rankloc  = rank
    end if
 !
@@ -2440,8 +2438,8 @@ subroutine eprecip1gpu
          call accumulate(pot,potrec,1,channel=reciprocal_work)
          call extend(pot,       1,halo_neighbour,channel=reciprocal_work)
       end if
-      call dcflux2( pot,de_ws1,reciprocal_work%queue )
-      call adflux2( de_ws1,dep,reciprocal_work%queue )
+      call dcflux2( pot,de_ws1,channel=reciprocal_work )
+      call adflux2( de_ws1,dep,channel=reciprocal_work )
       call mem_set(pot,zeror,int(nbloc,mipk),reciprocal_work%stream)
       if (nproc.ne.1) call mem_set&
          &(potrec,zeror,int(nlocrec,mipk),reciprocal_work%stream)

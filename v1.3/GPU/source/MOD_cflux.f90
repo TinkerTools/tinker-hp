@@ -24,6 +24,7 @@
 !
 #include "tinker_macro.h"
 module cflux
+   use mdevice, only: channel_t
    implicit none
    integer nbflx
    integer naflx
@@ -37,9 +38,9 @@ module cflux
       module subroutine adflux1(dcf,de)
          real(r_p) dcf(*),de(*)
       end subroutine
-      module subroutine adflux2(dcf,de,q)
+      module subroutine adflux2(dcf,de,channel)
          mdyn_rtyp dcf(*),de(*)
-         integer,intent(in),optional :: q
+         type(channel_t), intent(in), optional :: channel
       end subroutine
    end interface
 
@@ -48,10 +49,10 @@ module cflux
          real(t_p) pot(*)
          real(r_p) dcf(*)
       end subroutine
-      module subroutine dcflux2 (pot,dcf,q)
+      module subroutine dcflux2 (pot,dcf,channel)
          real(t_p),intent(in   ):: pot(*)
          mdyn_rtyp,intent(inout):: dcf(*)
-         integer,intent(in),optional :: q
+         type(channel_t), intent(in), optional :: channel
       end subroutine
    end interface
 

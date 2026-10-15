@@ -656,6 +656,10 @@ end interface
 
 contains
 
+logical function active_shared_windows()
+   active_shared_windows = s_shmem > 0
+end function active_shared_windows
+
 #ifdef USE_NVSHMEM_CUDA
 attributes(global) subroutine DPC_test (devptr,npes)
 implicit none

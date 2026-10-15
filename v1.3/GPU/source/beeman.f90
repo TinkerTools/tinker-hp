@@ -31,25 +31,22 @@ contains
 end module
 
 subroutine beeman (istep,dt)
-   use atmtyp
-   use atomsMirror
+   use atmtyp, only: mass
+   use atomsMirror, only: integrate_pos,save_atoms_pos
    use beeman_inl
-   use cutoff
-   use domdec
+   use cutoff, only: use_list
+   use domdec, only: glob,nbloc,rank,nloc
    use deriv    , only: info_forces,cBond,cNBond,comm_forces,tdes_l&
                 , dr_stride,de_tot,derivx
-   use energi
-   use freeze
-   use inform
-   use mdstuf
-   use mdstuf1
-   use moldyn
-   use mpi
-   use random_mod
-   use timestat
+   use energi, only: calc_e,esum,info_energy,reduceen
+   use freeze, only: use_rattle
+   use inform, only: abort,deb_Atom,deb_Energy,deb_Force,info_minmax_pva
+   use mdstuf, only: bmnmix
+   use mdstuf1, only: derivs,ekin,eksum,epot,etot,pres,stress,temp
+   use moldyn, only: a,aalt,v
    use tinheader, only: re_p
-   use units
-   use usage
+   use units, only: convert
+   use usage, only: use,useAll
    use parallel , only: migrate_atoms, commpos, commposrec
    implicit none
    integer i,j,istep,iglob

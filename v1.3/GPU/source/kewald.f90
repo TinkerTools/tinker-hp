@@ -237,10 +237,9 @@ subroutine kewald
       if (nefft2 .lt. minfft)  nefft2 = minfft
       if (nefft3 .lt. minfft)  nefft3 = minfft
    end do
-!$acc update device(bsorder,orthogonal,xbox,ybox, &
+!$acc update device(orthogonal,xbox,ybox, &
 !$acc zbox,alpha,beta,gamma)
 !$acc update device(nrpts,nlpts,grdoff)
-!$acc update device(nfft1,nfft2,nfft3)
 !
 !     determine dispersion grid size from allowed values
 !
@@ -416,7 +415,7 @@ subroutine kewald
       end do
 !$acc update device(istart1,iend1,jstart1,jend1,kstart1,kend1, &
 !$acc istart2,iend2,isize2,jstart2,jend2,jsize2,kstart2,kend2, &
-!$acc ksize2,nfft1,nfft2,nfft3)
+!$acc ksize2)
 !
 !    get maximum size of the grid of the neighbors
 !
@@ -431,7 +430,6 @@ subroutine kewald
             n3mpimax = ksize1(iproc+1)
          end if
       end do
-!$acc update device(n1mpimax,n2mpimax,n3mpimax)
 !
       if (rank.gt.ndir-1) then
          call prmem_request(qfac_2d,isize2(rank_bis+1),&
@@ -523,7 +521,7 @@ subroutine kewald
 
 !$acc update device(istart1,iend1,jstart1,jend1,kstart1,kend1, &
 !$acc istart2,iend2,isize2,jstart2,jend2,jsize2,kstart2,kend2, &
-!$acc ksize2,nfft1,nfft2,nfft3)
+!$acc ksize2)
 !
 !    get maximum size of the grid of the neighbors
 !
@@ -538,7 +536,6 @@ subroutine kewald
             n3mpimax = ksize1(iproc+1)
          end if
       end do
-!$acc update device(n1mpimax,n2mpimax,n3mpimax)
 !
       call prmem_request(qfac_2d,&
          &isize2(rank+1),jsize2(rank+1),ksize2(rank+1),&

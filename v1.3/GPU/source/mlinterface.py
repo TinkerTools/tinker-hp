@@ -97,7 +97,8 @@ try:
                 device = jax.devices("gpu")[devId]
                 port_str = ""
 
-            print(f"rank {rank}, jax device", device, port_str, flush=True)
+            if rank<4:
+                print(f" rank {rank}, jax device", device, port_str, flush=True)
             jax.config.update("jax_default_device", device)
             jax.config.update("jax_default_matmul_precision", "highest")
         except Exception as exp:
@@ -169,6 +170,39 @@ try:
         T = GPUPointer(ptr, length, _ctype2dtype[ctype])
         return jnp.asarray(T, copy=False).reshape(shape)
 
+    class Model:
+        def __init__(self, model_file, gradient_keys):
+          model = fennol.load(model_file)
+          self.model = model
+          self.first_eval = True
+          self.inputs = None
+          self.energy_multiplier = au.KCALPERMOL / model.Ha_to_model_energy
+
+
+          energy_and_gradient = model.get_gradient_function(
+              *gradient_keys, jit=False, variables_as_input=True
+          )
+
+          @jax.jit
+          def energy_and_gradient_and_virial(variables,inputs):
+              e, de, output = energy_and_gradient(variables, inputs)
+              dedx = de["coordinates"]
+              dedcells = de["cells"][0,:,:]
+              cells = inputs["cells"][0,:,:]
+              x = inputs["coordinates"]
+              batch_index = inputs["batch_index"]
+              vir = jax.ops.segment_sum(
+                  dedx[:, :, None] * x[:, None, :],
+                  batch_index,
+                  num_segments=len(inputs["natoms"]),
+              ) + jnp.matmul(dedcells, cells.T)
+
+              return e, de, vir, output
+
+          self.energy_and_gradient_and_virial = energy_and_gradient_and_virial
+
+
+
 except Exception as err:
     global_load = 1
     try:
@@ -199,7 +233,7 @@ def init_ml_ressources(rank_, devID, model_file_, debug_int, port, use_lambda_in
         global rank
         rank = rank_
         if debug and rank == 0:
-            print("init ML ressources", rank, model_file, debug_int, flush=True)
+            print(" init ML ressources", rank, model_file, debug_int, flush=True)
 
         load_err = load_modules(rank,devID, port)
         if load_err != 0:
@@ -218,14 +252,23 @@ def init_ml_ressources(rank_, devID, model_file_, debug_int, port, use_lambda_in
 
         # if debug:
         #     print(f'TINKER_ML_DIR="{_model_dir}"')
+        global use_lambda_in, gradient_keys
+        use_lambda = use_lambda_int != 0
+        use_lambda_in = use_lambda
+        gradient_keys = ["coordinates", "cells"]
+        if use_lambda:
+            gradient_keys = gradient_keys + ["alch_elambda", "alch_vlambda"]
 
         ## load model
-        global model
-        model = fennol.load(model_file)
-        
-        global energy_multiplier
-        energy_multiplier = au.KCALPERMOL / model.Ha_to_model_energy
+        model = Model(model_file, gradient_keys)
 
+        global model_dict
+        model_dict = {
+            model_file: model
+        }
+        
+
+        ## setup system info
         global qtot, qligand
         qtot = float(qtot_)
         qligand = float(qligand_)
@@ -233,36 +276,8 @@ def init_ml_ressources(rank_, devID, model_file_, debug_int, port, use_lambda_in
         global gc_stride
         gc_stride = gc_stride_
 
-        global first_eval
-        first_eval = True
-
         global ncalls
         ncalls = 0
-
-        use_lambda = use_lambda_int != 0
-        gradient_keys = ["coordinates", "cells"]
-        if use_lambda:
-            gradient_keys = gradient_keys + ["alch_elambda", "alch_vlambda"]
-        energy_and_gradient = model.get_gradient_function(
-            *gradient_keys, jit=False, variables_as_input=True
-        )
-
-        global energy_and_gradient_and_virial
-        @jax.jit
-        def energy_and_gradient_and_virial(variables,inputs):
-            e, de, output = energy_and_gradient(variables, inputs)
-            dedx = de["coordinates"]
-            dedcells = de["cells"][0,:,:]
-            cells = inputs["cells"][0,:,:]
-            x = inputs["coordinates"]
-            batch_index = inputs["batch_index"]
-            vir = jax.ops.segment_sum(
-                dedx[:, :, None] * x[:, None, :],
-                batch_index,
-                num_segments=len(inputs["natoms"]),
-            ) + jnp.matmul(dedcells, cells.T)
-
-            return e, de, vir, output
 
         nat = int(nat)
         species = asarray(species_ptr, [nat])
@@ -270,7 +285,8 @@ def init_ml_ressources(rank_, devID, model_file_, debug_int, port, use_lambda_in
         global species_set, species_count
         species_set, species_count = np.unique(species, return_counts=True)
 
-        print("species_set", species_set.tolist(), "species_count", species_count.tolist(), flush=True)
+        if rank == 0:
+            print(" species_set", species_set.tolist(), "species_count", species_count.tolist(), flush=True)
 
         if use_lambda:
             nligand = int(nligand)
@@ -290,7 +306,7 @@ def init_ml_ressources(rank_, devID, model_file_, debug_int, port, use_lambda_in
         
 
         if verbose:
-            print(f"init ML ressources done {time()-init_time} s".format(), flush=True)
+            print(f" init ML ressources done {time()-init_time} s".format(), flush=True)
         if rank == 0:
             print("", flush=True)
             print(" *****    Using ML potential engine    ***** ", flush=True)
@@ -304,6 +320,63 @@ def init_ml_ressources(rank_, devID, model_file_, debug_int, port, use_lambda_in
         # raise Exception('init_ml_ressources:'+str(err))
     return ierr
 
+@ffi.def_extern()
+def init_dmts(
+    model_file2,
+):
+    try:
+        global model_dict, gradient_keys
+        model_file2 = ffi.string(model_file2).decode("UTF-8").strip()
+        if model_file2 in model_dict:
+            return 0
+
+        model_dict[model_file2] = Model(model_file2, gradient_keys)
+        return 0
+
+    except Exception as err:
+        ierr = 1
+        if rank < 4:
+            print(">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>", flush=True)
+            print(traceback.format_exc(), flush=True)
+            print("<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<", flush=True)
+        # raise Exception('init_ml_ressources:'+str(err))
+    return ierr
+
+@ffi.def_extern()
+def get_model_cutoff(
+    model_file_,
+    cutoff_ptr,
+):
+    try:
+        if "model_dict" not in globals():
+            return 1
+
+        model_file = ffi.string(model_file_).decode("UTF-8").strip()
+        if model_file not in model_dict:
+            return 1
+
+        metadata = getattr(model_dict[model_file].model, "cutoff", None)
+        if metadata is None:
+            return 2
+        if isinstance(metadata, (bool, str, bytes)):
+            return 3
+
+        value = np.asarray(metadata)
+        if value.ndim != 0 or not np.issubdtype(value.dtype, np.number):
+            return 3
+
+        cutoff = float(value)
+        if not np.isfinite(cutoff):
+            return 4
+        if cutoff <= 0.0:
+            return 5
+
+        cutoff_ptr[0] = cutoff
+        return 0
+    except Exception:
+        if globals().get("rank", 0) < 4:
+            print(traceback.format_exc(), flush=True)
+        return 6
 
 @ffi.def_extern()
 def ml_models(
@@ -319,7 +392,7 @@ def ml_models(
     dxyz_ptr,
     trueat_ptr,
     nat,
-    nb_pairs,
+    model_padding,
     nb_atoms_full,
     dograd_int,
     use_lambda_int,
@@ -328,6 +401,7 @@ def ml_models(
     alch_group_ptr,
     dedle_ptr,
     dedlv_ptr,
+    model_file_cur,
 ):
     ierr = 0
     try:
@@ -342,10 +416,10 @@ def ml_models(
 
         true_atoms = asJaxArray(trueat_ptr, "int32_t", [nb_atoms_full]).astype(bool)
 
-        d12 = asJaxArray(dist_ptr, "float", [nb_pairs])
-        edge_src = asJaxArray(neigh1Idx_ptr, "int32_t", [nb_pairs])
-        edge_dst = asJaxArray(neigh2Idx_ptr, "int32_t", [nb_pairs])
-        pbc_shifts = asJaxArray(dxyz_ptr, "float", [nb_pairs, 3])
+        d12 = asJaxArray(dist_ptr, "float", [model_padding])
+        edge_src = asJaxArray(neigh1Idx_ptr, "int32_t", [model_padding])
+        edge_dst = asJaxArray(neigh2Idx_ptr, "int32_t", [model_padding])
+        pbc_shifts = asJaxArray(dxyz_ptr, "float", [model_padding, 3])
 
         total_charge = jnp.asarray(qtot, dtype=jnp.float32)
         if use_lambda:
@@ -376,10 +450,17 @@ def ml_models(
                     jnp.ones(nb_atoms_full - nat, dtype=jnp.int32),
                 )
             )
+
+        #select model
+        global model_dict
+        model_file_cur = ffi.string(model_file_cur).decode("UTF-8").strip()
+        if model_file_cur not in model_dict:
+            raise ValueError(f"{model_file_cur} was not initialized")
+        model_cur = model_dict[model_file_cur]
         
-        global inputs, first_eval
-        if first_eval:
-            first_eval = False
+        inputs = model_cur.inputs
+        if model_cur.first_eval:
+            model_cur.first_eval = False
             inputs = {
                 **ml_config,
                 "total_charge": total_charge,
@@ -402,7 +483,7 @@ def ml_models(
                 inputs["alch_group"] = alch_group
                 inputs["alch_ligand_charge"] = ligand_charge
                 inputs["species_ligand_count"] = species_ligand_count
-            inputs = model.preprocess(**inputs)
+            inputs, _ = model_cur.model.reinitialize_preprocessing(example_data=inputs)
             inputs_ = inputs
 
         else:
@@ -420,17 +501,18 @@ def ml_models(
                 inputs["alch_elambda"] = alch_elambda
                 inputs["alch_group"] = alch_group
                 inputs["alch_ligand_charge"] = ligand_charge
-            inputs_ = model.preprocessing.process(model.preproc_state, inputs)
-            model.preproc_state, state_up, inputs_, overflow = (
-                model.preprocessing.check_reallocate(model.preproc_state, inputs_)
+            inputs_ = model_cur.model.preprocessing.process(model_cur.model.preproc_state, inputs)
+            model_cur.model.preproc_state, state_up, inputs_, overflow = (
+                model_cur.model.preprocessing.check_reallocate(model_cur.model.preproc_state, inputs_)
             )
             # print(rank,model.preproc_state,state_up,overflow)
             if overflow:
                 print("rank", rank, ": nblist overflow => reallocating nblist")
                 print("   size updates:", state_up)
+        model_cur.inputs = inputs
         
         if dograd:
-            _, de, vir, output = energy_and_gradient_and_virial(model.variables, inputs_)
+            _, de, vir, output = model_cur.energy_and_gradient_and_virial(model_cur.model.variables, inputs_)
             dedx = de["coordinates"]
             # _, f, output = model._energy_and_forces(model.variables, inputs)
             # jax.debug.print(
@@ -438,11 +520,11 @@ def ml_models(
             #     a=f, b=true_atoms,
             # )
             # gradient = asGPUarray(gradient_ptr, "float", [3 * nat])
-            writeGPUptr(gradient_ptr, energy_multiplier * dedx.flatten(), wait=True)
-            writeGPUptr(vir_ptr, energy_multiplier * vir.flatten(), wait=True)
+            writeGPUptr(gradient_ptr, model_cur.energy_multiplier * dedx.flatten(), wait=True)
+            writeGPUptr(vir_ptr, model_cur.energy_multiplier * vir.flatten(), wait=True)
             if use_lambda:
-                dedle = energy_multiplier * de["alch_elambda"]
-                dedlv = energy_multiplier * de["alch_vlambda"]
+                dedle = model_cur.energy_multiplier * de["alch_elambda"]
+                dedlv = model_cur.energy_multiplier * de["alch_vlambda"]
                 writeGPUptr(dedle_ptr, dedle, wait=True)
                 writeGPUptr(dedlv_ptr, dedlv, wait=True)
                 # jax.debug.print("dedle {deldle} dedlv {dedlv}", deldle=dedle, dedlv=dedlv)
@@ -450,10 +532,10 @@ def ml_models(
             del de, vir, dedx
 
         else:
-            _, output = model._total_energy(model.variables, inputs_)
+            _, output = model_cur.model._total_energy(model_cur.model.variables, inputs_)
 
         writeGPUptr(
-            atm_ener_ptr, energy_multiplier * output["atomic_energies"], wait=True
+            atm_ener_ptr, model_cur.energy_multiplier * output["atomic_energies"], wait=True
         )
 
         del output, inputs_

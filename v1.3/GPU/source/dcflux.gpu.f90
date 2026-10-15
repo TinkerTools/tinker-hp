@@ -28,12 +28,14 @@ contains
 #include "convert.inc.f90"
 
    module subroutine release_cflux_workspaces(queue)
+      use lifecycle_observer, only: LifecycleCflux, record_lifecycle_event
       use tinMemory, only: s_prmem,sd_prmem,szoTp
       use cflux, only: cflux_pot,cflux_potrec
       implicit none
       integer,intent(in):: queue
 
       if (allocated(cflux_pot).or.allocated(cflux_potrec)) then
+         call record_lifecycle_event(LifecycleCflux)
 !$acc wait(queue)
       end if
       if (allocated(cflux_pot)) then
@@ -60,7 +62,7 @@ contains
       use domdec
       use inform
       use sizes
-      use mdevice, only: default_work
+      use mdevice, only: channel_t, default_work
       use virial
       implicit none
       integer   i,ia,ib,ic,ialoc,ibloc,icloc,iangle,ibond
@@ -220,7 +222,7 @@ contains
    end
 
    ! Same as dcflux2 except for _dcf_ type which is mdyn_rtyp
-   module subroutine dcflux2 (pot,dcf,q)
+   module subroutine dcflux2 (pot,dcf,channel)
       use atmlst
       use angle
       use atoms
@@ -236,7 +238,7 @@ contains
       implicit none
       real(t_p),intent(in   ):: pot(*)
       mdyn_rtyp,intent(inout):: dcf(*)
-      integer,intent(in),optional :: q
+      type(channel_t), intent(in), optional :: channel
       integer   i,ia,ib,ic,ialoc,ibloc,icloc,iangle,ibond
       real(t_p) xa,ya,za,xb,yb,zb,xc,yc,zc,xab,yab,zab,xcb,ycb,zcb
       real(t_p) rab,rab2,rab3,rcb,rcb2,rcb3
@@ -249,18 +251,18 @@ contains
       real(t_p) eps,dot
       real(t_p) term,fterm
       real(t_p) termxa,termxc,termya,termyc,termza,termzc
-      integer q_
+      type(channel_t) selected_channel
 !
 !     set tolerance for minimum distance and angle values
 !
       parameter(eps = 0.0001)
-      q_ = default_work%queue
-      if (present(q)) q_ = q
+      selected_channel = default_work
+      if (present(channel)) selected_channel = channel
       if (deb_Path) print*, "  dcflux2"
 !
 !     calculate the charge flux forces due to bond stretches
 !
-!$acc parallel loop async(q_) default(present)
+!$acc parallel loop async(selected_channel%queue) default(present)
       do ibond = 1, nbondloc
          i     = bndglob(ibond)
          ia    = ibnd(1,i)
@@ -299,7 +301,7 @@ contains
 !
 !     calculate the charge flux forces due to angle bends
 !
-!$acc parallel loop async(q_) default(present)
+!$acc parallel loop async(selected_channel%queue) default(present)
       do iangle = 1, nangleloc
          i     = angleglob(iangle)
          ia    = iang(1,i)
@@ -396,7 +398,7 @@ contains
       use atmlst
       use domdec
       use mpole
-      use mdevice, only: default_work
+      use mdevice, only: channel_t, default_work
       use virial
       implicit none
       real(r_p) dcf(*),de(*)
@@ -435,7 +437,7 @@ contains
       end do
    end subroutine
    ! Same as adflux1 except for _de_ type which is mdyn_rtyp
-   module subroutine adflux2(dcf,de,q)
+   module subroutine adflux2(dcf,de,channel)
       use atoms
       use atmlst
       use domdec
@@ -446,18 +448,18 @@ contains
       implicit none
       mdyn_rtyp dcf(*)
       mdyn_rtyp  de(*)
-      integer,intent(in),optional :: q
+      type(channel_t), intent(in), optional :: channel
       integer   ii,iipole,iglob,i
       real(t_p) xi,yi,zi
       mdyn_rtyp frcx,frcy,frcz
-      integer q_
+      type(channel_t) selected_channel
 
-      q_ = default_work%queue
-      if (present(q)) q_ = q
+      selected_channel = default_work
+      if (present(channel)) selected_channel = channel
 
       if (use_virial) then
 
-!$acc parallel loop async(q_) default(present) &
+!$acc parallel loop async(selected_channel%queue) default(present) &
 !$acc         present(g_vxx,g_vxy,g_vxz,g_vyy,g_vyz,g_vzz) &
 !$acc     reduction(+:g_vxx,g_vxy,g_vxz,g_vyy,g_vyz,g_vzz)
          do ii = 1, npolebloc
@@ -487,7 +489,7 @@ contains
 
       else
 
-!$acc parallel loop async(q_) default(present)
+!$acc parallel loop async(selected_channel%queue) default(present)
          do ii = 1, npolebloc
             iglob   = ipole(poleglob(ii))
             i       = (loc(iglob)-1)*3

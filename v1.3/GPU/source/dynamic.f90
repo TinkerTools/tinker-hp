@@ -19,7 +19,6 @@
 program dynamic
    use mpi
    use config, only: raw_cli_t, capture_raw_cli
-   use domdec, only: rank
    use parallel, only: get_domain_comm
    use iounit, only: iout
    use mdstate, only: track_mds
@@ -36,7 +35,6 @@ program dynamic
    call MPI_INIT(ierr)
    call MPI_COMM_RANK(MPI_COMM_WORLD,world_rank,ierr)
    iout = 6
-   rank = world_rank
    track_mds = .false.
    call dynamic_bis(raw_cli,status_value)
    if (failed(status_value)) then
@@ -50,27 +48,23 @@ program dynamic
 end
 !
 subroutine dynamic_bis(raw_cli,status_value)
-   use mlpot
-   use atoms
-   use bath
-   use bound
+   use mlpot, only: ml_embedding_mode
+   use bath, only: atmsph,isothermal,isobaric,kelvin,tautemp,taupres
+   use bound, only: use_bounds
    use config, only: raw_cli_t, config_t, parse_dynamic_cli
-   use domdec
-   use parallel, only: get_domain_comm
-   use keys
-   use inform
-   use iounit
-   use mdstuf
-   use moldyn
-   use mpi
+   use domdec, only: nproc,rank,ranktot
+   use parallel, only: get_domain_comm,parallel_t,release
+   use keys, only: keyline,nkey
+   use inform, only: abort,final_message_suppressed,iprint,iwrite,verbose
+   use iounit, only: iout
+   use mdstuf, only: integrate
+   use moldyn, only: step_c
+   use mpi, only: MPI_IN_PLACE,MPI_REAL8,MPI_REDUCE,MPI_SUM
    use potent  ,only: use_ml_embedding
-   use parallel, only: parallel_t, release
    use tinheader, only: re_p
-   use utils
    use mdevice, only: channel_t, finalize_device
    use initialization, only: dynamic_application, initialize
-   use timestat
-   use tinMemory
+   use timestat, only: timer_enter,timer_exit,timer_get_total,timer_timestep
    use qtb, only: qtb_thermostat,adaptive_qtb
    use structure, only: structure_t
    use status, only: status_t, failed, enrich_status
@@ -198,8 +192,11 @@ subroutine dynamic_bis(raw_cli,status_value)
 !     Inform about ML Embedding
 !
    if (use_ml_embedding) then
-      if(ranktot==0) write(*,*) 'USING ML EMBEDDING'
-      ml_embedding_mode=2
+      if (integrate.eq.'RESPA'.or.integrate.eq.'BAOABRESPA') then
+         ml_embedding_mode=2
+      else
+         ml_embedding_mode=1
+      endif
    endif
 !
 !     integrate equations of motion to take a time step

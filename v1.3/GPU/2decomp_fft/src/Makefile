@@ -7,7 +7,7 @@
 
 include Makefile.inc
 
-SRCS = decomp_2d.f90 io.f90 glassman.f90 fft_$(FFT).f90 fft_cufft.f90
+SRCS = MOD_mdevice_channel.f90 decomp_2d.f90 io.f90 glassman.f90 fft_$(FFT).f90 fft_cufft.f90
 
 # special treatment for shared-memory code
 ifneq (,$(findstring DSHM,$(OPTIONS)))

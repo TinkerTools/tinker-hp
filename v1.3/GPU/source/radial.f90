@@ -24,9 +24,8 @@ end module
 
 program radial
    use config, only: raw_cli_t, capture_raw_cli
-   use domdec, only: rank
    use iounit, only: iout
-   use mpi
+   use mpi, only: MPI_BARRIER, MPI_COMM_RANK, MPI_COMM_WORLD, MPI_FINALIZE, MPI_INIT
    use mdevice, only: bind_device
    use status, only: status_t, failed
    implicit none
@@ -40,7 +39,6 @@ program radial
    call MPI_INIT(ierr)
    call MPI_COMM_RANK(MPI_COMM_WORLD,world_rank,ierr)
    iout = 6
-   rank = world_rank
    call radial_bis(raw_cli,status_value)
    if (failed(status_value)) then
       if (world_rank.eq.0) write(iout,*) trim(status_value%message)
@@ -63,7 +61,6 @@ subroutine radial_bis(raw_cli,status_value)
    use iounit
    use math
    use molcul
-   use mpi
    use radial_inl
    use dcdmod
    use domdec

@@ -177,7 +177,6 @@ subroutine inducepcg_group(nrhs,precnd,ef,mu)
    real(t_p),save:: ggold1,ggold2
    real(r_p),save:: ggnew1,ggnew2
    real(t_p),save:: ggdev1,ggdev2
-   integer default_q
 
    real(r_p),save:: gnorm1,gnorm2
    real(r_p),save:: gg1,gg2
@@ -200,7 +199,6 @@ subroutine inducepcg_group(nrhs,precnd,ef,mu)
    integer status(MPI_STATUS_SIZE)
    type(polar_comm_t) :: comm_ticket
 
-   default_q = default_work%queue
 !
 1000 format(' cgiter shortreal converged after ',I3,' iterations.',/,&
       &' final energy        = ',2D14.7,/,&
@@ -260,8 +258,8 @@ subroutine inducepcg_group(nrhs,precnd,ef,mu)
 !
 !     initialize
 !
-   call set_to_zero2(res,zr,3*nrhs*npolelocgroup,default_q)
-   call set_to_zero2( pp, h,3*nrhs*npolegroup ,default_q)
+   call set_to_zero2(res,zr,3*nrhs*npolelocgroup,default_work%queue)
+   call set_to_zero2( pp, h,3*nrhs*npolegroup ,default_work%queue)
 !
 !     now, compute the initial direction
 !
@@ -310,7 +308,7 @@ subroutine inducepcg_group(nrhs,precnd,ef,mu)
       gg1=zerom; gg2=zerom
 !$acc end serial
 !
-!$acc parallel loop collapse(3) async(default_q)
+!$acc parallel loop collapse(3) async(default_work%queue)
       do i = 1,npolelocgroup
          do j = 1,nrhs
             do k = 1, 3
@@ -322,7 +320,7 @@ subroutine inducepcg_group(nrhs,precnd,ef,mu)
             end do
          end do
       end do
-!$acc update host(gg1,gg2) async(default_q)
+!$acc update host(gg1,gg2) async(default_work%queue)
 !$acc wait
       gg(1)=gg1; gg(2)=gg2
       if(nproc>1) then
@@ -330,7 +328,7 @@ subroutine inducepcg_group(nrhs,precnd,ef,mu)
             &get_domain_comm(),req2,ierr)
          call MPI_WAIT(req2,status,ierr)
          gg1 = gg(1); gg2 = gg(2)
-!$acc update device(gg1,gg2) async(default_q)
+!$acc update device(gg1,gg2) async(default_work%queue)
       endif
       do k = 1, nrhs
          if (gg(k).eq.zero) goto 30
@@ -342,7 +340,7 @@ subroutine inducepcg_group(nrhs,precnd,ef,mu)
       ene1   = zerom; ene2   = zerom;
       ggdev1 = ggold1/gg1; ggdev2 = ggold2/gg2
 
-!$acc parallel loop collapse(3) async(default_q)
+!$acc parallel loop collapse(3) async(default_work%queue)
       do k=1,npolelocgroup; do j=1,nrhs; do i=1,3
                if (btest(j,0)) then
                   mu (i,j,k) = mu (i,j,k) + ggdev1*pp(i,j,k)
@@ -358,7 +356,7 @@ subroutine inducepcg_group(nrhs,precnd,ef,mu)
                   ene2    = ene2 + (mu(i,j,k)*(res(i,j,k)+ef(i,j,k)))
                end if
             end do; end do; end do
-!$acc wait(default_q)
+!$acc wait(default_work%queue)
       ene2 = -pt5*ene2; ene1 = -pt5*ene1
       ggnew(1)=ggnew1; ggnew(2)=ggnew2
       ene(1)=  ene1;   ene(2)=  ene2
@@ -393,7 +391,7 @@ subroutine inducepcg_group(nrhs,precnd,ef,mu)
          goto 10
       end if
 
-!$acc parallel loop collapse(3) async(default_q)
+!$acc parallel loop collapse(3) async(default_work%queue)
       do k = 1,npolelocgroup; do j = 1,nrhs; do i = 1, 3
                if (btest(j,0)) then
                   pp(i,j,k) = zr(i,j,k) + ggdev1*pp(i,j,k)
@@ -1037,7 +1035,7 @@ subroutine orderbuffergroup
    use inform
    implicit none
    integer i,iproc,tag,status(MPI_STATUS_SIZE)
-   integer ierr,commloc,idomlen,ibeg
+   integer ierr,idomlen,ibeg
    integer count
    integer, allocatable :: reqrec(:), reqsend(:)
 !
@@ -1045,11 +1043,6 @@ subroutine orderbuffergroup
 
    if (deb_Path) print '(2X,A)','>>>orderbuffergroup'
 
-   if (use_pmecore) then
-      commloc = get_direct_comm()
-   else
-      commloc = get_domain_comm()
-   end if
    allocate (reqrec(nproc))
    allocate (reqsend(nproc))
 !
@@ -1237,17 +1230,12 @@ subroutine commfieldfull(nrhs,ef)
    integer, intent(in) :: nrhs
    real(t_p), intent(inout) ::  ef(:,:,:)
    integer i,j,k,l,tag,status(MPI_STATUS_SIZE),c
-   integer ierr,commloc
+   integer ierr
    integer, allocatable :: reqrec(:), reqsend(:)
    real(t_p), allocatable :: buffer(:,:,:,:)
 !
    if (nproc.eq.1.or.((use_pmecore).and.(rank.gt.ndir-1))) return
 
-   if (use_pmecore) then
-      commloc = get_direct_comm()
-   else
-      commloc = get_domain_comm()
-   end if
 !
    call prmem_request(buffer,3,nrhs,&
       &max(npolelocgroup,1),nproc,async=.true.)
@@ -1263,7 +1251,7 @@ subroutine commfieldfull(nrhs,ef)
          tag = nproc*rank + i
          call MPI_IRECV(buffer(1,1,1,c)&
             &,3*nrhs*npolelocgroup,MPI_TPREC,&
-            &i-1,0,commloc,reqrec(i),ierr)
+            &i-1,0,merge(get_direct_comm(),get_domain_comm(),use_pmecore),reqrec(i),ierr)
       end if
    end do
 !$acc end host_data
@@ -1274,7 +1262,7 @@ subroutine commfieldfull(nrhs,ef)
          tag = nproc*(i-1) + rank + 1
          call MPI_ISEND(ef(1,1,bufbegpolegroup(i)),&
             &3*nrhs*domlenpolegroup(i),MPI_TPREC,i-1,&
-            &0,commloc,reqsend(i),ierr)
+            &0,merge(get_direct_comm(),get_domain_comm(),use_pmecore),reqsend(i),ierr)
       end if
    end do
 !$acc end host_data

@@ -893,16 +893,14 @@ subroutine efld0_recip(cphi)
    real(t_p), allocatable :: qgridmpi(:,:,:,:,:)
    integer, allocatable :: reqrec(:),reqsend(:)
    integer, allocatable :: reqbcastrec(:),reqbcastsend(:)
-   integer nprocloc,commloc,rankloc
+   integer nprocloc,rankloc
    real(t_p) time0,time1
 !
    if (use_pmecore) then
       nprocloc = nrec
-      commloc  = get_recip_comm()
       rankloc  = rank_bis
    else
       nprocloc = nproc
-      commloc  = get_domain_comm()
       rankloc  = rank
    end if
 
@@ -918,7 +916,7 @@ subroutine efld0_recip(cphi)
       tag = nprocloc*rankloc + prec_recep(i) + 1
       call MPI_IRECV(qgridmpi(1,1,1,1,i),2*n1mpimax*n2mpimax*&
          &n3mpimax,MPI_TPREC,prec_recep(i),tag,&
-         &commloc,reqrec(i),ierr)
+         &merge(get_recip_comm(),get_domain_comm(),use_pmecore),reqrec(i),ierr)
    end do
 !
 !     return if the Ewald coefficient is zero
@@ -967,7 +965,7 @@ subroutine efld0_recip(cphi)
       tag = nprocloc*prec_send(i) + rankloc + 1
       call MPI_ISEND(qgridin_2d(1,1,1,1,i+1),&
          &2*n1mpimax*n2mpimax*n3mpimax,MPI_TPREC,&
-         &prec_send(i),tag,commloc,reqsend(i),ierr)
+         &prec_send(i),tag,merge(get_recip_comm(),get_domain_comm(),use_pmecore),reqsend(i),ierr)
    end do
 !
    do i = 1, nrec_recep
@@ -1069,7 +1067,7 @@ subroutine efld0_recip(cphi)
       tag = nprocloc*rankloc + prec_send(i) + 1
       call MPI_IRECV(qgridin_2d(1,1,1,1,i+1),&
          &2*n1mpimax*n2mpimax*n3mpimax,MPI_TPREC,&
-         &prec_send(i),tag,commloc,reqbcastrec(i),ierr)
+         &prec_send(i),tag,merge(get_recip_comm(),get_domain_comm(),use_pmecore),reqbcastrec(i),ierr)
    end do
 !
 !     MPI : begin sending
@@ -1078,7 +1076,7 @@ subroutine efld0_recip(cphi)
       tag = nprocloc*prec_recep(i) + rankloc + 1
       call MPI_ISEND(qgridin_2d(1,1,1,1,1),&
          &2*n1mpimax*n2mpimax*n3mpimax,MPI_TPREC,&
-         &prec_recep(i),tag,commloc,reqbcastsend(i),ierr)
+         &prec_recep(i),tag,merge(get_recip_comm(),get_domain_comm(),use_pmecore),reqbcastsend(i),ierr)
    end do
 !
    do i = 1, nrec_send
@@ -1141,15 +1139,13 @@ subroutine tmatxbrecip(mu,murec,nrhs,dipfield,dipfieldbis)
    real(t_p), allocatable :: qgridmpi(:,:,:,:,:)
    integer, allocatable :: reqbcastrec(:),reqbcastsend(:)
    integer, allocatable :: reqrec(:),reqsend(:)
-   integer nprocloc,commloc,rankloc,proc
+   integer nprocloc,rankloc,proc
 !
    if (use_pmecore) then
       nprocloc = nrec
-      commloc  = get_recip_comm()
       rankloc  = rank_bis
    else
       nprocloc = nproc
-      commloc  = get_domain_comm()
       rankloc  = rank
    end if
 
@@ -1165,7 +1161,7 @@ subroutine tmatxbrecip(mu,murec,nrhs,dipfield,dipfieldbis)
       tag = nprocloc*rankloc + prec_recep(i) + 1
       call MPI_IRECV(qgridmpi(1,1,1,1,i),2*n1mpimax*n2mpimax*n3mpimax,&
          &MPI_TPREC,prec_recep(i),tag,&
-         &commloc,reqrec(i),ierr)
+         &merge(get_recip_comm(),get_domain_comm(),use_pmecore),reqrec(i),ierr)
    end do
 !
 !     return if the Ewald coefficient is zero
@@ -1216,7 +1212,7 @@ subroutine tmatxbrecip(mu,murec,nrhs,dipfield,dipfieldbis)
       tag = nprocloc*prec_send(i) + rankloc + 1
       call MPI_ISEND(qgrid2in_2d(1,1,1,1,i+1),&
          &2*n1mpimax*n2mpimax*n3mpimax,MPI_TPREC,&
-         &prec_send(i),tag,commloc,reqsend(i),ierr)
+         &prec_send(i),tag,merge(get_recip_comm(),get_domain_comm(),use_pmecore),reqsend(i),ierr)
    end do
 !
    do i = 1, nrec_recep
@@ -1262,7 +1258,7 @@ subroutine tmatxbrecip(mu,murec,nrhs,dipfield,dipfieldbis)
       tag = nprocloc*rankloc + prec_send(i) + 1
       call MPI_IRECV(qgrid2in_2d(1,1,1,1,i+1),&
          &2*n1mpimax*n2mpimax*n3mpimax,MPI_TPREC,&
-         &prec_send(i),tag,commloc,reqbcastrec(i),ierr)
+         &prec_send(i),tag,merge(get_recip_comm(),get_domain_comm(),use_pmecore),reqbcastrec(i),ierr)
    end do
 !
 !     MPI : begin sending
@@ -1271,7 +1267,7 @@ subroutine tmatxbrecip(mu,murec,nrhs,dipfield,dipfieldbis)
       tag = nprocloc*prec_recep(i) + rankloc + 1
       call MPI_ISEND(qgrid2in_2d,&
          &2*n1mpimax*n2mpimax*n3mpimax,MPI_TPREC,&
-         &prec_recep(i),tag,commloc,reqbcastsend(i),ierr)
+         &prec_recep(i),tag,merge(get_recip_comm(),get_domain_comm(),use_pmecore),reqbcastsend(i),ierr)
    end do
 !
    do i = 1, nrec_send

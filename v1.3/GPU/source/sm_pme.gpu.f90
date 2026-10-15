@@ -13,6 +13,7 @@
 submodule (pme) pme_lifecycle
    use mpi, only: MPI_SUCCESS, MPI_Type_free, MPI_Waitall, MPI_STATUSES_IGNORE
    use pme1
+   use lifecycle_observer, only: LifecyclePme, record_lifecycle_event
    use tinMemory, only: prmem_request,mfhostacc,s_prmem,sd_prmem,szoTp
 #ifdef _CUDA
    use pmestuffcu, only: igrid_t,thetai1_t,thetai2_t,thetai3_t,&
@@ -37,6 +38,12 @@ contains
       integer,intent(out),optional :: cleanup_status
       integer :: ierr, first_error
 
+      if (pme_device_ready .or. allocated(thetai1) .or. allocated(thetai2) .or. &
+            &allocated(thetai3) .or. allocated(qfac_2d) .or. allocated(cphirec) .or. &
+            &allocated(fphirec) .or. allocated(igrid) .or. allocated(qgridin_2d) .or. &
+            &allocated(qgridout_2d) .or. allocated(qgrid2in_2d) .or. &
+            &allocated(qgrid2out_2d) .or. allocated(qgridmpi)) &
+         &call record_lifecycle_event(LifecyclePme)
       first_error = MPI_SUCCESS
 
       pme_ftc_ready=.false.

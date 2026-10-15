@@ -11,19 +11,11 @@
 !
 #include "tinker_macro.h"
 module mdevice
-#ifdef _OPENACC
-   use cudafor, only: cuda_stream_kind
-#else
-   integer, parameter :: cuda_stream_kind = 8
-#endif
+   use mdevice_channel, only: channel_t
    use status, only: status_t
    implicit none
 
-   type, public :: channel_t
-      character(len=12) :: name = 'unbound'
-      integer :: queue = -1
-      integer(cuda_stream_kind) :: stream = 0
-   end type channel_t
+   public :: channel_t
 
    integer, parameter :: phase_new = 0
    integer, parameter :: phase_bound = 1
@@ -33,7 +25,7 @@ module mdevice
    logical, protected :: capabilities_selected = .false.
    integer, protected :: gpu_sm_count = 1
    integer, protected :: cores_per_sm = 1
-   type(channel_t), protected :: direct_work, reciprocal_work, default_work, sync_work
+   type(channel_t), protected, target :: direct_work, reciprocal_work, default_work, sync_work
    type(status_t), protected :: platform_error
 
    public :: bind_device, initialize_device

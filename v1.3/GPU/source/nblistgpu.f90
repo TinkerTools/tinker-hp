@@ -1237,7 +1237,6 @@ subroutine build_cell_list2(ineignl,cell_order,&
    integer ierr
    integer xw,yw,zw,miter
    integer icell_len
-   integer commloc
    integer levelUp,incr,iter
    integer,save:: save_ncell
    integer min_cell_len
@@ -1251,15 +1250,6 @@ subroutine build_cell_list2(ineignl,cell_order,&
    logical first_loop
    integer,save:: first_in=0
 
-   if (use_pmecore) then  !Deal with pme_core
-      if (rank.lt.ndir) then
-         commloc = get_direct_comm()
-      else
-         commloc = get_recip_comm()
-      end if
-   else
-      commloc = get_domain_comm()
-   end if
 
    if (deb_Path) write(*,'(2x,a)') 'build_cell_listgpu2'
    first_in=first_in+1
@@ -1428,10 +1418,12 @@ subroutine build_cell_list2(ineignl,cell_order,&
 
       if (nproc.ne.1) then
          call MPI_AllReduce(MPI_IN_PLACE,max_cell_len,1,MPI_INT,&
-            &MPI_MAX,commloc,ierr)
+            &MPI_MAX,merge(merge(get_direct_comm(),get_recip_comm(),rank.lt.ndir),&
+            &get_domain_comm(),use_pmecore),ierr)
          if (btest(tinkerdebug,tindPath))&
             &call MPI_AllReduce(MPI_IN_PLACE,min_cell_len,1,MPI_INT,&
-            &MPI_MIN,commloc,ierr)
+            &MPI_MIN,merge(merge(get_direct_comm(),get_recip_comm(),rank.lt.ndir),&
+            &get_domain_comm(),use_pmecore),ierr)
       end if
 20    format(a,7I5,2X,I8,2x,3I3)
       if (deb_Path)&

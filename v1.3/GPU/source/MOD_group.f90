@@ -95,9 +95,10 @@ contains
    end subroutine
 
    subroutine load_wgrp
+      use mdevice, only: reciprocal_work
       implicit none
       wgrp = wgrp0
-!$acc update device(wgrp) async
+!$acc update device(wgrp) async(reciprocal_work%queue)
    end subroutine
 
 end

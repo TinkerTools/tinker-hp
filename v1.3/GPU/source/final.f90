@@ -43,6 +43,7 @@ subroutine final(final_status)
    use moldyn
    use molcul
    use mdstate
+   use mlpot, only: release_mlpot_buffers
    use mpi
    use mdevice, only: default_work, direct_work, finalize_device, phase, phase_active, &
       &reciprocal_work, sync_work
@@ -154,10 +155,16 @@ subroutine final(final_status)
    end if
 !$acc wait(direct_work%queue)
 !$acc wait(reciprocal_work%queue)
+!$acc wait
+   call release_mlpot_buffers
+!$acc wait
    call delete_reduction_buffers(direct_work%queue)
    call release_cflux_workspaces(direct_work%queue)
    call release_polar_workspace(direct_work%queue)
    call release_tmatxb_workspace(direct_work%queue)
+   call scaling_postop
+   call dealloc_shared_scaling
+   call mem_free_deriv
    call thrust_clear_cache_memory(sd_prmem)
    pme_cleanup_code = 0
    call release_pme_device(reciprocal_work%queue, pme_cleanup_code)
@@ -171,6 +178,36 @@ subroutine final(final_status)
    end if
    call delete_energi_on_device()
    call delete_vir_device()
+!$acc wait
+!
+!     Free MPI shared memory segments before platform teardown
+!
+   if (use_vdw   ) call dealloc_shared_vdw
+   if (use_charge) call dealloc_shared_chg
+   if (use_mpole ) call dealloc_shared_mpole
+   if (use_polar ) call dealloc_shared_polar
+   call dealloc_shared_angles
+   call dealloc_shared_angang
+   if (use_opbend) call delete_data_kopbend
+   if (use_tors.or.use_tortor) call delete_data_ktors
+   if (use_chgflx) call dealloc_shared_chgflx
+   if (use_repuls) call dealloc_shared_rep
+   if (use_chgtrn) call dealloc_shared_chgct
+   if (use_disp)   call dealloc_shared_disp
+   call dealloc_shared_mutate
+   call delete_data_kgeom
+   call dealloc_shared_active
+   call delete_data_bonds
+   call dealloc_shared_attach
+   call dealloc_shared_bitors
+   call dealloc_shared_katom
+   call dealloc_shared_mol
+   call dealloc_shared_torsions
+   call delete_data_kopdist
+   call dealloc_polar_predictor
+#ifdef USE_NVSHMEM
+   call nvshmem_finalize()
+#endif
    if (phase == phase_active) then
       call finalize_device(dev_clean_stat)
       if (failed(dev_clean_stat)) then
@@ -193,33 +230,6 @@ subroutine final(final_status)
 !      if (cudaStreamDestroy(rec_stream).ne.0)
 !     &   print*, 'error destroying stream'
 !#endif
-!
-!     Free MPI shared memory segments
-!
-   if (use_vdw   ) call dealloc_shared_vdw
-   if (use_charge) call dealloc_shared_chg
-   if (use_mpole ) call dealloc_shared_mpole
-   if (use_polar ) call dealloc_shared_polar
-   if (use_angle .or. use_strbnd .or. use_angang) call dealloc_shared_angles
-   call dealloc_shared_angang
-   if (use_opbend) call delete_data_kopbend
-   if (use_tors.or.use_tortor) call delete_data_ktors
-   if (use_chgflx) call dealloc_shared_chgflx
-   if (use_repuls) call dealloc_shared_rep
-   if (use_chgtrn) call dealloc_shared_chgct
-   if (use_disp)   call dealloc_shared_disp
-   call dealloc_shared_mutate
-   call delete_data_kgeom
-   call dealloc_shared_active
-   call delete_data_bonds
-   call dealloc_shared_attach
-   call dealloc_shared_bitors
-   call dealloc_shared_katom
-   call dealloc_shared_mol
-   call dealloc_shared_scaling
-   call dealloc_shared_torsions
-   call delete_data_kopdist
-   call dealloc_polar_predictor
 !
 !     module "analyz"
 !
@@ -319,7 +329,6 @@ subroutine final(final_status)
 !
 !     module "deriv"
 !
-   call mem_free_deriv
 !
 !     module "disp"
 !
@@ -512,9 +521,6 @@ subroutine final(final_status)
       &MPI_MAX, MPI_COMM_WORLD, final_red_stat)
    if (final_red_stat /= MPI_SUCCESS .or. final_fail_any /= 0) &
       &final_failed = .true.
-#ifdef USE_NVSHMEM
-   call nvshmem_finalize()
-#endif
    if (final_failed) then
       write (iout,'(/,a)') 'finalization owner cleanup incomplete'
    else

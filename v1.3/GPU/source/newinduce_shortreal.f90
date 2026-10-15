@@ -17,7 +17,7 @@
 subroutine newinduce_shortreal
    use atmlst   , only: poleglob
    use domdec   , only: rank
-   use iounit   , only: iout
+   use iounit   !, only: iout
    use mpole    , only: npolebloc, npoleloc
    use parallel , only: commfieldshort, polar_comm_t, polar_finish, polar_post_comm
    use polar    , only: polarity, uind, uinp
@@ -170,7 +170,7 @@ subroutine inducepcg_shortreal(matvec,nrhs,precnd,ef,mu)
    use parallel, only: get_domain_comm
    use atmlst   , only: poleglob
    use domdec   , only: rank
-   use iounit   , only: iout
+   use iounit 
    use mpole    , only: ipole, npolebloc, npoleloc
    use parallel , only: commfieldshort, polar_comm_t, polar_finish, polar_post_comm
    use polar    , only: npolar, polarity, tinypol
@@ -380,7 +380,7 @@ subroutine inducejac_shortreal(matvec,nrhs,dodiis,ef,mu)
    use parallel, only: get_domain_comm
    use atmlst   , only: poleglob
    use domdec   , only: rank
-   use iounit   , only: iout
+   use iounit
    use mpole    , only: ipole, npolebloc, npoleloc
    use parallel , only: commfieldshort, polar_comm_t, polar_finish, polar_post_comm
    use polar    , only: npolar, polarity

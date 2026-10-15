@@ -58,7 +58,6 @@ module pme
 #else
    real(t_p),parameter:: pme_eps=1d-8
 #endif
-!$acc declare create(nfft1,nfft2,nfft3,bsorder)
    real(t_p) bsmod1(maxfft),bsmod2(maxfft),bsmod3(maxfft)
 !DIR$ ATTRIBUTES ALIGN:64:: thetai1
    real(t_p), allocatable,target :: thetai1(:,:,:)

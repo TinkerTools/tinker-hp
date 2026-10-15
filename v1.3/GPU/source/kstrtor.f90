@@ -419,13 +419,12 @@ subroutine upload_device_kstrtor
    use sizes ,only: tinkerdebug
    use strtor
    implicit none
-   integer ierr, host_communicator
+   integer ierr
 
 #ifdef _OPENACC
 12 format(2x,'upload_device_kstrtor')
    if(deb_Path) print 12
-   host_communicator = get_host_comm()
-   call MPI_BARRIER(host_communicator,ierr)
+   call MPI_BARRIER(get_host_comm(),ierr)
 #endif
 
 !$acc enter data copyin(nstrtorloc,nstrtor)

@@ -24,6 +24,7 @@ submodule(deriv) subderiv
    use mpi
    use mdstuf   ,only:integrate
    use mdstuf1  ,only:epot
+   use mlpot    ,only:use_dmts
    use moldyn   ,only:stepfast,stepint,nalt,step_c
    use neigh
    use output   ,only:archive,new_restart,f_mdsave
@@ -174,7 +175,8 @@ contains
          ftot_l     = .false.
 
          respa1_l   = (index(integrate,'RESPA1').gt.0)&
-            &.or. (centroid_longrange .and. polar_allbeads)
+            &.or. (centroid_longrange .and. polar_allbeads)&
+            &.or. (use_dmts) .or. use_ml_embedding
          smd_l      = use_smd_velconst.or.use_smd_forconst
          gamd_l     = use_gamd.or.use_amd_ene.or.use_amd_dih.or.&
             &use_amd_wat1
@@ -443,7 +445,7 @@ contains
 
       if (integrate.eq.'RESPA1'.or.integrate.eq.'BAOABRESPA1'&
          &.or. (centroid_longrange.and.polar_allbeads)&
-         &) then
+         &.or. use_dmts .or. use_ml_embedding) then
          desave (1:3,1:dr_stride) => de_buff1(of1+1:of1+dr_stride3)
          of1 = of1 + dr_stride3
       end if
@@ -535,9 +537,9 @@ contains
       if (associated(desave)) nullify (desave)
       if (associated(desmd))  nullify (desmd)
 
-      if (allocated(de_buff0)) deallocate(de_buff0)
-      if (allocated(de_buff1)) deallocate(de_buff1)
-      if (allocated(de_buffr)) deallocate(de_buffr)
+      if (allocated(de_buff0)) call prmem_requestm(de_buff0,0,async=.true.)
+      if (allocated(de_buff1)) call prmem_requestm(de_buff1,0,async=.true.)
+      if (allocated(de_buffr)) call prmem_requestm(de_buffr,0,async=.true.)
    end subroutine
 
    subroutine updateForcesHost
@@ -613,20 +615,82 @@ contains
 
    end subroutine
 
+   module subroutine save_total_forces
+      integer i,j
+
+      if (.not.ftot_l) then
+         write(0,*) 'ERROR: embedding force snapshot requires ftot_l'
+         call fatal
+      endif
+      if (.not.associated(desave)) then
+         write(0,*) 'ERROR: embedding force snapshot has no desave buffer'
+         call fatal
+      endif
+
+      if (tdes_l) then
+!$acc parallel loop async(reciprocal_work%queue) default(present)
+         do i = 1,dr_stride
+            desave(1,i) = derivx(i)
+            desave(2,i) = derivy(i)
+            desave(3,i) = derivz(i)
+            derivx(i) = zero_md
+            derivy(i) = zero_md
+            derivz(i) = zero_md
+         end do
+      else
+!$acc parallel loop collapse(2) async(reciprocal_work%queue) default(present)
+         do i = 1,dr_stride
+            do j = 1,3
+               desave(j,i) = de_tot(j,i)
+               de_tot(j,i) = zero_md
+            end do
+         end do
+      endif
+   end subroutine
+
+   module subroutine restore_total_forces
+      integer i,j
+
+      if (.not.ftot_l) then
+         write(0,*) 'ERROR: embedding force restoration requires ftot_l'
+         call fatal
+      endif
+      if (.not.associated(desave)) then
+         write(0,*) 'ERROR: embedding force restoration has no desave buffer'
+         call fatal
+      endif
+
+      if (tdes_l) then
+!$acc parallel loop async(reciprocal_work%queue) default(present)
+         do i = 1,dr_stride
+            derivx(i) = derivx(i) + desave(1,i)
+            derivy(i) = derivy(i) + desave(2,i)
+            derivz(i) = derivz(i) + desave(3,i)
+         end do
+      else
+!$acc parallel loop collapse(2) async(reciprocal_work%queue) default(present)
+         do i = 1,dr_stride
+            do j = 1,3
+               de_tot(j,i) = de_tot(j,i) + desave(j,i)
+            end do
+         end do
+      endif
+   end subroutine
+
    module subroutine get_ftot(derivs,nbloc_)
       integer   nbloc_
       real(r_p) derivs(3,nbloc_)
       integer i,j
 
       if (tdes_l) then
-!$acc parallel loop async default(present)
+!$acc parallel loop async(reciprocal_work%queue) default(present)
          do i = 1,nbloc_
             derivs(1,i) = mdr2md(derivx(i))
             derivs(2,i) = mdr2md(derivy(i))
             derivs(3,i) = mdr2md(derivz(i))
          end do
       else
-!$acc parallel loop collapse(2) async default(present)
+!$acc parallel loop collapse(2) async(reciprocal_work%queue) default(present)
          do i = 1,nbloc_; do j = 1,3
                derivs(j,i) = mdr2md(de_tot(j,i))
             end do; end do
@@ -663,10 +727,15 @@ contains
       if (shortnonbonded_l.and.stepint.eq.nalt.and.use_polar)&
          &call mem_move(desave(1:stride,1),dep(1:stride,1),stride,reciprocal_work%stream)
 
+      !for DMTS, save model2 forces
+      if (use_dmts.and.stepfast.eq.nalt) then
+        call mem_move(desave(1:stride,1),dmlpot(1:stride,1),stride,reciprocal_work%stream)
+      end if
+
       if (tdes_l) then  ! (n,3) buffer format
 
 !$acc host_data use_device(deadd,de_buff0,de_buff1)
-         if (bonded_l.and..not.nonbonded_l) then
+         if (bonded_l.and.(.not.nonbonded_l).and.(.not.use_dmts)) then
             if (.not.fdebs_l) then ! Check merge and transposition
                if(deb_Path) write(*,*) "   add_forces bonded"
 !$acc parallel loop async(reciprocal_work%queue) deviceptr(de_buff0,deadd)
@@ -684,7 +753,7 @@ contains
                   deadd(idx) = deadd(idx) + rp2mdr(tot_)
                end do
             end if
-         else if (nonbonded_l.and..not.bonded_l) then
+         else if (nonbonded_l.and.(.not.bonded_l).and.(.not.use_dmts)) then
             if(deb_Path) write(*,*) "   add_forces non bonded"
 !$acc parallel loop async(reciprocal_work%queue) deviceptr(de_buff1,deadd)
             do i = 1,3*nbloc
@@ -730,7 +799,7 @@ contains
       else  ! (n,3) buffer format
 
 !$acc host_data use_device(deadd,de_buff0,de_buff1)
-         if (bonded_l.and..not.nonbonded_l) then
+         if (bonded_l.and..not.nonbonded_l.and.(.not.use_dmts)) then
             if(deb_Path) write(*,*) "   add_forces bonded"
 !$acc parallel loop async(reciprocal_work%queue) deviceptr(de_buff0,deadd)
             do i = 1,3*nbloc
@@ -743,7 +812,7 @@ contains
                end do
                deadd(i) = deadd(i) + rp2mdr(tot_)
             end do
-         else if (nonbonded_l.and..not.bonded_l) then
+         else if (nonbonded_l.and..not.bonded_l.and.(.not.use_dmts)) then
             if(deb_Path) write(*,*) "   add_forces non bonded"
 !$acc parallel loop async(reciprocal_work%queue) deviceptr(de_buff1,deadd)
             do i = 1,3*nbloc
@@ -796,6 +865,10 @@ contains
       !save the values of the short range real space polarizable forces
       if (shortnonbonded_l.and.stepint.eq.nalt)&
          &call mem_move(desave(1:stride,1),dep(1:stride,1),stride,reciprocal_work%stream)
+
+      !for DMTS, save model2 forces
+      if (use_dmts.and.stepfast.eq.nalt)&
+         &call mem_move(desave(1:stride,1),dmlpot(1:stride,1),stride,reciprocal_work%stream)
 
 !$acc host_data use_device(de_buff0,de_buff1,deadd)
       if (bonded_l.and..not.nonbonded_l) then
@@ -1142,7 +1215,7 @@ contains
          else
             de_mpi(1:3,1:dr_stride) =>&
                &de_buff1(dr_obws+1:dr_obws+dr_stride3)
-!$acc parallel loop collapse(2) async default(present)
+!$acc parallel loop collapse(2) async(reciprocal_work%queue) default(present)
             do i = 1,dr_stride; do j = 1,3
                   de_mpi(j,i) = derivx(i+(j-1)*dr_stride)
                end do; end do
@@ -1150,7 +1223,7 @@ contains
       else if (opt.eq.1) then
          !call mmo(de_mpi,3*dr_stride,"deri")
          if (nproc.ne.1.and.tdes_l) then
-!$acc parallel loop async default(present)
+!$acc parallel loop async(reciprocal_work%queue) default(present)
             do i=1,dr_stride
                derivx(i) = de_mpi(1,i)
                derivy(i) = de_mpi(2,i)
@@ -1223,7 +1296,7 @@ contains
       implicit none
       real(r_p) de_rec(3,nlocrec2)
       integer,optional:: opt
-      integer i,j,k,tag,ierr,siz,opt_,commloc
+      integer i,j,k,tag,ierr,siz,opt_
       integer nsend,nrecv,psend,precv,pbeg,dlen
       integer reqsend(nproc),reqrecv(nproc)
       integer status(MPI_STATUS_SIZE)
@@ -1247,7 +1320,6 @@ contains
       p_recv(1:nproc) => prec_recep(:)
       p_beg (1:nproc) => bufbegrec(:)
       d_len (1:nproc) => domlenrec(:)
-      commloc = merge(get_recip_comm(),get_domain_comm(),use_pmecore)
 !
       ! Create exchange buffer
       siz = 3*max(1,nlocrec)*nsend
@@ -1260,7 +1332,7 @@ contains
          psend = p_send(i)
          dlen  = 3*nlocrec
          call MPI_IRECV(buffer(1,1,i),dlen,MPI_RPREC,psend,tag&
-            &,commloc,reqrecv(i),ierr)
+            &,merge(get_recip_comm(),get_domain_comm(),use_pmecore),reqrecv(i),ierr)
       end do
 !
       !MPI : Start sending
@@ -1270,7 +1342,7 @@ contains
          pbeg  = p_beg ( precv+1 )
          dlen  = d_len ( precv+1 )*3
          call MPI_ISEND(de_rec(1,pbeg),dlen,MPI_RPREC,precv,tag&
-            &,commloc,reqsend(i),ierr)
+            &,merge(get_recip_comm(),get_domain_comm(),use_pmecore),reqsend(i),ierr)
       end do
 !$acc end host_data
 !
@@ -1280,7 +1352,7 @@ contains
 !
 !     MPI : move in global arrays
 !
-!$acc parallel loop gang vector collapse(2) async &
+!$acc parallel loop gang vector collapse(2) async(reciprocal_work%queue) &
 !$acc         present(de_rec,buffer)
       do j = 1,nlocrec; do k = 1,3; do i = 1,nsend;
                de_rec(k,j) = de_rec(k,j) + buffer(k,j,i)
@@ -1519,12 +1591,12 @@ contains
 !
       do i = 1, nrecdir_send1
          if (precdir_send1(i).ne.rank) then
-!$acc parallel loop collapse(2) async default(present)
+!$acc parallel loop collapse(2) async(reciprocal_work%queue) default(present)
             do j = 1,nloc; do k = 1,3
                   derivs(k,j) = derivs(k,j) + buffer(k,j,i)
                end do; end do
          else
-!$acc parallel loop collapse(2) async default(present)
+!$acc parallel loop collapse(2) async(reciprocal_work%queue) default(present)
             do j = 1, nlocrec; do k = 1,3
                   iglob = globrec(j)
                   iloc  = loc(iglob)
@@ -2043,6 +2115,12 @@ module subroutine commforceststgrad(detot)
    real(r_p), allocatable :: buffers(:,:)
    real(r_p), intent(inout) :: detot(3,*)
    integer status(MPI_STATUS_SIZE)
+
+!     The sequential diagnostic path has no force exchange.  testgrad copies
+!     the assembled force buffer after its reciprocal accumulation.
+   if (nproc.eq.1) then
+      return
+   end if
 !     FIXME portage en cours
 !
 !     allocate some arrays
@@ -2306,6 +2384,7 @@ end
             if(use_angang) call comm_forces_dd1(deaa ,cBond)
             if(use_geom)   call comm_forces_dd1(deg  ,cBond)
             if(use_extra)  call comm_forces_dd1(dex  ,cBond)
+            if(use_mlpot.or.use_ml_embedding) call comm_forces_dd(dmlpot,cBond)
          else
             !call commforce_one(de_buff0,commBonded)
          end if
@@ -2376,6 +2455,12 @@ end
             call comm_forces_dd(dect,cNBond)
             call minmaxone1(mmx(28),mmx(nf+28),mmx(2*nf+28),dect&
                &,sze,'dect');
+         end if
+
+         if (use_dmts) then
+            call comm_forces_dd(dmlpot,cNBond)
+            call minmaxone1(mmx(29),mmx(nf+29),mmx(2*nf+29),dmlpot&
+               &,sze,'dmlpot')
          end if
 
       end if

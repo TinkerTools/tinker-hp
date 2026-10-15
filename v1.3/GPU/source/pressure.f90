@@ -665,7 +665,7 @@ subroutine pmonte (epot,temp)
 end
 
 
-subroutine dedvcalc()
+subroutine dedvcalc(delta_)
    use atmlst
    use atmtyp
    use atomsMirror
@@ -675,6 +675,7 @@ subroutine dedvcalc()
    use domdec
    use energi
    use group
+   use ieee_arithmetic, only: ieee_is_finite
    use math
    use mdstuf
    use molcul
@@ -693,6 +694,7 @@ subroutine dedvcalc()
    real(r_p) vold,xboxold
    real(r_p) yboxold,zboxold
    real(r_p) epos,eneg
+   real(r_p),optional,intent(in) :: delta_
    real(r_p), allocatable :: xoldloc(:)
    real(r_p), allocatable :: yoldloc(:)
    real(r_p), allocatable :: zoldloc(:)
@@ -711,6 +713,13 @@ subroutine dedvcalc()
 
    if(virnum) then
       delta = 0.000001d0
+      if (present(delta_)) then
+         delta = delta_
+         if (delta.le.0.0_re_p .or. .not.ieee_is_finite(delta)) then
+            write (0,*) 'Invalid finite-difference volume perturbation'
+            call fatal
+         end if
+      end if
       step = volbox * delta
 !
 !     perform dynamic allocation of some local arrays

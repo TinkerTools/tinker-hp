@@ -403,7 +403,7 @@ subroutine emrecip1
    real*8, allocatable :: decfz(:)
    integer, allocatable :: reqsend(:),reqrec(:)
    integer, allocatable :: req2send(:),req2rec(:)
-   integer nprocloc,commloc,rankloc,proc
+   integer nprocloc,rankloc,proc
    real*8 time0,time1
    time0 = mpi_wtime()
 !
@@ -412,11 +412,9 @@ subroutine emrecip1
 !
    if (use_pmecore) then
       nprocloc = nrec
-      commloc  = get_recip_comm()
       rankloc  = rank_bis
    else
       nprocloc = nproc
-      commloc  = get_domain_comm()
       rankloc  = rank
    end if
 !
@@ -507,7 +505,7 @@ subroutine emrecip1
       tag = nprocloc*rankloc + prec_recep(i) + 1
       call MPI_IRECV(qgridmpi(1,1,1,1,i),2*n1mpimax*n2mpimax*&
       &n3mpimax,MPI_REAL8,prec_recep(i),tag,&
-      &commloc,reqrec(i),ierr)
+      &merge(get_recip_comm(),get_domain_comm(),use_pmecore),reqrec(i),ierr)
    end do
 !
 !     MPI : begin sending
@@ -517,7 +515,7 @@ subroutine emrecip1
       tag = nprocloc*prec_send(i) + rankloc + 1
       call MPI_ISEND(qgridin_2d(1,1,1,1,i+1),&
       &2*n1mpimax*n2mpimax*n3mpimax,MPI_REAL8,proc,tag,&
-      &commloc,reqsend(i),ierr)
+      &merge(get_recip_comm(),get_domain_comm(),use_pmecore),reqsend(i),ierr)
    end do
 !
    do i = 1, nrec_recep
@@ -660,7 +658,7 @@ subroutine emrecip1
       tag = nprocloc*rankloc + prec_send(i) + 1
       call MPI_IRECV(qgridin_2d(1,1,1,1,i+1),&
       &2*n1mpimax*n2mpimax*n3mpimax,MPI_REAL8,&
-      &prec_send(i),tag,commloc,req2rec(i),ierr)
+      &prec_send(i),tag,merge(get_recip_comm(),get_domain_comm(),use_pmecore),req2rec(i),ierr)
    end do
 !
 !     MPI : begin sending
@@ -669,7 +667,7 @@ subroutine emrecip1
       tag = nprocloc*prec_recep(i) + rankloc + 1
       call MPI_ISEND(qgridin_2d,&
       &2*n1mpimax*n2mpimax*n3mpimax,&
-      &MPI_REAL8,prec_recep(i),tag,commloc,req2send(i),&
+      &MPI_REAL8,prec_recep(i),tag,merge(get_recip_comm(),get_domain_comm(),use_pmecore),req2send(i),&
       &ierr)
    end do
 !

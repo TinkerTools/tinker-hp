@@ -973,7 +973,7 @@ subroutine eprecipgpu
    use tinheader ,only: ti_p,re_p
    implicit none
    integer ierr,iipole,proc
-   integer status(MPI_STATUS_SIZE),tag,commloc
+   integer status(MPI_STATUS_SIZE),tag
    integer nprocloc,rankloc
    integer i,j,k,iglob
    integer k1,k2,k3
@@ -997,11 +997,9 @@ subroutine eprecipgpu
    if (use_pmecore) then
       nprocloc = nrec
       rankloc  = rank_bis
-      commloc  =  get_recip_comm()
    else
       nprocloc = nproc
       rankloc  = rank
-      commloc  = get_domain_comm()
    end if
 !
 !     return if the Ewald coefficient is zero
@@ -1059,4 +1057,62 @@ subroutine eprecipgpu
 !$acc end data
 !$acc exit data delete(a,e) async(reciprocal_work%queue)
    call timer_exit( timer_eprecip )
+end
+!
+!     subroutine totaldipole: get the total dipole moment of the system (permanent+induced)
+!
+subroutine totaldipole
+   use atmlst
+   use atoms
+   use boxes
+   use charge
+   use domdec
+   use parallel, only: get_domain_comm
+   use iounit
+   use mpole
+   use polar
+   use potent
+   use tinheader ,only:ti_p,re_p
+   use units
+   use mpi
+   use spectra, only: compute_dipole
+   implicit none
+   integer i,iipole,iglob,ierr
+   integer iichg
+   real(t_p) q,xr,yr,zr
+   real(r_p) dipx,dipy,dipz
+   real(r_p) dip(3),dipind(3)
+   real(t_p) mux,muy,muz,mudx,mudy,mudz,mupx,mupy,mupz
+1000 format(/'x dipolar moment : ',F14.5)
+1010 format(/'y dipolar moment : ',F14.5)
+1020 format(/'z dipolar moment : ',F14.5)
+!
+!$acc data copyout(dip,dipind)
+   call compute_dipole(dip,dipind,.TRUE.)
+!$acc wait
+!$acc end data
+
+   dipx = debye*(dip(1) + dipind(1))
+   dipy = debye*(dip(2) + dipind(2))
+   dipz = debye*(dip(3) + dipind(3))
+
+   if (rank.eq.0) then
+      call MPI_REDUCE(MPI_IN_PLACE,dipx,1,MPI_RPREC,MPI_SUM,0,&
+         &get_domain_comm(),ierr)
+      call MPI_REDUCE(MPI_IN_PLACE,dipy,1,MPI_RPREC,MPI_SUM,0,&
+         &get_domain_comm(),ierr)
+      call MPI_REDUCE(MPI_IN_PLACE,dipz,1,MPI_RPREC,MPI_SUM,0,&
+         &get_domain_comm(),ierr)
+   else
+      call MPI_REDUCE(dipx,dipx,1,MPI_RPREC,MPI_SUM,0,&
+         &get_domain_comm(),ierr)
+      call MPI_REDUCE(dipy,dipy,1,MPI_RPREC,MPI_SUM,0,&
+         &get_domain_comm(),ierr)
+      call MPI_REDUCE(dipz,dipz,1,MPI_RPREC,MPI_SUM,0,&
+         &get_domain_comm(),ierr)
+   end if
+   if (rank.eq.0) write(iout,1000) dipx
+   if (rank.eq.0) write(iout,1010) dipy
+   if (rank.eq.0) write(iout,1020) dipz
+   return
 end

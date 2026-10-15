@@ -29,6 +29,7 @@ subroutine mdstatpi (istep,dt)
    use inter
    use iounit
    use mdstuf
+   use mdstate, only: set_energy_format, write_energy_hdr, write_energy_row
    use molcul
    use potent
    use timestat
@@ -81,18 +82,6 @@ subroutine mdstatpi (istep,dt)
    real(d_prec),save :: stress_sum(3,3),stress2_sum(3,3)
    integer, save  :: count=0
    real(d_prec) :: lth
-#ifdef SINGLE
-   character(1) :: edcim = '2'
-#else
-   character(1) :: edcim = '4'
-#endif
-   character(2) :: esize
-   character(5) :: f_ener
-
-   esize='14'
-   if (n>5d6) esize='17'
-   f_ener = 'f'//esize//'.'//edcim
-
 !
 !
 !     set number of steps for block averages of properties
@@ -147,6 +136,8 @@ subroutine mdstatpi (istep,dt)
       count=count+1
       dens = (1.0d24/real(volbox,d_prec))&
          &* (real(totmass,d_prec)/real(avogadro,d_prec))
+   endif
+   if (display .or. modstep.eq.1) then
 !$acc update host(epotpi,eintrapi,einterpi,presvir &
 !$acc   ,ekvir,ekprim,temppi,temppi_cl,gyrpi,stresspi,ekcentroid) async
 !$acc wait
@@ -156,35 +147,21 @@ subroutine mdstatpi (istep,dt)
 !        dens = (1.0d24/real(volbox,d_prec))
 !     &          * (real(totmass,d_prec)/real(avogadro,d_prec))
    if (verbose) then
-      if(modstep==1) then
-         write(iout,'(A)',advance="no") "    MD Step"&
-            &//"      E total"&
-            &//"   E Potential"&
-            &//"     E Kinetic"&
-!     &                  //"     Ek prim"
-            &//"       Temp"&
-            &//"    Temp_cl"
-         if(use_virial) then
-            write(iout,'(A)',advance="no") "       Pres"
-         endif
+      if(modstep==1 .or. iprint.eq.1) then
+         call set_energy_format(ekvir+epotpi)
+         call write_energy_hdr(iout,.true.,use_virial)
 !            if(isobaric) then
 !              write(iout,'(A)',advance="no")
 !     &                    "     Density"
 !     &                  //"      Volume"
 !            endif
-         write(iout,*)
       endif
       if (display) then
-         write(iout,'(i10,3'//f_ener//',2f11.2)',advance="no") istep&
-            &,ekvir+epotpi,epotpi,ekvir& !,ekprim
-            &,temppi,temppi_cl/nbeads
-         if(use_virial) then
-            write(iout,'(f11.2)',advance="no") presvir
-         endif
+         call write_energy_row(iout,istep,ekvir+epotpi,epotpi,ekvir,temppi, &
+            &temppi_cl/nbeads,presvir,.true.,use_virial)
 !            if(isobaric) then
 !              write(iout,'(f12.4,f12.2)',advance="no") dens,volbox
 !            endif
-         write(iout,*)
       endif
    end if
 

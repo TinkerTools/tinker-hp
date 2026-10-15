@@ -1,4 +1,5 @@
 add_library(tinkerhp_2decomp_fft STATIC
+  src/MOD_mdevice_channel.f90
   src/decomp_2d.f90
   src/io.f90
   src/glassman.f90
@@ -7,6 +8,7 @@ add_library(tinkerhp_2decomp_fft STATIC
 )
 
 set_source_files_properties(
+  src/MOD_mdevice_channel.f90
   src/decomp_2d.f90
   src/io.f90
   src/glassman.f90

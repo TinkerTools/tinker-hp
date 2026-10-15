@@ -142,7 +142,6 @@ module nonbondedpotent
    logical use_repulslong,use_displong,use_chgtrnlong
    logical use_smd_velconst, use_smd_forconst
    logical use_dewald,use_chgpen
-!$acc declare create(use_mpole,use_polar)
 end module
 
 module potent
@@ -165,5 +164,4 @@ module potent
    logical PotentialAmoeba181,PotentialAmoeba182
    logical PotentialWaterAmoeba,PotentialWaterCharmm
    logical PotentialCharmm
-!$acc declare create(use_pmecore)
 end

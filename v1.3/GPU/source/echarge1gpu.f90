@@ -780,7 +780,7 @@ subroutine ecrecip1gpu
    integer nf1,nf2,nf3
    integer nff
    integer status(MPI_STATUS_SIZE),tag,ierr
-   integer nprocloc,rankloc,commloc,proc
+   integer nprocloc,rankloc,proc
    integer ist2,jst2,kst2,ien2,jen2,ken2
    integer istart,iend,jstart,jend,kstart,kend
    integer iloc,iproc
@@ -807,11 +807,9 @@ subroutine ecrecip1gpu
 !
    if (use_pmecore) then
       nprocloc = nrec
-      commloc  = get_recip_comm()
       rankloc  = rank_bis
    else
       nprocloc = nproc
-      commloc  = get_domain_comm()
       rankloc  = rank
    end if
 !

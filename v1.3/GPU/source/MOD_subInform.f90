@@ -311,7 +311,7 @@ contains
          val = vector(i)
          mi  = min( mi,val )
          ma  = max( ma,val )
-         on  = on + abs( val*val )
+         on  = on + abs( val )
       end do
 !$acc wait
 12    format(A6,2F20.8,1x,F21.5,I5)
@@ -321,8 +321,8 @@ contains
          call MPI_ALLREDUCE(mi,mi1,1,MPI_RPREC,MPI_MIN,get_domain_comm(),i)
          call MPI_ALLREDUCE(ma,ma1,1,MPI_RPREC,MPI_MAX,get_domain_comm(),i)
       end if
-      on1 = sqrt(on1)
-      on  = sqrt(on )
+      !on1 = sqrt(on1)
+      !on  = sqrt(on )
       if (rank.eq.0.and.nproc.gt.1) then
          write(*,13) name,mi1,ma1,on,rank,on1
       else if (rank.eq.0) then

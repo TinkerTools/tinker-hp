@@ -43,36 +43,28 @@
 !
 #include "tinker_macro.h"
 subroutine baoabrespa1(istep,dt)
-   use mlpot
-   use atmtyp
-   use atomsMirror
-   use cutoff
-   use domdec
-   use parallel, only: commposrec
-   use deriv
-   use energi
-   use freeze
-   use group
-   use inform
-   use mdstuf1
+   use atomsMirror, only: integrate_vel
+   use cutoff   , only: use_list
+   use domdec   , only: nbloc,rank
+   use parallel , only: commposrec
+   use deriv    , only: cNBond,comm_forces,ftot_l,info_forces
+   use energi   , only: calc_e,chk_energy_fluct,info_energy,reduceen
+   use freeze   , only: use_rattle
+   use inform   , only: abort,deb_Atom,deb_Energy,deb_Force,info_minmax_pva
+   use mdstuf1  , only: ealt,ekin,eksum,epot,etot,derivs,pres,stress,temp,viralt
    use mdevice  , only: reciprocal_work
-   use moldyn
-   use mpi
+   use moldyn   , only: a,dinter,dshort
    use potent
-   use timestat
-   use tinMemory
-   use units
-   use uprior  ,only: use_pred
-   use usage
-   use utilbaoab
-   use utils
-   use virial
+   use tinMemory, only: prmem_requestm
+   use tinheader, only: re_p
+   use utilbaoab, only: set_langevin_thermostat_coeff
+   use utils    , only: set_to_zero1m
+   use virial   , only: use_virial,vir
    implicit none
    integer i,j,iglob
    integer istep
    real(r_p) dt,dt_2
    real(r_p) dta,dta_2,dts
-   logical save_pred
 !
 !     set some time values for the dynamics integration
 !
@@ -82,7 +74,6 @@ subroutine baoabrespa1(istep,dt)
    dts   = dta / dshort
    if (istep.eq.1) call set_langevin_thermostat_coeff(dts)
 !
-   if (use_ml_embedding) use_mlpot=.FALSE.
 !
 !     store the current atom positions, then find half-step
 !     velocities via BAOAB recursion
@@ -136,25 +127,6 @@ subroutine baoabrespa1(istep,dt)
 !
    call reduceen(epot)
 
-   if(use_ml_embedding) then
-!$acc parallel loop collapse(2) async
-      do i = 1, 3; do j = 1, 3
-            viralt(j,i) = vir(j,i) + viralt(j,i)
-         end do; end do
-!     COMPUTE ML DELTA CONTRIBUTION (ml_embedding_mode=2)
-      use_mlpot=  .TRUE.
-      call zero_forces_rec
-      save_pred = use_pred
-      use_pred = .FALSE.
-      call gradient (eml,derivs)
-      use_pred = save_pred
-      call reduceen(eml)
-      call comm_forces(derivs)
-!$acc serial async
-      epot = epot+eml
-!$acc end serial
-   endif
-!
 !     make half-step temperature and pressure corrections
 !
 !     call temper2 (temp)
@@ -219,29 +191,19 @@ end
 !     find intermediate-evolving velocities and positions via BAOAB recursion
 !
 subroutine baoabrespaint1(ealt,viralt,dta,dts)
-   use mlpot
-   use atmtyp
-   use atomsMirror
-   use cutoff
-   use deriv
-   use domdec
-   use deriv
-   use energi
-   use freeze
-   use inform
+   use atomsMirror, only: integrate_vel
+   use domdec, only: nbloc,rank
+   use deriv, only: cSNBond,comm_forces,ftot_l,info_forces
+   use energi, only: calc_e,info_energy,reduceen
+   use freeze, only: use_rattle
+   use inform, only: abort,deb_Atom,deb_Energy,deb_Force,info_minmax_pva
    use mdstuf1 , only: derivs,ealt2,viralt2
    use mdevice , only: reciprocal_work
-   use moldyn
-   use mutant
-   use potent
-   use timestat
-   use tinMemory
-   use units
-   use uprior  , only: use_pred
-   use usage
-   use utils
-   use virial
-   use mpi
+   use moldyn, only: aalt,dinter,nalt,stepint
+   use tinMemory, only: prmem_requestm
+   use tinheader, only: re_p
+   use utils, only: set_to_zero1m
+   use virial, only: use_virial,vir,zero_virial
    implicit none
    integer i,j,k,iglob
    real(r_p) dta,dta_2,dts
@@ -283,7 +245,7 @@ subroutine baoabrespaint1(ealt,viralt,dta,dts)
 !
 !     get the fast-evolving potential energy and atomic forces
 !
-      call gradint(ealt,derivs)
+      call gradient_helper(ealt,derivs,3,.false.)
 !
 !     communicate forces
 !
@@ -304,28 +266,6 @@ subroutine baoabrespaint1(ealt,viralt,dta,dts)
       if (abort)      call emergency_save
       if (abort)      call fatal
 
-!      if(use_ml_embedding) then
-!!$acc parallel loop collapse(2) async
-!        do i = 1, 3; do j = 1, 3
-!          viralt2(j,i) = vir(j,i) + viralt2(j,i)
-!        end do; end do
-!c     COMPUTE ML DELTA CONTRIBUTION (ml_embedding_mode=2)
-!        use_mlpot= .TRUE.
-!!$acc data create(ealtml)
-!        call resetForcesRec
-!        save_pred = use_pred
-!        use_pred  = .FALSE.
-!        call gradient (ealtml,derivs)
-!        use_pred  = save_pred
-!        call reduceen(ealtml)
-!        call comm_forces(derivs)
-!!$acc serial async present(ealt,ealtml)
-!         ealt = ealt + ealtml
-!!$acc end serial
-!!$acc end data
-!        use_mlpot= .FALSE.
-!      endif
-!
 !     use Newton's second law to get fast-evolving accelerations;
 !     update fast-evolving velocities using the BAOAB recursion
 !
@@ -350,29 +290,21 @@ end
 !     find fast-evolving velocities and positions via BAOAB recursion
 !
 subroutine baoabrespafast1(ealt,viralt,dta)
-   use atmtyp
-   use atomsMirror
-   use bath
-   use cutoff
-   use domdec
-   use deriv
-   use energi
-   use freeze
-   use inform
-   use langevin
+   use atomsMirror, only: integrate_pos,integrate_vel,save_atoms_pos
+   use domdec, only: nbloc,rank
+   use deriv, only: cBond,comm_forces,ftot_l,info_forces
+   use energi, only: info_energy,reduceen
+   use freeze, only: use_rattle
+   use inform, only: abort,deb_Atom,deb_Energy,deb_Force,info_minmax_pva
    use mdstuf1 , only: derivs
    use mdevice , only: reciprocal_work
-   use moldyn
-   use random_mod
-   use parallel, only: commposrespa, reassign_respa
-   use timestat
-   use tinMemory
-   use units
-   use utils
-   use usage
-   use virial
-   use mpi
-   use utilbaoab
+   use moldyn, only: aalt2,dshort,nalt2,stepfast
+   use parallel, only: commposrespa,reassign_respa
+   use tinMemory, only: prmem_requestm
+   use tinheader, only: re_p
+   use utils, only: set_to_zero1m
+   use utilbaoab, only: apply_langevin_thermostat
+   use virial, only: use_virial,vir,zero_virial
    implicit none
    integer i,j,k,iglob
    real(r_p) dta,dta_2

@@ -715,7 +715,7 @@ subroutine ecrecipgpu
    integer nf1,nf2,nf3
    integer nff,npoint
    integer status(MPI_STATUS_SIZE),tag,ierr,proc
-   integer nprocloc,rankloc,commloc
+   integer nprocloc,rankloc
    real(t_p) e,f,denom
    real(t_p) term,expterm
    real(t_p) pterm,volterm
@@ -735,11 +735,9 @@ subroutine ecrecipgpu
    if (use_pmecore) then
       nprocloc = nrec
       rankloc = rank_bis
-      commloc = get_recip_comm()
    else
       nprocloc = nproc
       rankloc = rank
-      commloc = get_domain_comm()
    end if
 !
 !     dynamic allocation of local arrays
@@ -757,7 +755,7 @@ subroutine ecrecipgpu
       tag = nprocloc*rankloc + prec_recep(i) + 1
 !$acc host_data use_device(qgridmpi)
       call MPI_IRECV(qgridmpi(1,1,1,1,i),2*n1mpimax*n2mpimax*&
-         &n3mpimax,MPI_TPREC,prec_recep(i),tag,commloc,req(tag),&
+         &n3mpimax,MPI_TPREC,prec_recep(i),tag,merge(get_recip_comm(),get_domain_comm(),use_pmecore),req(tag),&
          &ierr)
 !$acc end host_data
    end do

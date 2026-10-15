@@ -40,6 +40,7 @@ subroutine mdinit(dt)
    use mdstate
    use mdstuf
    use mdstuf1 ,only: gpuAllocMdstuf1Data
+   use mlpot
    use molcul
    use moldyn
    use mpole
@@ -348,7 +349,30 @@ subroutine mdinit(dt)
       dshort = 0.00025
       mts=.true.
    end if
+!
+!  DMTS requires RESPA or BAOABRESPA integration
+!
+   if (use_dmts.and.(integrate.ne.'RESPA'.and.integrate.ne.'BAOABRESPA')) then
+     if (rank.eq.0) then
+       write(*,*) 'DMTS requires RESPA or BAOABRESPA integrator'
+     end if
+     call fatal
+   end if
 
+   if (use_ml_embedding.and.use_dmts) then
+      if (rank.eq.0) then
+         write(*,*) 'ML embedding and DMTS cannot share the desave force buffer'
+      end if
+      call fatal
+   end if
+
+   if (use_ml_embedding.and.(integrate.eq.'RESPA1'.or.&
+      &integrate.eq.'BAOABRESPA1')) then
+      if (rank.eq.0) then
+         write(*,*) 'ML embedding is unsupported with RESPA1 and BAOABRESPA1'
+      end if
+      call fatal
+   end if
 !
 !     keywords for respa and respa1 integrators
 !
@@ -707,6 +731,7 @@ subroutine mdinit(dt)
          call get_ftot (derivs,nbloc)
          siz_ = dr_stride3
          call set_to_zero1_md(de_tot, int(siz_), reciprocal_work%queue)
+!$acc wait(reciprocal_work%queue)
       end if
 
       if(deb_Force) call info_forces(cNBond)
@@ -767,6 +792,7 @@ subroutine mdinit(dt)
          call get_ftot (derivs,nbloc)
          siz_ = dr_stride3
          call set_to_zero1_md(de_tot, int(siz_), reciprocal_work%queue)
+!$acc wait(reciprocal_work%queue)
       end if
 
       !Debug Info
@@ -818,7 +844,10 @@ subroutine mdinit(dt)
 #endif
       call gradfast(e,derivs)
       call comm_forces(derivs,cBond)
-      if (ftot_l) call get_ftot (derivs,nbloc)
+      if (ftot_l) then
+         call get_ftot (derivs,nbloc)
+!$acc wait(reciprocal_work%queue)
+      end if
 
       !Debug info
       if(deb_Force) call info_forces(cBond)
@@ -836,9 +865,12 @@ subroutine mdinit(dt)
       end do
 
       call set_to_zero1m(derivs,3*nbloc,reciprocal_work%queue)
-      call gradint(e,derivs)
+      call gradient_helper(e,derivs,3,.false.)
       call comm_forces(derivs,cSNBond)
-      if (ftot_l) call get_ftot (derivs,nbloc)
+      if (ftot_l) then
+         call get_ftot (derivs,nbloc)
+!$acc wait(reciprocal_work%queue)
+      end if
 
       !Debug info
       if(deb_Force) call info_forces(cSNBond)
@@ -863,6 +895,7 @@ subroutine mdinit(dt)
          call get_ftot (derivs,nbloc)
          siz_ = dr_stride3
          call set_to_zero1_md(de_tot, int(siz_), reciprocal_work%queue)
+!$acc wait(reciprocal_work%queue)
       end if
 
       if(deb_Force) call info_forces(cNBond)
@@ -943,6 +976,7 @@ subroutine mdinit(dt)
          call get_ftot (derivs,nbloc)
          siz_ = dr_stride3
          call set_to_zero1_md(de_tot, int(siz_), reciprocal_work%queue)
+!$acc wait(reciprocal_work%queue)
       end if
 
       ! Debug informations

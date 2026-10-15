@@ -14,6 +14,7 @@ submodule (parallel) parallel_communication
    use potent, only: use_pmecore
    use mpi
    use status, only: clear_status, set_status, status_invalid_argument, status_t
+   use lifecycle_observer, only: LifecycleTicket, record_lifecycle_event
    implicit none
 
    integer, save :: active_polar_ticket_count = 0
@@ -538,9 +539,12 @@ module subroutine reset_polar_ticket(ticket)
    if (allocated(ticket%send_req)) deallocate(ticket%send_req)
    if (allocated(ticket%dip_recv_req)) deallocate(ticket%dip_recv_req)
    if (allocated(ticket%dip_send_req)) deallocate(ticket%dip_send_req)
-   if ((ticket%active .or. ticket%dip_active .or. ticket%recdir_active) .and. &
-      &active_polar_ticket_count > 0) &
-      &active_polar_ticket_count = active_polar_ticket_count - 1
+   if (ticket%active .or. ticket%dip_active .or. ticket%recdir_active) then
+      if (active_polar_ticket_count > 0) then
+         active_polar_ticket_count = active_polar_ticket_count - 1
+         call record_lifecycle_event(LifecycleTicket)
+      end if
+   end if
    ticket%active = .false.
    ticket%dip_active = .false.
    ticket%recdir_active = .false.
@@ -554,7 +558,7 @@ module subroutine polar_post_recdir_receive_legacy(ticket, nrhs, buffer, channel
    integer, intent(in) :: nrhs
    real(t_p), intent(inout) :: buffer(3,nrhs,*)
    type(channel_t), intent(in) :: channel
-   integer :: i, ierr, peer, tag, queue_
+   integer :: i, ierr, peer, tag
 
    if (ticket%active .or. ticket%dip_active .or. ticket%recdir_active) &
       &error stop 'polar exchange ticket is already active'
@@ -566,8 +570,7 @@ module subroutine polar_post_recdir_receive_legacy(ticket, nrhs, buffer, channel
    if (nproc.eq.1) return
 
    call check_domain_layout()
-   queue_ = channel%queue
-!$acc wait(queue_)
+!$acc wait(channel%queue)
 !$acc host_data use_device(buffer)
    do i = 1, nrecdir_send1
       peer = precdir_send1(i)
@@ -587,19 +590,18 @@ module subroutine polar_post_recdir_send_legacy(ticket, nrhs, values, buffer, ch
    real(t_p), intent(in) :: values(3,nrhs,*)
    real(t_p), intent(inout) :: buffer(3,nrhs,*)
    type(channel_t), intent(in) :: channel
-   integer :: i, j, k, l, ierr, peer, tag, lenbuf, ibufbeg, queue_
+   integer :: i, j, k, l, ierr, peer, tag, lenbuf, ibufbeg
 
    if (.not.ticket%recdir_active) error stop 'polar exchange ticket is not active'
    if (nproc.eq.1) return
 
    call check_domain_layout()
-   queue_ = channel%queue
    do i = 1, nrecdir_recep1
       peer = precdir_recep1(i)
       if (peer.ne.rank) then
          lenbuf = buflen2(peer+1)-1
          ibufbeg = bufbeg2(peer+1)
-!$acc parallel loop gang collapse(3) async(queue_) default(present)
+!$acc parallel loop gang collapse(3) async(channel%queue) default(present)
          do j = 0, lenbuf
             do k = 1, nrhs
                do l = 1, 3
@@ -609,7 +611,7 @@ module subroutine polar_post_recdir_send_legacy(ticket, nrhs, values, buffer, ch
          end do
       end if
    end do
-!$acc wait(queue_)
+!$acc wait(channel%queue)
 !$acc host_data use_device(buffer)
    do i = 1, nrecdir_recep1
       peer = precdir_recep1(i)
@@ -629,7 +631,7 @@ module subroutine polar_finish_recdir_legacy(ticket, nrhs, values, buffer, chann
    real(t_p), intent(inout) :: values(3,nrhs,*)
    real(t_p), intent(in) :: buffer(3,nrhs,*)
    type(channel_t), intent(in) :: channel
-   integer :: i, j, k, l, ierr, peer, lenbuf, ibufbeg, queue_
+   integer :: i, j, k, l, ierr, peer, lenbuf, ibufbeg
    integer :: status(MPI_STATUS_SIZE)
 
    if (.not.ticket%recdir_active) error stop 'polar exchange ticket is not active'
@@ -639,7 +641,6 @@ module subroutine polar_finish_recdir_legacy(ticket, nrhs, values, buffer, chann
    end if
 
    call check_domain_layout()
-   queue_ = channel%queue
    do i = 1, nrecdir_recep1
       peer = precdir_recep1(i)
       if (peer.ne.rank) call MPI_WAIT(ticket%recdir_send_req(i),status,ierr)
@@ -650,7 +651,7 @@ module subroutine polar_finish_recdir_legacy(ticket, nrhs, values, buffer, chann
          call MPI_WAIT(ticket%recdir_recv_req(i),status,ierr)
          lenbuf = buflen1(peer+1)-1
          ibufbeg = bufbeg1(peer+1)
-!$acc parallel loop gang collapse(3) async(queue_) default(present)
+!$acc parallel loop gang collapse(3) async(channel%queue) default(present)
          do j = 0, lenbuf
             do k = 1, nrhs
                do l = 1, 3
@@ -660,7 +661,7 @@ module subroutine polar_finish_recdir_legacy(ticket, nrhs, values, buffer, chann
          end do
       end if
    end do
-!$acc wait(queue_)
+!$acc wait(channel%queue)
    call reset_polar_ticket(ticket)
 end subroutine polar_finish_recdir_legacy
 
@@ -1247,14 +1248,13 @@ subroutine exchange_extend_tp(values, components, halo, channel)
    integer, intent(in) :: components, halo
    type(channel_t), intent(in) :: channel
    integer :: i, ierr, peer, first, count, option, comm, request
-   integer :: status(MPI_STATUS_SIZE), default_queue
+   integer :: status(MPI_STATUS_SIZE)
 
-   call select_queue(channel, default_queue)
    call check_domain(halo)
    if (skip_domain_exchange()) return
    option = halo_option(halo)
    comm = active_domain%communicator
-!$acc wait(default_queue)
+!$acc wait(channel%queue)
    do i = 1, receive_count(option)
       peer = receive_peer(option, i)
       first = components*(active_domain%bufbeg(peer+1)-1)+1
@@ -1282,10 +1282,9 @@ subroutine exchange_accumulate_tp(values, components, halo, channel)
    integer, intent(in) :: components, halo
    type(channel_t), intent(in) :: channel
    integer :: i, j, ierr, option, incoming, peer, comm, request, value_count, first, count
-   integer :: status(MPI_STATUS_SIZE), default_queue
+   integer :: status(MPI_STATUS_SIZE)
    real(t_p), pointer :: work(:)
 
-   call select_queue(channel, default_queue)
    call check_domain(halo)
    if (skip_domain_exchange()) return
    option = halo_option(halo)
@@ -1294,7 +1293,7 @@ subroutine exchange_accumulate_tp(values, components, halo, channel)
    incoming = receive_count(option)
    call ensure_work_tp(value_count*max(1,incoming))
    work => active_domain%work_tp
-!$acc wait(default_queue)
+!$acc wait(channel%queue)
 !$acc host_data use_device(work,values)
    do i = 1, incoming
       peer = receive_peer(option, i)
@@ -1313,7 +1312,7 @@ subroutine exchange_accumulate_tp(values, components, halo, channel)
    end do
 !$acc end host_data
    do i = 1, incoming; call MPI_Wait(active_domain%reqr(i), status, ierr); end do
-!$acc parallel loop gang vector async(default_queue) present(values,work(1:max(1,value_count*incoming)))
+!$acc parallel loop gang vector async(channel%queue) present(values,work(1:max(1,value_count*incoming)))
    do j = 1, value_count
       do i = 1, incoming
          values(j) = values(j) + work(j+components*active_domain%nloc*(i-1))
@@ -1326,14 +1325,13 @@ subroutine exchange_accumulate_rec_to_dir_tp(direct_values, reciprocal_values, c
    real(t_p), intent(inout) :: direct_values(*), reciprocal_values(*)
    integer, intent(in) :: components
    type(channel_t), intent(in) :: channel
-   integer :: i, j, k, ierr, peer, first, count, queue_, dimn, rankloc
+   integer :: i, j, k, ierr, peer, first, count, dimn, rankloc
    integer :: status(MPI_STATUS_SIZE)
    real(t_p), pointer :: receive_work(:), send_work(:)
 
-   call select_queue(channel, queue_)
    call check_domain_layout()
    if (active_domain%nproc == 1) then
-!$acc parallel loop async(queue_) default(present)
+!$acc parallel loop async(channel%queue) default(present)
       do j = 1, components* nlocrec
          direct_values(j) = direct_values(j) + reciprocal_values(j)
       end do
@@ -1347,7 +1345,7 @@ subroutine exchange_accumulate_rec_to_dir_tp(direct_values, reciprocal_values, c
    send_work => active_domain%recdir_send_work
    rankloc = merge(rank_bis, active_domain%rank, use_pmecore)
 
-!$acc wait(queue_)
+!$acc wait(channel%queue)
 !$acc host_data use_device(receive_work)
    do i = 1, nrecdir_send1
       peer = precdir_send1(i)
@@ -1363,7 +1361,7 @@ subroutine exchange_accumulate_rec_to_dir_tp(direct_values, reciprocal_values, c
       if (peer /= active_domain%rank) then
          first = active_domain%bufbeg(peer+1)-1
          count = active_domain%domlen(peer+1)
-!$acc parallel loop collapse(2) async(queue_) &
+!$acc parallel loop collapse(2) async(channel%queue) &
 !$acc      present(repartrec,locrec,glob,reciprocal_values,send_work)
          do j = 1, count
             do k = 1, components
@@ -1377,7 +1375,7 @@ subroutine exchange_accumulate_rec_to_dir_tp(direct_values, reciprocal_values, c
          end do
       end if
    end do
-!$acc wait(queue_)
+!$acc wait(channel%queue)
 !$acc host_data use_device(send_work)
    do i = 1, nrecdir_recep1
       peer = precdir_recep1(i)
@@ -1394,12 +1392,12 @@ subroutine exchange_accumulate_rec_to_dir_tp(direct_values, reciprocal_values, c
       peer = precdir_send1(i)
       if (peer /= active_domain%rank) then
          call MPI_Wait(active_domain%recdir_recv_reqs(i), status, ierr)
-!$acc parallel loop async(queue_) default(present)
+!$acc parallel loop async(channel%queue) default(present)
          do j = 1, dimn
             direct_values(j) = direct_values(j) + receive_work(j+(i-1)*dimn)
          end do
       else
-!$acc parallel loop collapse(2) async(queue_) default(present)
+!$acc parallel loop collapse(2) async(channel%queue) default(present)
          do j = 1, nlocrec
             do k = 1, components
                if (repart(globrec(j)) == active_domain%rank) then
@@ -1425,14 +1423,13 @@ subroutine exchange_extend_rp(values, components, halo, channel)
    integer, intent(in) :: components, halo
    type(channel_t), intent(in) :: channel
    integer :: i, ierr, peer, first, count, option, comm, request
-   integer :: status(MPI_STATUS_SIZE), default_queue
+   integer :: status(MPI_STATUS_SIZE)
 
-   call select_queue(channel, default_queue)
    call check_domain(halo)
    if (skip_domain_exchange()) return
    option = halo_option(halo)
    comm = active_domain%communicator
-!$acc wait(default_queue)
+!$acc wait(channel%queue)
    do i = 1, receive_count(option)
       peer = receive_peer(option, i)
       first = components*(active_domain%bufbeg(peer+1)-1)+1
@@ -1461,10 +1458,9 @@ subroutine exchange_accumulate_rp(values, components, halo, channel)
    type(channel_t), intent(in) :: channel
    integer :: i, j, ierr, option, incoming, peer, comm, request, value_count
    integer :: first, count
-   integer :: status(MPI_STATUS_SIZE), default_queue
+   integer :: status(MPI_STATUS_SIZE)
    real(r_p), pointer :: work(:)
 
-   call select_queue(channel, default_queue)
    call check_domain(halo)
    if (skip_domain_exchange()) return
    option = halo_option(halo)
@@ -1473,7 +1469,7 @@ subroutine exchange_accumulate_rp(values, components, halo, channel)
    incoming = receive_count(option)
    call ensure_work_rp(value_count*max(1,incoming))
    work => active_domain%work_rp
-!$acc wait(default_queue)
+!$acc wait(channel%queue)
 !$acc host_data use_device(work,values)
    do i = 1, incoming
       peer = receive_peer(option, i)
@@ -1492,7 +1488,7 @@ subroutine exchange_accumulate_rp(values, components, halo, channel)
    end do
 !$acc end host_data
    do i = 1, incoming; call MPI_Wait(active_domain%reqr(i), status, ierr); end do
-!$acc parallel loop gang vector async(default_queue) present(values,work(1:max(1,value_count*incoming)))
+!$acc parallel loop gang vector async(channel%queue) present(values,work(1:max(1,value_count*incoming)))
    do j = 1, value_count
       do i = 1, incoming
          values(j) = values(j) + work(j+components*active_domain%nloc*(i-1))
@@ -1508,14 +1504,13 @@ subroutine exchange_extend_md(values, components, halo, channel)
    integer, intent(in) :: components, halo
    type(channel_t), intent(in) :: channel
    integer :: i, ierr, peer, first, count, option, comm, request
-   integer :: status(MPI_STATUS_SIZE), default_queue
+   integer :: status(MPI_STATUS_SIZE)
 
-   call select_queue(channel, default_queue)
    call check_domain(halo)
    if (skip_domain_exchange()) return
    option = halo_option(halo)
    comm = active_domain%communicator
-!$acc wait(default_queue)
+!$acc wait(channel%queue)
    do i = 1, receive_count(option)
       peer = receive_peer(option, i)
       first = components*(active_domain%bufbeg(peer+1)-1)+1
@@ -1543,10 +1538,9 @@ subroutine exchange_accumulate_md(values, components, halo, channel)
    integer, intent(in) :: components, halo
    type(channel_t), intent(in) :: channel
    integer :: i, j, ierr, option, incoming, peer, comm, request, value_count, first, count
-   integer :: status(MPI_STATUS_SIZE), default_queue
+   integer :: status(MPI_STATUS_SIZE)
    mdyn_rtyp, pointer :: work(:)
 
-   call select_queue(channel, default_queue)
    call check_domain(halo)
    if (skip_domain_exchange()) return
    option = halo_option(halo)
@@ -1555,7 +1549,7 @@ subroutine exchange_accumulate_md(values, components, halo, channel)
    incoming = receive_count(option)
    call ensure_work_md(value_count*max(1,incoming))
    work => active_domain%work_md
-!$acc wait(default_queue)
+!$acc wait(channel%queue)
 !$acc host_data use_device(work,values)
    do i = 1, incoming
       peer = receive_peer(option, i)
@@ -1574,7 +1568,7 @@ subroutine exchange_accumulate_md(values, components, halo, channel)
    end do
 !$acc end host_data
    do i = 1, incoming; call MPI_Wait(active_domain%reqr(i), status, ierr); end do
-!$acc parallel loop gang vector async(default_queue) present(values,work(1:max(1,value_count*incoming)))
+!$acc parallel loop gang vector async(channel%queue) present(values,work(1:max(1,value_count*incoming)))
    do j = 1, value_count
       do i = 1, incoming
          values(j) = values(j) + work(j+components*active_domain%nloc*(i-1))
@@ -1666,13 +1660,6 @@ subroutine check_domain(halo)
    if (halo /= halo_large .and. halo /= halo_neighbour .and. halo /= halo_short) &
       &error stop 'unknown halo neighbourhood'
 end subroutine check_domain
-
-subroutine select_queue(channel, selected)
-   type(channel_t), intent(in) :: channel
-   integer, intent(out) :: selected
-
-   selected = channel%queue
-end subroutine select_queue
 
 module subroutine check_domain_layout()
 
@@ -2319,17 +2306,12 @@ module subroutine commfield(nrhs,ef)
    implicit none
    integer, intent(in) :: nrhs
    integer i,j,k,tag,status(MPI_STATUS_SIZE)
-   integer ierr,commloc
+   integer ierr
    integer, allocatable :: reqrec(:), reqsend(:)
    real(t_p), intent(inout) :: ef(3,nrhs,*)
    real(t_p), allocatable :: buffer(:,:,:,:)
 !
    call timer_enter( timer_polfieldcomm )
-   if (use_pmecore) then
-      commloc = get_direct_comm()
-   else
-      commloc = get_domain_comm()
-   end if
 !
    allocate (buffer(3,nrhs,max(npoleloc,1),n_send1))
    allocate (reqrec(nproc))
@@ -2338,14 +2320,14 @@ module subroutine commfield(nrhs,ef)
    do i = 1, n_send1
       tag = nproc*rank + p_send1(i) + 1
       call MPI_IRECV(buffer(1,1,1,i),3*nrhs*npoleloc,MPI_TPREC,&
-         &p_send1(i),tag,commloc,reqrec(i),ierr)
+         &p_send1(i),tag,merge(get_direct_comm(),get_domain_comm(),use_pmecore),reqrec(i),ierr)
    end do
 !
    do i = 1, n_recep1
       tag = nproc*p_recep1(i) + rank + 1
       call MPI_ISEND(ef(1,1,bufbegpole(p_recep1(i)+1)),&
          &3*nrhs*domlenpole(p_recep1(i)+1),MPI_TPREC,p_recep1(i),&
-         &tag,commloc,reqsend(i),ierr)
+         &tag,merge(get_direct_comm(),get_domain_comm(),use_pmecore),reqsend(i),ierr)
    end do
 !
    do i = 1, n_send1
@@ -2388,7 +2370,7 @@ module subroutine commfieldgpu(nrhs,ef)
    integer  ,intent(in)    :: nrhs
    real(t_p),intent(inout) :: ef(3,nrhs,*)
    integer i,i1,j,k,tag,status(MPI_STATUS_SIZE)
-   integer ierr,commloc
+   integer ierr
    integer ibufbeg
    integer :: reqrec(nproc), reqsend(nproc)
    real(t_p), allocatable :: buffer(:,:,:,:)
@@ -2408,11 +2390,6 @@ module subroutine commfieldgpu(nrhs,ef)
 !           write(0,22) rank,npoleloc,domlenpole(1:4)
 !        end if
 
-      if (use_pmecore) then
-         commloc = get_direct_comm()
-      else
-         commloc = get_domain_comm()
-      end if
 
       call prmem_request(buffer,3,nrhs,max(npoleloc,1),n_send1,async=.false.)
 !
@@ -2420,7 +2397,7 @@ module subroutine commfieldgpu(nrhs,ef)
          tag = nproc*rank + p_send1(i) + 1
 !$acc host_data use_device(buffer)
          call MPI_IRECV(buffer(1,1,1,i),3*nrhs*npoleloc,MPI_TPREC,&
-            &p_send1(i),tag,commloc,reqrec(i),ierr)
+            &p_send1(i),tag,merge(get_direct_comm(),get_domain_comm(),use_pmecore),reqrec(i),ierr)
 !$acc end host_data
       end do
 !
@@ -2431,7 +2408,7 @@ module subroutine commfieldgpu(nrhs,ef)
 !$acc host_data use_device(ef)
          call MPI_ISEND(ef(1,1,ibufbeg),&
             &3*nrhs*domlenpole(p_recep1(i)+1),MPI_TPREC,&
-            &p_recep1(i),tag,commloc,reqsend(i),ierr)
+            &p_recep1(i),tag,merge(get_direct_comm(),get_domain_comm(),use_pmecore),reqsend(i),ierr)
 !$acc end host_data
       end do
 !
@@ -2478,7 +2455,7 @@ module subroutine commfieldshort(nrhs,ef)
    implicit none
    integer, intent(in) :: nrhs
    integer i,j,k,l,tag,status(mpi_status_size)
-   integer ierr,ibufbeg,commloc
+   integer ierr,ibufbeg
    integer, allocatable :: reqrec(:), reqsend(:)
    real(t_p), intent(inout) :: ef(3,nrhs,*)
    real(t_p), allocatable :: buffer(:,:,:,:)
@@ -2497,11 +2474,6 @@ module subroutine commfieldshort(nrhs,ef)
 !           write(0,22) 'npoleloc',rank,npoleloc
 !        end if
 
-   if (use_pmecore) then
-      commloc = get_direct_comm()
-   else
-      commloc = get_domain_comm()
-   end if
 !
    call prmem_request(buffer,3,nrhs,max(npoleloc,1),n_sendshort1,&
       &async=.true.)
@@ -2512,7 +2484,7 @@ module subroutine commfieldshort(nrhs,ef)
    do i = 1, n_sendshort1
       tag = nproc*rank + p_sendshort1(i) + 1
       call MPI_IRECV(buffer(1,1,1,i),3*nrhs*npoleloc,MPI_TPREC,&
-         &p_sendshort1(i),tag,commloc,reqrec(i),ierr)
+         &p_sendshort1(i),tag,merge(get_direct_comm(),get_domain_comm(),use_pmecore),reqrec(i),ierr)
    end do
 !$acc end host_data
 !
@@ -2523,7 +2495,7 @@ module subroutine commfieldshort(nrhs,ef)
       ibufbeg = bufbegpole(p_recepshort1(i)+1)
       call MPI_ISEND(ef(1,1,ibufbeg),&
          &3*nrhs*domlenpole(p_recepshort1(i)+1),MPI_TPREC,&
-         &p_recepshort1(i),tag,commloc,reqsend(i),ierr)
+         &p_recepshort1(i),tag,merge(get_direct_comm(),get_domain_comm(),use_pmecore),reqsend(i),ierr)
    end do
 !$acc end host_data
 !
@@ -3123,7 +3095,7 @@ module subroutine commposrec
    integer i,iproc,iprec
    integer iglob,iloc
    integer tag,ierr,ibufbeg,idomlen
-   integer rankloc,commloc,nprocloc
+   integer rankloc,nprocloc
    integer status(MPI_STATUS_SIZE)
    real(r_p),pointer :: buffer(:,:),buffers(:,:),pool1(:),pool2(:)
    integer, allocatable :: reqsend(:),reqrec(:)
@@ -3140,11 +3112,9 @@ module subroutine commposrec
 !
    if (use_pmecore) then
       nprocloc = nrec
-      commloc  = get_recip_comm()
       rankloc  = rank_bis
    else
       nprocloc = nproc
-      commloc  = get_domain_comm()
       rankloc  = rank
    end if
 !
@@ -3239,7 +3209,7 @@ module subroutine commposrec
       tag = nprocloc*rankloc + prec_recep(i) + 1
       call MPI_IRECV(buffer(1,bufbegrec(prec_recep(i)+1))&
          &,3*domlenrec(prec_recep(i)+1),MPI_RPREC&
-         &,prec_recep(i),tag,commloc,reqrec(i),ierr)
+         &,prec_recep(i),tag,merge(get_recip_comm(),get_domain_comm(),use_pmecore),reqrec(i),ierr)
    end do
 
 !     MPI : move in buffer
@@ -3256,7 +3226,7 @@ module subroutine commposrec
    do i = 1, nrec_send
       tag = nprocloc*prec_send(i) + rankloc+1
       call MPI_ISEND(buffers,3*nlocrec,MPI_RPREC,prec_send(i)&
-         &,tag,commloc,reqsend(i),ierr)
+         &,tag,merge(get_recip_comm(),get_domain_comm(),use_pmecore),reqsend(i),ierr)
    end do
 
    ! Wait for receiving requests
@@ -4170,7 +4140,7 @@ module subroutine orderbufferrec
    implicit none
    integer counttemp(nproc),reqsend(nproc),reqrec(nproc)
    integer,allocatable::ind1temp(:)
-   integer count,rankloc,nprocloc,commloc
+   integer count,rankloc,nprocloc
    integer i,iproc
    integer iloc,iglob,ierr,tag,status(MPI_STATUS_SIZE)
    integer iprec,ind1
@@ -4184,11 +4154,9 @@ module subroutine orderbufferrec
    if (use_pmecore) then
       nprocloc = nrec
       rankloc  = rank_bis
-      commloc  = get_recip_comm()
    else
       nprocloc = nproc
       rankloc  = rank
-      commloc  = get_domain_comm()
    end if
 !
 !      ind1temp = 0
@@ -4227,12 +4195,12 @@ module subroutine orderbufferrec
    do iproc = 1, nrec_recep
       tag = nprocloc*rankloc + prec_recep(iproc) + 1
       call MPI_IRECV(domlenrec(prec_recep(iproc)+1),1,MPI_INT,&
-         &prec_recep(iproc),tag,commloc,reqrec(iproc),ierr)
+         &prec_recep(iproc),tag,merge(get_recip_comm(),get_domain_comm(),use_pmecore),reqrec(iproc),ierr)
    end do
    do iproc = 1, nrec_send
       tag = nprocloc*prec_send(iproc) + rankloc + 1
       call MPI_ISEND(nlocrec,1,MPI_INT,prec_send(iproc),tag,&
-         &commloc,reqsend(iproc),ierr)
+         &merge(get_recip_comm(),get_domain_comm(),use_pmecore),reqsend(iproc),ierr)
    end do
    do iproc = 1, nrec_recep
       call MPI_WAIT(reqrec(iproc),status,ierr)
@@ -4261,13 +4229,13 @@ module subroutine orderbufferrec
       tag = nprocloc*rankloc + prec_recep(iproc) + 1
       call MPI_IRECV(globrec(bufbegrec(prec_recep(iproc)+1)),&
          &domlenrec(prec_recep(iproc)+1),MPI_INT,prec_recep(iproc),tag,&
-         &commloc,reqrec(iproc),ierr)
+         &merge(get_recip_comm(),get_domain_comm(),use_pmecore),reqrec(iproc),ierr)
    end do
    do iproc = 1, nrec_send
       tag = nprocloc*prec_send(iproc) + rankloc + 1
       call MPI_ISEND(globrec,domlenrec(rankloc+1),MPI_INT,&
          &prec_send(iproc),&
-         &tag,commloc,reqsend(iproc),ierr)
+         &tag,merge(get_recip_comm(),get_domain_comm(),use_pmecore),reqsend(iproc),ierr)
    end do
    do iproc = 1, nrec_recep
       call MPI_WAIT(reqrec(iproc),status,ierr)
@@ -4326,7 +4294,7 @@ module subroutine orderbufrec_gpu
    use sizes    ,only : tinkerdebug
    implicit none
 !     integer, allocatable :: counttemp(:),ind1temp(:)
-   integer count,rankloc,nprocloc,commloc
+   integer count,rankloc,nprocloc
    integer i,iproc
    integer idomlen,ibeg,ibeg1,iprec,irep,ind1
    integer iloc,iglob
@@ -4345,11 +4313,9 @@ module subroutine orderbufrec_gpu
    if (use_pmecore) then
       nprocloc = nrec
       rankloc = rank_bis
-      commloc = get_recip_comm()
    else
       nprocloc = nproc
       rankloc = rank
-      commloc = get_domain_comm()
    end if
 !
 
@@ -4406,12 +4372,12 @@ module subroutine orderbufrec_gpu
    do iproc = 1, nrec_recep
       tag = nprocloc*rankloc + prec_recep(iproc) + 1
       call MPI_IRECV(domlenrec(prec_recep(iproc)+1),1,MPI_INT&
-         &,prec_recep(iproc),tag,commloc,reqrec(iproc),ierr)
+         &,prec_recep(iproc),tag,merge(get_recip_comm(),get_domain_comm(),use_pmecore),reqrec(iproc),ierr)
    end do
    do iproc = 1, nrec_send
       tag = nprocloc*prec_send(iproc) + rankloc + 1
       call MPI_ISEND(nlocrec,1,MPI_INT,prec_send(iproc),tag&
-         &,commloc,reqsend(iproc),ierr)
+         &,merge(get_recip_comm(),get_domain_comm(),use_pmecore),reqsend(iproc),ierr)
    end do
 !
    do iproc = 1, nrec_recep
@@ -4443,12 +4409,12 @@ module subroutine orderbufrec_gpu
       tag = nprocloc*rankloc + prec_recep(iproc) + 1
       call MPI_IRECV(globrec(bufbegrec(prec_recep(iproc)+1))&
          &,domlenrec(prec_recep(iproc)+1),MPI_INT&
-         &,prec_recep(iproc),tag,commloc,reqrec(iproc),ierr)
+         &,prec_recep(iproc),tag,merge(get_recip_comm(),get_domain_comm(),use_pmecore),reqrec(iproc),ierr)
    end do
    do iproc = 1, nrec_send
       tag = nprocloc*prec_send(iproc) + rankloc + 1
       call MPI_ISEND(globrec,domlenrec(rankloc+1),MPI_INT&
-         &,prec_send(iproc),tag,commloc,reqsend(iproc),ierr)
+         &,prec_send(iproc),tag,merge(get_recip_comm(),get_domain_comm(),use_pmecore),reqsend(iproc),ierr)
    end do
 !$acc end host_data
    do iproc = 1, nrec_recep
@@ -4482,7 +4448,7 @@ module subroutine orderbufrec_gpu
    if (tinkerdebug.gt.0) then
 
       call MPI_AllReduce(nlocrec,reqsend(1),1,MPI_INT&
-         &,MPI_SUM,commloc,ierr)
+         &,MPI_SUM,merge(get_recip_comm(),get_domain_comm(),use_pmecore),ierr)
       if (reqsend(1).ne.n.and.&
          &((use_pmecore.and.rank.eq.ndir).or.&
          &(.not.use_pmecore.and.rank.eq.0)) ) then

@@ -99,6 +99,7 @@ set(MOD_SRCS
   source/MOD_kvdws.f90
   source/MOD_langevin.f90
   source/MOD_linmin.f90
+  source/MOD_lifecycle_observer.f90
   source/MOD_memory.f90
   source/MOD_math.f90
   source/MOD_mamd.f90
@@ -238,7 +239,6 @@ set(F_SRCS
   source/ebond3.f90
   source/ebond3gpu.f90
   source/echarge1gpu.f90
-  source/echarge3.f90
   source/echarge3gpu.f90
   source/echgtrn.f90
   source/echgtrn1.f90
@@ -255,10 +255,7 @@ set(F_SRCS
   source/egeom1gpu.f90
   source/egeom3.f90
   source/egeom3gpu.f90
-  source/ehal.f90
-  source/ehal1.f90
   source/ehal1gpu.f90
-  source/ehal3.f90
   source/ehal3gpu.f90
   source/eimprop.f90
   source/eimprop1.f90
@@ -268,16 +265,10 @@ set(F_SRCS
   source/eimptor1.f90
   source/eimptor1gpu.f90
   source/eimptor3.f90
-  source/elj.f90
-  source/elj1.f90
   source/elj1gpu.f90
-  source/elj3.f90
   source/elj3gpu.f90
   source/eliaison1gpu.f90
-  source/empole.f90
-  source/empole1.f90
   source/empole1_group.f90
-  source/empole3.f90
   source/empole3_group.f90
   source/empole1gpu.f90
   source/empole3gpu.f90
@@ -294,10 +285,8 @@ set(F_SRCS
   source/epitors1.f90
   source/epitors1gpu.f90
   source/epitors3.f90
-  source/epolar.f90
   source/epolar1gpu.f90
   source/epolar1_group.f90
-  source/epolar3.f90
   source/epolar3gpu.f90
   source/epolar3_group.f90
   source/erepel.f90

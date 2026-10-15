@@ -22,25 +22,17 @@
 !
 #include "tinker_macro.h"
 subroutine baoab (istep,dt)
-   use atmtyp
-   use atomsMirror
-   use bath
-   use cutoff
-   use domdec
-   use freeze
-   use inform
-   use langevin
-   use mdstuf
-   use mdstuf1
-   use moldyn
-   use mpi
-   use random_mod
-   use spectra
-   use timestat
-   use units
-   use usage
-   use utilbaoab
-   use virial
+   use atomsMirror, only: integrate_pos,integrate_vel,reCast_position,save_atoms_pos
+   use bath, only: atmsph,use_piston
+   use cutoff, only: use_list
+   use domdec, only: nbloc,rank
+   use freeze, only: use_rattle
+   use inform, only: abort,deb_Atom,deb_Energy,deb_Force,info_minmax_pva
+   use mdstuf1, only: derivs,ekin,eksum,epot,etot,pres,stress,temp
+   use moldyn, only: a
+   use spectra, only: compute_dipole,full_dipole,ir,save_dipole_traj
+   use utilbaoab, only: apply_a_piston,apply_b_piston,apply_langevin_thermostat,&
+      &apply_o_piston,set_langevin_thermostat_coeff
    use tinheader, only: re_p
    use tinMemory, only: prmem_requestm
    use parallel , only: commpos, commposrec, migrate_atoms

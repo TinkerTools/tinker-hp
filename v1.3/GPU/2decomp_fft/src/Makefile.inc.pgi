@@ -28,6 +28,11 @@ FFT=generic
 # Platform-dependent information - compiler, external library etc
 #================================================================
 
+# The package owns this module directory. Keep the legacy PGI build detached
+# from Tinker-HP source modules while making its public adapter discoverable
+# to both package sources and downstream consumers.
+DECOMP_MODULE_DIR ?= ../include
+
 # Include path if necessary (change to your actual paths)
 ifeq ($(FFT),mkl)
   INC=-I$(MKL_PATH)/include
@@ -40,6 +45,8 @@ else ifeq ($(FFT),fftw3_f03)
 else
   INC=
 endif
+
+INC += -I$(DECOMP_MODULE_DIR)
 
 ifneq (,$(findstring DGLOBAL_ARRAYS,$(OPTIONS)))
   GA_PATH=/opt/ga-5-0-2

@@ -519,7 +519,7 @@ subroutine emrecip
    use mpi
    implicit none
    integer ierr,iipole,proc,iglob
-   integer status(MPI_STATUS_SIZE),tag,commloc
+   integer status(MPI_STATUS_SIZE),tag
    integer i,j,k
    integer k1,k2,k3
    integer m1,m2,m3
@@ -542,11 +542,9 @@ subroutine emrecip
    if (use_pmecore) then
       nprocloc = nrec
       rankloc = rank_bis
-      commloc =  get_recip_comm()
    else
       nprocloc = nproc
       rankloc = rank
-      commloc = get_domain_comm()
    end if
 !
 !     dynamic allocation of global arrays
@@ -606,7 +604,7 @@ subroutine emrecip
       tag = nprocloc*rankloc + prec_recep(i) + 1
       call MPI_IRECV(qgridmpi(1,1,1,1,i),2*n1mpimax*n2mpimax*&
          &n3mpimax,MPI_TPREC,prec_recep(i),tag,&
-         &commloc,reqrec(i),ierr)
+         &merge(get_recip_comm(),get_domain_comm(),use_pmecore),reqrec(i),ierr)
    end do
 !
 !     MPI : begin sending
@@ -616,7 +614,7 @@ subroutine emrecip
       tag = nprocloc*prec_send(i) + rankloc + 1
       call MPI_ISEND(qgridin_2d(1,1,1,1,i+1),&
          &2*n1mpimax*n2mpimax*n3mpimax,MPI_TPREC,proc,tag,&
-         &commloc,reqsend(i),ierr)
+         &merge(get_recip_comm(),get_domain_comm(),use_pmecore),reqsend(i),ierr)
    end do
 !
    do i = 1, nrec_recep
@@ -724,7 +722,7 @@ subroutine emrecip
       tag = nprocloc*rankloc + prec_send(i) + 1
       call MPI_IRECV(qgridin_2d(1,1,1,1,i+1),&
          &2*n1mpimax*n2mpimax*n3mpimax,MPI_TPREC,&
-         &prec_send(i),tag,commloc,req2rec(i),ierr)
+         &prec_send(i),tag,merge(get_recip_comm(),get_domain_comm(),use_pmecore),req2rec(i),ierr)
    end do
 !
 !     MPI : begin sending
@@ -733,7 +731,7 @@ subroutine emrecip
       tag = nprocloc*prec_recep(i) + rankloc + 1
       call MPI_ISEND(qgridin_2d,&
          &2*n1mpimax*n2mpimax*n3mpimax,&
-         &MPI_TPREC,prec_recep(i),tag,commloc,req2send(i),&
+         &MPI_TPREC,prec_recep(i),tag,merge(get_recip_comm(),get_domain_comm(),use_pmecore),req2send(i),&
          &ierr)
    end do
 !

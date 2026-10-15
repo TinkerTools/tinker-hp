@@ -696,7 +696,6 @@ subroutine kmpole(init,istep)
       if (npole.eq.0)  then
          use_mpole = .false.
          use_mlist = .false.
-!$acc update device(use_mpole)
       end if
       if (ncp .ne. 0)  use_chgpen = .true.
 

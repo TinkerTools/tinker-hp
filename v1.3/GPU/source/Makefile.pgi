@@ -122,6 +122,7 @@ lib_decompfft := l2decomp_fft
 conf_decompfft:= Makefile.inc.pgi
 INC_FFTDECOMP  = $(FFTDECOMPDIR)/$(inc_decompfft)
 LIB_FFTDECOMP  = $(FFTDECOMPDIR)/lib -$(lib_decompfft)
+FFTDECOMP_CHANNEL_MOD = $(INC_FFTDECOMP)/mdevice_channel.mod
 
 INC_CUDA       = $(CUDA_HOME)/include
 LIB_CUDA       = $(CUDA_HOME)/lib64
@@ -251,6 +252,7 @@ MOD_SRCS += MOD_langevin.f90
 MOD_SRCS += MOD_linmin.f90
 MOD_SRCS += MOD_memory.o
 MOD_SRCS += MOD_math.o
+MOD_SRCS += MOD_mdevice.f90
 MOD_SRCS += MOD_mamd.f90
 MOD_SRCS += MOD_msmd.f90 
 MOD_SRCS += MOD_mdstate.f90
@@ -366,32 +368,32 @@ F_SRCS   += eangle.f90 eangle1.f90 eangle1gpu.f90
 F_SRCS   += eangle3.f90 eangle3gpu.f90
 F_SRCS   += eangtor.f90 eangtor1.f90 eangtor3.f90
 F_SRCS   += ebond.f90 ebond1.f90 ebond1gpu.f90 ebond3.f90 ebond3gpu.f90
-F_SRCS   += echarge1gpu.f90 echarge3.f90 echarge3gpu.f90
+F_SRCS   += echarge1gpu.f90 echarge3gpu.f90
 F_SRCS   += echgtrn.f90 echgtrn1.f90 echgtrn1gpu.f90
 F_SRCS   += echgtrn3.f90 echgtrn3gpu.f90
 F_SRCS   += edisp.f90 edisp1.f90 edisp3.f90
 F_SRCS   += efld0_direct.f90 efld0_directgpu.f90
 F_SRCS   += egeom.f90 egeom1.f90 egeom1gpu.f90
 F_SRCS   += egeom3.f90 egeom3gpu.f90
-F_SRCS   += ehal.f90 ehal1.f90 ehal1gpu.f90
-F_SRCS   += ehal3.f90 ehal3gpu.f90
+F_SRCS   += ehal1gpu.f90
+F_SRCS   += ehal3gpu.f90
 F_SRCS   += eimprop.f90 eimprop1.f90 eimprop1gpu.f90
 F_SRCS   += eimprop3.f90
 F_SRCS   += eimptor.f90 eimptor1.f90 eimptor1gpu.f90
 F_SRCS   += eimptor3.f90
-F_SRCS   += elj.f90 elj1.f90 elj1gpu.f90
-F_SRCS   += elj3.f90 elj3gpu.f90
+F_SRCS   += elj1gpu.f90
+F_SRCS   += elj3gpu.f90
 F_SRCS   += eliaison1gpu.f90
-F_SRCS   += empole.f90 empole1.f90 empole1_group.f90
-F_SRCS   += empole3.f90 empole3_group.f90
+F_SRCS   += empole1_group.f90
+F_SRCS   += empole3_group.f90
 F_SRCS   += empole1gpu.f90 empole3gpu.f90
 F_SRCS   += energy.f90
 F_SRCS   += eopbend.f90 eopbend1.f90 eopbend1gpu.f90
 F_SRCS   += eopbend3.f90 eopbend3gpu.f90
 F_SRCS   += eopdist.f90 eopdist1.f90 eopdist3.f90
 F_SRCS   += epitors.f90 epitors1.f90 epitors1gpu.f90 epitors3.f90
-F_SRCS   += epolar.f90 epolar1gpu.f90 epolar1_group.f90
-F_SRCS   += epolar3.f90 epolar3gpu.f90 epolar3_group.f90
+F_SRCS   += epolar1gpu.f90 epolar1_group.f90
+F_SRCS   += epolar3gpu.f90 epolar3_group.f90
 F_SRCS   += erepel.f90 erepel1.f90 erepel3.f90
 F_SRCS   += esmd1.f90
 F_SRCS   += estrbnd.f90 estrbnd1.f90 estrbnd1gpu.f90 estrbnd3.f90
@@ -818,6 +820,9 @@ k%.o: $(src_dir)/k%.f90
 	$(RunF77) $(FFLAGS) -c $<
 %.o: $(src_dir)/%.f90
 	$(RunF77) $(FFLAGS) -I$(src_dir) -I$(INC_FFTDECOMP) -c $< -o $@
+
+# mdevice's public channel type is owned and installed by 2DECOMP&FFT.
+MOD_mdevice.o: $(FFTDECOMP_CHANNEL_MOD)
 
 # -- Build directories
 BUILD_DIR     ?= build

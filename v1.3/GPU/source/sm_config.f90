@@ -356,7 +356,6 @@ contains
       do i = 1, configuration%key_count
          call prmkey(configuration%key_line(i))
       end do
-!$acc update device(use_mpole,use_polar)
       configuration%complete = .true.
    end subroutine apply_defaults_prm_key
 

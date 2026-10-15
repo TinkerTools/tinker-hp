@@ -256,11 +256,9 @@ subroutine kpolar(init,istep)
       if (npole .eq. 0)  then
          use_mpole = .false.
          use_mlist = .false.
-!$acc update device(use_mpole)
       endif
       if (npolar .eq. 0) then
          use_polar = .false.
-!$acc update device(use_polar)
       end if
       if (ncp .ne. 0)  use_chgpen = .true.
       if (ncp .ne. 0)  use_thole  = .false.
@@ -793,7 +791,7 @@ subroutine orderPole
    implicit none
    integer ierr,i,j,iproc,ipr,ibufbeg,idomlen
    integer iipole
-   integer commloc,tag0,status(MPI_STATUS_SIZE)
+   integer tag0,status(MPI_STATUS_SIZE)
    integer npolelocmpi(nproc)
    integer mpi_status1(MPI_STATUS_SIZE)
    integer, allocatable :: receive_requests(:), send_requests(:)
@@ -807,11 +805,6 @@ subroutine orderPole
    receive_requests = MPI_REQUEST_NULL
    send_requests = MPI_REQUEST_NULL
 
-   if (use_pmecore) then
-      commloc = get_direct_comm()
-   else
-      commloc = get_domain_comm()
-   end if
    call timer_enter( timer_eneig )
    if (deb_Path) write(*,'(3X,A)') '>>  orderPole'
 
@@ -827,7 +820,7 @@ subroutine orderPole
 !$acc host_data use_device(poleglob)
    do i = 1, nbig_send
       call MPI_ISEND(poleglob(1),npoleloc,MPI_INT,pbig_send(i)&
-         &,tag0,commloc,send_requests(i),ierr)
+         &,tag0,merge(get_direct_comm(),get_domain_comm(),use_pmecore),send_requests(i),ierr)
    end do
 
    if (n.eq.npole) then
@@ -841,7 +834,7 @@ subroutine orderPole
       ! Intercept communication size
       do i = 1, nbig_recep
          ipr = pbig_recep(i) + 1
-         call MPI_Probe(pbig_recep(i), tag0, commloc,&
+         call MPI_Probe(pbig_recep(i), tag0, merge(get_direct_comm(),get_domain_comm(),use_pmecore),&
             &mpi_status1, ierr)
          call MPI_Get_count( mpi_status1, MPI_INT,&
             &domlenpole(ipr), ierr )
@@ -871,7 +864,7 @@ subroutine orderPole
       idomlen = domlenpole(ipr)
       ibufbeg = bufbegpole(ipr)
       call MPI_IRECV(poleglob(ibufbeg),idomlen,MPI_INT,pbig_recep(i)&
-         &,tag0,commloc,receive_requests(i),ierr)
+         &,tag0,merge(get_direct_comm(),get_domain_comm(),use_pmecore),receive_requests(i),ierr)
    end do
 !$acc end host_data
 !
@@ -905,7 +898,7 @@ subroutine orderPole
    end if
 
    !print*,rank,domlenpole,bufbegpole
-   if (btest(tinkerdebug,0)) call MPI_BARRIER(commloc,ierr)
+   if (btest(tinkerdebug,0)) call MPI_BARRIER(merge(get_direct_comm(),get_domain_comm(),use_pmecore),ierr)
    if (deb_Path)  write(*,'(3X,A)') '<<  orderPole'
 
    deallocate(receive_requests, send_requests)

@@ -18,7 +18,6 @@
 program minimize
    use mpi
    use config, only: raw_cli_t, capture_raw_cli
-   use domdec, only: rank
    use iounit, only: iout
    use mdevice, only: bind_device
    use status, only: status_t, failed
@@ -32,7 +31,6 @@ program minimize
    call MPI_INIT(ierr)
    call MPI_COMM_RANK(MPI_COMM_WORLD,world_rank,ierr)
    iout = 6
-   rank = world_rank
    call minimize_bis(raw_cli,status_value)
    if (failed(status_value)) then
       if (world_rank.eq.0) write(iout,*) trim(status_value%message)
@@ -412,6 +410,7 @@ function minimiz1 (xx,g)
       siz_ = dr_stride3
       call get_ftot(derivs,nbloc)
       call mem_set (de_tot(1:siz_,1),zero_md,siz_,reciprocal_work%stream)
+!$acc wait(reciprocal_work%queue)
    end if
    call allreduceen(e)
 

@@ -1,5 +1,26 @@
 #include "tinker_macro.h"
 submodule(utilbaoab) baoabutil
+   use atomsMirror,only: n, reCast_position, x, y, z
+   use atmtyp    , only: mass
+   use bath      , only: aextbox, aextvol, anisotrop, atmsph, extbox, extvol, &
+                   extvolold, freeze_axis, gammapiston, kelvin, masspiston, &
+                   temppiston, vextbox, vextvol
+   use domdec    , only: glob, nloc, nproc, rank
+   use inform    , only: deb_Path
+   use langevin  , only: Rn, gamma, nose, nose_mass, noses, use_noselangevin, &
+                   use_noselangevin_massive
+   use moldyn    , only: v
+   use mpi       , only: MPI_BCAST, MPI_RPREC
+   use parallel  , only: get_domain_comm
+   use qtb       , only: qtbrandom, qtb_thermostat
+#ifdef _OPENACC
+   use random_mod, only: host_rand_platform, normal, normalvec, normalgpu
+#else
+   use random_mod, only: host_rand_platform, normal, normalvec
+#endif
+   use tinMemory , only: prmem_request
+   use units     , only: boltzmann, convert, gasconst, prescon
+   use usage     , only: is_used=>use
    implicit none
    real(r_p) :: a1=0.0,a2=0.0
    real(r_p) :: acc_nose, an
@@ -7,9 +28,6 @@ submodule(utilbaoab) baoabutil
 contains
 
    module subroutine apply_b_piston(dt,pres,stress)
-      use bath
-      use inform, only: deb_Path
-      use units
       implicit none
       real(r_p), intent(in) :: dt,pres,stress(3,3)
       integer :: i
@@ -31,13 +49,6 @@ contains
    end subroutine apply_b_piston
 
    module subroutine apply_o_piston(dt)
-      use parallel, only: get_domain_comm
-      use bath
-      use domdec
-      use inform, only: deb_Path
-      use mpi
-      use random_mod
-      use units
       implicit none
       real(r_p), intent(in) :: dt
       real(r_p) :: a1piston,a2piston
@@ -80,14 +91,6 @@ contains
    end subroutine apply_o_piston
 
    module subroutine apply_a_piston(dt,istep,A_full)
-      use atomsMirror
-      use atmlst
-      use bath
-      use domdec
-      use freeze
-      use inform, only: deb_Path
-      use moldyn
-      use usage
       implicit none
       real(r_p),intent(in):: dt
       integer  ,intent(in):: istep
@@ -123,7 +126,7 @@ contains
 !$acc parallel loop async default(present)
       do i = 1, nloc
          iglob = glob(i)
-         if (use(iglob)) then
+         if (is_used(iglob)) then
             x(iglob) = x(iglob)*scalex + v(1,iglob)*taux
             y(iglob) = y(iglob)*scaley + v(2,iglob)*tauy
             z(iglob) = z(iglob)*scalez + v(3,iglob)*tauz
@@ -136,9 +139,6 @@ contains
    end subroutine apply_a_piston
 
    module subroutine set_langevin_thermostat_coeff(dta)
-      use langevin   ,only: gamma
-      use bath       ,only: kelvin
-      use units      ,only: boltzmann
       real(r_p),intent(in):: dta
 !
 !     set coefficients for BAOAB integration
@@ -148,20 +148,6 @@ contains
    end subroutine
 
    module subroutine apply_langevin_thermostat(dt)
-      use atomsmirror,only: n
-      use atmtyp     ,only: mass
-      use bath       ,only: kelvin
-      use domdec     ,only: rank,glob,nloc
-      use langevin
-      use moldyn     ,only: v,a
-      use qtb
-      use random_mod ,only: normalvec,host_rand_platform,normal
-#ifdef _OPENACC
-      use random_mod ,only: normalgpu
-#endif
-      use tinMemory  ,only: prmem_request
-      use units      ,only: boltzmann
-      use usage
       implicit none
       real(r_p) ,intent(in):: dt
       integer i,j,iglob
@@ -193,7 +179,7 @@ contains
          do i = 1, nloc
             do j = 1, 3
                iglob = glob(i)
-               if (use(iglob)) then
+               if (is_used(iglob)) then
                   v(j,iglob) = an*v(j,iglob)
                   acc_nose = acc_nose + mass(iglob)*v(j,iglob)**2
                end if
@@ -213,7 +199,7 @@ contains
          do i = 1, nloc
             do j = 1, 3
                iglob = glob(i)
-               if (use(iglob)) then
+               if (is_used(iglob)) then
                   v(j,iglob) = an*v(j,iglob)
                end if
             end do
@@ -234,7 +220,7 @@ contains
 !$acc parallel loop collapse(2) async default(present)
          do i = 1, nloc; do j = 1, 3
                iglob = glob(i)
-               if (use(iglob)) then
+               if (is_used(iglob)) then
                   noses(j,iglob) = noses(j,iglob) + dt2/nose_mass&
                      &*(mass(iglob)*v(j,iglob)**2- kT)
                   v(j,iglob) = exp(-noses(j,iglob)*dt2)*v(j,iglob)
@@ -256,12 +242,12 @@ contains
 !$acc update device(Rn) async
          end if
 
-!$acc host_data use_device(glob,use,v,Rn,mass)
+!$acc host_data use_device(glob,is_used,v,Rn,mass)
 !$acc parallel loop collapse(2) async &
-!$acc         deviceptr(glob,use,v,Rn,mass)
+!$acc         deviceptr(glob,is_used,v,Rn,mass)
          do i = 1,nloc; do j = 1,3
                iglob = glob(i)
-               if (use(iglob)) then
+               if (is_used(iglob)) then
                   v(j,iglob) = a1*v(j,iglob) +&
                      &a2*real(Rn(j,i),r_p)/sqrt(mass(iglob))
                end if

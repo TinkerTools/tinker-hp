@@ -75,7 +75,7 @@ module fft
    complex(t_p), pointer, contiguous :: in(:,:,:), out(:,:,:)
    type(c_ptr) in_cptr,out_cptr
    save
-!$acc declare create(n1mpimax,n2mpimax,n3mpimax, &
+!$acc declare create( &
 !$acc   istart2,iend2,jstart2,jend2,kstart2,kend2, &
 !$acc   istart1,iend1,jstart1,jend1,kstart1,kend1, &
 !$acc   isize2,jsize2,ksize2)

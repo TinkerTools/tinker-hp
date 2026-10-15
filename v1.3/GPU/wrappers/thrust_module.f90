@@ -60,6 +60,16 @@
 !DIR$ ignore_tkr (r) in, (r) out
        end subroutine
 
+       subroutine thrust_inclusive_scan_int_async (in, N, out, s) &
+                  bind(C,name="inclusive_scan_int_async_wrapper")
+         import  c_int,cuda_stream_kind
+         integer(c_int),device :: in(*)
+         integer(c_int),value  :: N
+         integer(c_int),device :: out(*)
+         integer(cuda_stream_kind),value :: s
+!DIR$ ignore_tkr (r) in, (r) out
+       end subroutine
+
     end interface
 
     interface thrust_exclusive_scan

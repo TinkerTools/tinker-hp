@@ -105,6 +105,18 @@ subroutine kmlpot(init,istep)
             next = 1
             call getstring (string,model_file,next)
             if (next .eq. 1)  call gettext (string,model_file,next)
+            model_file_cur = model_file
+         CASE('ML-MODEL2')
+            if (.not.use_dmts) then
+              if (rank.eq.0) then
+              write(*,*) 'ML-MODEL2 definition requires DMTS usage'
+              end if
+              call fatal
+            end if
+            string = record_raw(next:240)
+            next = 1
+            call getstring (string,model_file2,next)
+            if (next .eq. 1)  call gettext (string,model_file2,next)
          end select
       end do
 
@@ -122,10 +134,14 @@ subroutine kmlpot(init,istep)
          endif
       endif
 
-      if (use_ml_embedding) then
-         if (rank.eq.0) write(*,*) '--- TinkerHP : USING ML EMBEDDING'
-         call fetchkeya('INTEGRATOR',record,'')
-         if (index(record,'RESPA1').gt.0) ml_embedding_mode=2
+      if (ranktot.eq.0.and.use_ml_embedding) then
+         write(*,"(/,A)") ' --- TinkerHP : USING ML EMBEDDING'
+      end if
+
+      if (use_dmts) then
+        if (ranktot.eq.0) then
+          write(*,"(/,A,A,' ',A)") ' --- TinkerHP : DMTS integration with ',trim(model_file),trim(model_file2)
+        end if
       end if
 
       if (use_mlpot_only) call ddpme3d
@@ -149,12 +165,7 @@ subroutine kmlpot(init,istep)
             iaml(i)  = kgrp(igrp(1,1)+i-1)
             laml(iaml(i)) = .true.
          enddo
-
          call sort (naml,iaml)
-
-         if(ranktot==0) then
-            write(*,*) 'ML embedding attached to group 1'
-         endif
 
       else
          allocate(fixed(n))

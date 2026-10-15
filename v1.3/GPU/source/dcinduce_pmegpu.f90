@@ -828,16 +828,11 @@ subroutine commfield2gpu(nrhs,ef)
    use tinMemory,only: prmem_request
    implicit none
    integer nrhs,i,j,k,l,tag,status(MPI_STATUS_SIZE)
-   integer ierr,commloc
+   integer ierr
    integer req(nproc*nproc)
    real(t_p) ef(3,nrhs,*)
    real(t_p), allocatable :: buffer(:,:,:,:)
 !
-   if (use_pmecore) then
-      commloc = get_direct_comm()
-   else
-      commloc = get_domain_comm()
-   end if
 !
    if (n_send1>0)&
       &call prmem_request(buffer,3,nrhs,&
@@ -847,7 +842,7 @@ subroutine commfield2gpu(nrhs,ef)
    do i = 1, n_send1
       tag = nproc*rank + p_send1(i) + 1
       call MPI_IRECV(buffer(1,1,1,i),3*nrhs*npoleloc,MPI_TPREC,&
-         &p_send1(i),tag,commloc,req(tag),ierr)
+         &p_send1(i),tag,merge(get_direct_comm(),get_domain_comm(),use_pmecore),req(tag),ierr)
    end do
 !$acc end host_data
 !
@@ -857,7 +852,7 @@ subroutine commfield2gpu(nrhs,ef)
       tag = nproc*p_recep1(i) + rank + 1
       call MPI_ISEND(ef(1,1,bufbegpole(p_recep1(i)+1)),&
          &3*nrhs*domlen(p_recep1(i)+1),MPI_TPREC,p_recep1(i),&
-         &tag,commloc,req(tag),ierr)
+         &tag,merge(get_direct_comm(),get_domain_comm(),use_pmecore),req(tag),ierr)
    end do
 !$acc end host_data
 
@@ -901,16 +896,11 @@ subroutine commfield2shortgpu(nrhs,ef)
    use tinMemory,only: prmem_request
    implicit none
    integer nrhs,i,j,k,l,tag,status(MPI_STATUS_SIZE)
-   integer ierr,commloc
+   integer ierr
    integer req(nproc*nproc)
    real(t_p) ef(3,nrhs,*)
    real(t_p), allocatable :: buffer(:,:,:,:)
 !
-   if (use_pmecore) then
-      commloc = get_direct_comm()
-   else
-      commloc = get_domain_comm()
-   end if
 
    if (n_sendshort1>0)&
       &call prmem_request(buffer,3,nrhs,&
@@ -919,14 +909,14 @@ subroutine commfield2shortgpu(nrhs,ef)
    do i = 1, n_sendshort1
       tag = nproc*rank + p_sendshort1(i) + 1
       call MPI_IRECV(buffer(1,1,1,i),3*nrhs*npoleloc,MPI_TPREC,&
-         &p_sendshort1(i),tag,commloc,req(tag),ierr)
+         &p_sendshort1(i),tag,merge(get_direct_comm(),get_domain_comm(),use_pmecore),req(tag),ierr)
    end do
 !
    do i = 1, n_recepshort1
       tag = nproc*p_recepshort1(i) + rank + 1
       call MPI_ISEND(ef(1,1,bufbegpole(p_recepshort1(i)+1)),&
          &3*nrhs*domlen(p_recepshort1(i)+1),MPI_TPREC,&
-         &p_recepshort1(i),tag,commloc,req(tag),ierr)
+         &p_recepshort1(i),tag,merge(get_direct_comm(),get_domain_comm(),use_pmecore),req(tag),ierr)
    end do
 
    call dc_factorgpu

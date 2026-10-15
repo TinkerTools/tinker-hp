@@ -12,6 +12,7 @@
 #include "tinker_macro.h"
 module reduction
    use tinheader, only: ti_p,re_p
+   use lifecycle_observer, only: LifecycleReduction, record_lifecycle_event
    implicit none
 
    integer,parameter :: RED_BUFF_SIZE=ishft(1,15)
@@ -54,6 +55,7 @@ contains
       integer,intent(in):: queue
 
       if (.not.reduction_data_on_device) return
+      call record_lifecycle_event(LifecycleReduction)
 !$acc wait(queue)
 !$acc exit data delete(ered_buff,ered_buf1,lam_buff,vred_buff,vred_buf1,nred_buff)
       reduction_data_on_device=.false.

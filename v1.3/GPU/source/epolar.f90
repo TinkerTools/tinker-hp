@@ -536,7 +536,6 @@ subroutine eprecip
    use mpi
    implicit none
    integer iipole
-   integer commloc
    integer nprocloc,rankloc
    integer i,j,k,iglob
    real(t_p) e
@@ -550,11 +549,9 @@ subroutine eprecip
    if (use_pmecore) then
       nprocloc = nrec
       rankloc = rank_bis
-      commloc =  get_recip_comm()
    else
       nprocloc = nproc
       rankloc = rank
-      commloc = get_domain_comm()
    end if
 !
 !     return if the Ewald coefficient is zero

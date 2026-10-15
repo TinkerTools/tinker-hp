@@ -286,8 +286,8 @@ subroutine empole1cgpu
 !
          if (use_chgflx) then
             call extend(pot,1,halo_neighbour,channel=direct_work)
-            call dcflux2(pot,de_ws1,direct_work%queue)
-            call adflux2(de_ws1,dem,direct_work%queue)
+            call dcflux2(pot,de_ws1,channel=direct_work)
+            call adflux2(de_ws1,dem,channel=direct_work)
             call mem_set(pot,zeror,int(nbloc,mipk),direct_work%stream)
          end if
 !
@@ -520,8 +520,8 @@ subroutine emreal1c_
    if (use_chgflx) then
       call accumulate(pot,1,halo_large,channel=direct_work)
       call extend(pot,1,halo_neighbour,channel=direct_work)
-      call dcflux2(pot,de_ws1,direct_work%queue)
-      call adflux2(de_ws1,dem,direct_work%queue)
+      call dcflux2(pot,de_ws1,channel=direct_work)
+      call adflux2(de_ws1,dem,channel=direct_work)
       call mem_set(pot,zeror,int(nbloc,mipk),direct_work%stream)
    end if
 !
@@ -1347,7 +1347,7 @@ subroutine emrecip1gpu
    real(t_p) fiy(3),fiz(3)
    integer reqsend(nproc),reqrec(nproc)
    integer req2send(nproc),req2rec(nproc)
-   integer nprocloc,commloc,rankloc,proc
+   integer nprocloc,rankloc,proc
    real(8) time0,time1
    parameter(zero=0.0_ti_p,  one=1.0_ti_p,&
       &two=2.0_ti_p, half=0.5_ti_p)
@@ -1370,11 +1370,9 @@ subroutine emrecip1gpu
 
    if (use_pmecore) then
       nprocloc = nrec
-      commloc  = get_recip_comm()
       rankloc  = rank_bis
    else
       nprocloc = nproc
-      commloc  = get_domain_comm()
       rankloc  = rank
    end if
    f = electric / dielec
@@ -1735,8 +1733,8 @@ subroutine emrecip1gpu
          call accumulate(pot,potrec,1,channel=reciprocal_work)
          call extend(pot,       1,halo_neighbour,channel=reciprocal_work)
       end if
-      call dcflux2( pot,de_ws1,reciprocal_work%queue )
-      call adflux2( de_ws1,dem,reciprocal_work%queue )
+      call dcflux2( pot,de_ws1,channel=reciprocal_work )
+      call adflux2( de_ws1,dem,channel=reciprocal_work )
       call mem_set(pot,zeror,int(nbloc,mipk),reciprocal_work%stream)
       if (nproc.ne.1) call mem_set&
          &(potrec,zeror,int(nlocrec,mipk),reciprocal_work%stream)

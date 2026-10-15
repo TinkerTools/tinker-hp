@@ -32,6 +32,7 @@ module angle
 #endif
    implicit none
    integer nangle,nangle_pe,nangleloc
+   logical :: has_angle_data = .false.
    !DIR$ ATTRIBUTES ALIGN:64 :: angleloc
    integer, allocatable :: angleloc(:)
    integer, pointer :: iang(:,:)

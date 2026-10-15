@@ -314,7 +314,7 @@
          complex_type, work2_c, decomp%x1count, &
          complex_type, DECOMP_2D_COMM_COL, ierror)
 #else
-!$acc wait(rec_queue)
+!$acc wait(decomp_state%reciprocal_channel%queue)
     call MPI_ALLTOALLV(work1_c, decomp%y1cnts, decomp%y1disp, &
          complex_type, work2_c, decomp%x1cnts, decomp%x1disp, &
          complex_type, DECOMP_2D_COMM_COL, ierror)
@@ -543,7 +543,7 @@
 #endif
 #endif
 
-!$acc parallel loop collapse(3) async(rec_queue)
+!$acc parallel loop collapse(3) async(decomp_state%reciprocal_channel%queue)
        do k=1,n3
           do j=i1,i2
              do i=1,n1
@@ -682,7 +682,7 @@
 #endif
 #endif
 
-!$acc parallel loop collapse(3) async(rec_queue)
+!$acc parallel loop collapse(3) async(decomp_state%reciprocal_channel%queue)
        do k=1,n3
           do j=1,n2
              do i=i1,i2

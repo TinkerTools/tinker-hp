@@ -20,12 +20,11 @@ contains
 end module
 
 program analyze
-   use config, only: raw_cli_t, capture_raw_cli
-   use domdec, only: rank
-   use iounit, only: iout
-   use mpi
+   use config , only: raw_cli_t, capture_raw_cli
+   use iounit , only: iout
+   use mpi    , only: MPI_BARRIER, MPI_COMM_RANK, MPI_COMM_WORLD, MPI_FINALIZE, MPI_INIT
    use mdevice, only: bind_device
-   use status, only: failed, status_t
+   use status , only: failed, status_t
    implicit none
    integer ierr,world_rank
    type(raw_cli_t) :: raw_cli
@@ -37,7 +36,6 @@ program analyze
 !      call MPI_INIT_THREAD(MPI_THREAD_MULTIPLE,nthreadsupport,ierr)
    call MPI_COMM_RANK(MPI_COMM_WORLD,world_rank,ierr)
    iout = 6
-   rank = world_rank
    call analyze_bis(raw_cli,status_value)
    if (failed(status_value)) then
       if (world_rank.eq.0) write(iout,*) trim(status_value%message)
@@ -51,18 +49,17 @@ end
 !
 subroutine analyze_bis(raw_cli,status_value)
    use dcdmod
-   use config, only: max_raw_cli_args, raw_cli_length, raw_cli_t, config_t, &
-      &parse_common_cli
+   use config   , only: max_raw_cli_args, raw_cli_length, raw_cli_t, config_t, &
+                  parse_common_cli
    use domdec
    use files
    use inform
    use initialization, only: analyze_application, initialize
    use iounit
-   use mdevice, only: channel_t, finalize_device
-   use mpi
-   use parallel, only: parallel_t, release, assign_direct, assign_reciprocal
-   use status, only: failed, enrich_status, set_status, status_invalid_argument, &
-      &status_t
+   use mdevice  , only: channel_t, finalize_device
+   use parallel , only: parallel_t, release, assign_direct, assign_reciprocal
+   use status   , only: failed, enrich_status, set_status, status_invalid_argument, &
+                  status_t
    use structure, only: read_frame, structure_t
    implicit none
    integer i,ixyz,ierr
@@ -463,18 +460,16 @@ end
 !     subroutine dipolemol: get the total dipole moment of the molecules system (permanent+induced)
 !
 subroutine dipolemol
-   use atmlst
-   use atoms
-   use boxes
-   use charge
-   use domdec
-   use iounit
-   use molcul
-   use mpole
-   use polar
-   use potent
-   use units
-   use mpi
+   use atmlst, only: molculeglob
+   use atomsMirror, only: x, y, z
+   use charge, only: chglist, pchg
+   use domdec, only: nproc
+   use iounit, only: iout
+   use molcul, only: imol, nmoleloc
+   use mpole , only: pollist, rpole
+   use polar , only: uind, uinp
+   use potent, only: use_charge, use_mpole
+   use units , only: debye
    implicit none
    integer i
    integer iichg,iimol,kkpole,k

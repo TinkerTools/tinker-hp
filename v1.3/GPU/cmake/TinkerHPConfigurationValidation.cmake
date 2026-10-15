@@ -1504,16 +1504,22 @@ function(tinkerhp_validate_nn_configuration name origin version modules cuda has
   endif()
 endfunction()
 
-function(tinkerhp_assert_deferred_feature_rejected)
+function(tinkerhp_assert_deferred_feature_rejected name feature)
   execute_process(
-    COMMAND "${CMAKE_COMMAND}" -S "${TINKERHP_SOURCE_DIR}" -B "${TINKERHP_VALIDATION_DIR}/deferred-openmp" -G Ninja
+    COMMAND "${CMAKE_COMMAND}" -S "${TINKERHP_SOURCE_DIR}" -B "${TINKERHP_VALIDATION_DIR}/deferred-${name}" -G Ninja
       -DTINKERHP_INTERNAL_VALIDATE_ONLY=ON
       -DCMAKE_C_COMPILER=gcc -DCMAKE_CXX_COMPILER=g++ -DCMAKE_Fortran_COMPILER=gfortran
-      -DTINKERHP_ENABLE_OPENMP=ON
-    RESULT_VARIABLE result
+      -D${feature}=ON
+      RESULT_VARIABLE result
+      OUTPUT_VARIABLE stdout
+      ERROR_VARIABLE stderr
   )
   if(result EQUAL 0)
-    message(FATAL_ERROR "Deferred OpenMP configuration unexpectedly succeeded")
+    message(FATAL_ERROR "Deferred ${feature} configuration unexpectedly succeeded")
+  elseif(NOT "${stdout}\n${stderr}" MATCHES "${feature}=ON is part of the deferred CMake roadmap")
+    message(FATAL_ERROR
+      "Deferred ${feature} configuration failed without the expected preflight rejection:\n"
+      "${stdout}\n${stderr}")
   endif()
 endfunction()
 
@@ -1773,7 +1779,8 @@ tinkerhp_validate_nn_configuration(nn-managed-wrong-version managed-local 3.10.1
 tinkerhp_validate_nn_configuration(nn-explicit-missing-module explicit 3.11.8 1 12.5 TRUE FALSE)
 tinkerhp_validate_nn_configuration(nn-created-unsupported-cuda managed-created 3.11.8 0 11.8 TRUE FALSE)
 tinkerhp_validate_nn_configuration(nn-explicit-missing-libpython explicit 3.11.8 0 12.5 FALSE FALSE)
-tinkerhp_assert_deferred_feature_rejected()
+tinkerhp_assert_deferred_feature_rejected(openmp TINKERHP_ENABLE_OPENMP)
+tinkerhp_assert_deferred_feature_rejected(nvshmem TINKERHP_ENABLE_NVSHMEM)
 tinkerhp_assert_invalid_link_mode_rejected()
 
 # CMake must receive definitions for the preprocessing scan, but compilation of

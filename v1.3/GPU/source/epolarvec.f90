@@ -737,7 +737,7 @@ subroutine eprecipvec
 
    implicit none
    integer ierr,iipole,proc
-   integer status(MPI_STATUS_SIZE),tag,commloc
+   integer status(MPI_STATUS_SIZE),tag
    integer nprocloc,rankloc
    integer i,j,k,iglob
    integer k1,k2,k3
@@ -763,11 +763,9 @@ subroutine eprecipvec
    if (use_pmecore) then
       nprocloc = nrec
       rankloc = rank_bis
-      commloc =  get_recip_comm()
    else
       nprocloc = nproc
       rankloc = rank
-      commloc = get_domain_comm()
    end if
    allocate(iipolevec(npolerecloc))
    allocate(fuindvec(3,npolerecloc))

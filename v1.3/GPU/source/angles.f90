@@ -208,6 +208,8 @@ subroutine alloc_shared_angles
 !     if (associated(ak).and.size(ak).eq.nangle
 !    &   .and.16*n.eq.size(anglist)) return ! Exit condition
 
+   ! Keep ownership active if a later shared request returns early.
+   has_angle_data = .true.
 #ifdef USE_NVSHMEM_CUDA
    call shmem_request(anglist, winanglist, [16,n],&
       &c_anglist, d_anglist, config=mhostnvsh)
@@ -269,6 +271,8 @@ subroutine dealloc_shared_angles
    use mpi
    use urypot
    implicit none
+
+   if (.not.has_angle_data) return
 !
 !     if (associated(ak).and.size(ak).eq.nangle
 !    &   .and.16*n.eq.size(anglist)) return ! Exit condition
@@ -308,4 +312,5 @@ subroutine dealloc_shared_angles
    call shmem_request(nbopbend,winnbopbend,[0],config=mhostacc)
    call shmem_request(nbimprop,winnbimprop,[0],config=mhostacc)
    call shmem_request(nbimptor,winnbimptor,[0],config=mhostacc)
+   has_angle_data = .false.
 end

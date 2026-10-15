@@ -1061,7 +1061,7 @@ subroutine efld0_recipgpu(cphi,ef)
 !     real(t_p),dimension(10,npolerecloc)::cmp,fmp
    integer, allocatable :: reqrec(:),reqsend(:)
    integer, allocatable :: reqbcastrec(:),reqbcastsend(:)
-   integer nprocloc,commloc,rankloc,proc
+   integer nprocloc,rankloc,proc
    real(8) time0,time1,timem
 !
 !     return if the Ewald coefficient is zero
@@ -1075,11 +1075,9 @@ subroutine efld0_recipgpu(cphi,ef)
 
    if (use_pmecore) then
       nprocloc = nrec
-      commloc  = get_recip_comm()
       rankloc  = rank_bis
    else
       nprocloc = nproc
-      commloc  = get_domain_comm()
       rankloc  = rank
    end if
 
@@ -1325,7 +1323,7 @@ subroutine tmatxbrecipgpu(mu,murec,nrhs,dipfield,dipfieldbis)
 
    integer, allocatable :: reqbcastrec(:),reqbcastsend(:)
    integer, allocatable :: reqrec(:),reqsend(:)
-   integer nprocloc,commloc,rankloc,proc
+   integer nprocloc,rankloc,proc
    logical,save::f_in=.true.
 
    interface
@@ -1348,11 +1346,9 @@ subroutine tmatxbrecipgpu(mu,murec,nrhs,dipfield,dipfieldbis)
 
    if (use_pmecore) then
       nprocloc = nrec
-      commloc  = get_recip_comm()
       rankloc  = rank_bis
    else
       nprocloc = nproc
-      commloc  = get_domain_comm()
       rankloc  = rank
    end if
 

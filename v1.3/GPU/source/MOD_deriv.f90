@@ -179,6 +179,10 @@ module deriv
       end subroutine
       module subroutine zero_forces_rec
       end subroutine
+      module subroutine save_total_forces
+      end subroutine
+      module subroutine restore_total_forces
+      end subroutine
       module subroutine check_nzero
       end subroutine
       module subroutine get_ftot(derivs,nbloc_)

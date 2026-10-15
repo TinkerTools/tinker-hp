@@ -97,7 +97,6 @@ subroutine drivermpi
 14 format('no cores assigned to compute reciprocal space ',&
       &'contribution')
    if (use_pmecore) then
-!$acc update device(use_pmecore)
       if (nrec.eq.0) then
          if (rank.eq.0) write(iout,14)
          call fatal
@@ -111,7 +110,6 @@ subroutine drivermpi
 !     (direct and reciprocal space) and associated communicators
 !
       call create_domain_subcommunicators(ndir, rank_bis)
-!$acc update device(rank_bis)
    end if
 #ifdef _OPENACC
 #endif
@@ -2225,18 +2223,10 @@ subroutine AtomDebRepart(ierr)
    use potent
    implicit none
    integer nd,nr,ierr
-   integer comm_d,comm_r
-
-   if (use_pmecore) then
-      comm_d = get_direct_comm()
-      comm_r = get_recip_comm()
-   else
-      comm_d = get_domain_comm()
-      comm_r = get_domain_comm()
-   end if
-
-   call MPI_AllReduce(nloc,nd,1,MPI_INT,MPI_SUM,comm_d,ierr)
-   call MPI_AllReduce(nlocrec,nr,1,MPI_INT,MPI_SUM,comm_r,ierr)
+   call MPI_AllReduce(nloc,nd,1,MPI_INT,MPI_SUM,&
+      &merge(get_direct_comm(),get_domain_comm(),use_pmecore),ierr)
+   call MPI_AllReduce(nlocrec,nr,1,MPI_INT,MPI_SUM,&
+      &merge(get_recip_comm(),get_domain_comm(),use_pmecore),ierr)
 
 11 format("An issue has been detected during reassign process")
 12 format(A,' > nloc ',I10,' ntot ',3I10)
@@ -2484,7 +2474,7 @@ subroutine ddpme3dnptaniso(scale,istep)
    use parallel, only: orderbuffer_gpu, orderbufrec_gpu
    use tinheader
    implicit none
-   integer nprocloc,rankloc,commloc,iproc
+   integer nprocloc,rankloc,iproc
    integer i
    integer istep,modnl
    real(t_p) mbuf,vbuf,neigbuf,bigbuf
@@ -2501,11 +2491,9 @@ subroutine ddpme3dnptaniso(scale,istep)
 !c
    if (use_pmecore) then
       nprocloc = ndir
-      commloc  = get_direct_comm()
       rankloc  = rank_bis
    else
       nprocloc = nproc
-      commloc  = get_domain_comm()
       rankloc  = rank
    end if
 !

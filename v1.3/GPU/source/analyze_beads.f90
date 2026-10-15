@@ -17,7 +17,6 @@
 program analyze_beads
    use mpi
    use config, only: raw_cli_t, capture_raw_cli
-   use domdec, only: rank
    use iounit, only: iout
    use mdevice, only: bind_device
    use status, only: failed, status_t
@@ -32,7 +31,6 @@ program analyze_beads
 !      call MPI_INIT_THREAD(MPI_THREAD_MULTIPLE,nthreadsupport,ierr)
    call MPI_COMM_RANK(MPI_COMM_WORLD,world_rank,ierr)
    iout = 6
-   rank = world_rank
    call analyze_beads_bis(raw_cli,status_value)
    if (failed(status_value)) then
       if (world_rank.eq.0) write(iout,*) trim(status_value%message)

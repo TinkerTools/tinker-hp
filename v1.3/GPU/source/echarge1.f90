@@ -504,7 +504,7 @@ subroutine ecrecip1
    integer nf1,nf2,nf3
    integer nff
    integer status(MPI_STATUS_SIZE),tag,ierr
-   integer nprocloc,rankloc,commloc,proc
+   integer nprocloc,rankloc,proc
    real*8 e,term,expterm
    real*8 vterm,pterm
    real*8 volterm
@@ -522,11 +522,9 @@ subroutine ecrecip1
 !
    if (use_pmecore) then
       nprocloc = nrec
-      commloc  = get_recip_comm()
       rankloc = rank_bis
    else
       nprocloc = nproc
-      commloc  = get_domain_comm()
       rankloc = rank
    end if
 !
@@ -553,7 +551,7 @@ subroutine ecrecip1
    do i = 1, nrec_recep
       tag = nprocloc*rankloc + prec_recep(i) + 1
       call MPI_IRECV(qgridmpi(1,1,1,1,i),2*n1mpimax*n2mpimax*&
-      &n3mpimax,MPI_REAL8,prec_recep(i),tag,commloc,req(tag),&
+      &n3mpimax,MPI_REAL8,prec_recep(i),tag,merge(get_recip_comm(),get_domain_comm(),use_pmecore),req(tag),&
       &ierr)
    end do
    do i = 1, nionrecloc
@@ -572,7 +570,7 @@ subroutine ecrecip1
       tag = nprocloc*prec_send(i) + rankloc + 1
       call MPI_ISEND(qgridin_2d(1,1,1,1,i+1),&
       &2*n1mpimax*n2mpimax*n3mpimax,MPI_REAL8,proc,tag,&
-      &commloc,req(tag),ierr)
+      &merge(get_recip_comm(),get_domain_comm(),use_pmecore),req(tag),ierr)
    end do
    do i = 1, nrec_recep
       tag = nprocloc*rankloc + prec_recep(i) + 1
@@ -705,7 +703,7 @@ subroutine ecrecip1
       tag = nprocloc*rankloc + prec_send(i) + 1
       call MPI_IRECV(qgridin_2d(1,1,1,1,i+1),&
       &2*n1mpimax*n2mpimax*n3mpimax,MPI_REAL8,&
-      &prec_send(i),tag,commloc,reqbcast(tag),ierr)
+      &prec_send(i),tag,merge(get_recip_comm(),get_domain_comm(),use_pmecore),reqbcast(tag),ierr)
    end do
 !
 !     MPI : begin sending
@@ -714,7 +712,7 @@ subroutine ecrecip1
       tag = nprocloc*prec_recep(i) + rankloc + 1
       call MPI_ISEND(qgridin_2d,&
       &2*n1mpimax*n2mpimax*n3mpimax,&
-      &MPI_REAL8,prec_recep(i),tag,commloc,reqbcast(tag),&
+      &MPI_REAL8,prec_recep(i),tag,merge(get_recip_comm(),get_domain_comm(),use_pmecore),reqbcast(tag),&
       &ierr)
    end do
 !

@@ -5,94 +5,6 @@
 !
 #include "tinker_macro.h"
 
-subroutine set_nproc()
-   use domdec
-   use iounit
-   use replicas
-   use mpi
-   use beads
-   implicit none
-   integer ierr,nbeads_para
-
-   if (path_integral_md .AND. use_reps) then
-      if (ranktot.eq.0) then
-         write(iout,*) 'Error: PIMD and classical replicas&
-            &     cannot be used together'
-      end if
-      call MPI_BARRIER(MPI_COMM_WORLD,ierr)
-      call fatal
-   end if
-
-   if (use_reps) then
-      ! check consistency of replica numbers for classical replicas
-      ! and define nproc
-      if(nreps<=0) then
-         if (ranktot.eq.0) then
-            write(iout,*) 'Error: number of replicas should be > 0'
-         end if
-         call MPI_BARRIER(MPI_COMM_WORLD,ierr)
-         call fatal
-      endif
-      if (nproctot.lt.nreps) then
-         nproc = 1
-         if (ranktot.eq.0) then
-            write(iout,*) 'each process should deal with max 1 replica'
-         end if
-         call MPI_BARRIER(MPI_COMM_WORLD,ierr)
-         call fatal
-      else if (mod(nproctot,nreps).ne.0) then
-         if (ranktot.eq.0) then
-            write(iout,*) 'Error: inconsistent number&
-               &     of process for parallelism'
-            write(iout,*) 'the total number of processors&
-               &      should be lower&
-               &     or a multiple of nreps'
-            call fatal
-         end if
-      else
-         nproc = nproctot/nreps
-      end if
-      if (ranktot==0) then
-         write(iout,*) 'Using multiple replicas, nreps = ',nreps
-      endif
-
-   elseif(path_integral_md) then
-      ! check consistency of replica numbers for PIMD
-      if(contract .and. nbeads_ctr>1) then
-         nbeads_para = nbeads_ctr
-      else
-         nbeads_para = nbeads
-      endif
-      if(nbeads_para<=0) then
-         if (ranktot.eq.0) then
-            write(iout,*) 'Error: number of beads should be > 0'
-         end if
-         call MPI_BARRIER(MPI_COMM_WORLD,ierr)
-         call fatal
-      endif
-
-
-      if (nproctot.lt.nbeads_para) then
-         nproc = 1
-      else if (mod(nproctot,nbeads_para).ne.0) then
-         if (ranktot.eq.0) then
-            write(iout,*) 'Error: inconsistent number&
-               &     of process for parallelism'
-            write(iout,*) 'the total number of processors&
-               &      should be lower&
-               &     or a multiple of nbeads'
-            call fatal
-         end if
-      else
-         nproc = nproctot/nbeads_para
-      end if
-
-   else ! standard parallelization (no replicas)
-      nproc = nproctot
-   end if
-
-end subroutine set_nproc
-!
 !     Initialize GPU
 !
 subroutine initDevice(platform_ready)
@@ -174,5 +86,4 @@ subroutine initDevice(platform_ready)
 
    call set_gpu_config(gangs=80,workers=1,vector=32,modulo=.true.)
 
-!$acc update device(rank)
 end subroutine

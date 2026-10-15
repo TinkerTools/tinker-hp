@@ -13,11 +13,11 @@
 #include "tinker_macro.h"
 submodule(atomsMirror) subAtoms
    use atmtyp    ,only: mass
-   use atoms     , nr=>n,xr=>x,yr=>y,zr=>z&
-      &, xor=>xold,yor=>yold,zor=>zold
+   use atoms     , nr=>n, xr=>x, yr=>y, zr=>z &
+                 , xor=>xold, yor=>yold, zor=>zold
    use cell
    use domdec    ,only: rank,nproc,nloc,nbloc,glob
-   use parallel, only: get_host_comm
+   use parallel  ,only: get_host_comm
    use deriv     ,only: ftot_l,tdes_l,de_tot,derivx,derivy,derivz
    use inform    ,only: deb_path,minmaxone
    use moldyn    ,only: v
@@ -26,7 +26,7 @@ submodule(atomsMirror) subAtoms
    use sizes     ,only: tinkerdebug
    use units     ,only: convert
    use mdevice   ,only: reciprocal_work
-   use usage
+   use usage     ,only: useAll, is_used=>use
    implicit none
 
 contains
@@ -142,7 +142,7 @@ contains
 !$acc parallel loop collapse(2) async deviceptr(v,a)
          do i = 1, nloc; do j = 1, 3
                iglob = glob(i)
-               if (use(iglob))&
+               if (is_used(iglob))&
                   &v(j,iglob) = v(j,iglob) + a(j,iglob)*dt
             end do; end do
       end if
@@ -171,7 +171,7 @@ contains
 !$acc parallel loop collapse(2) async deviceptr(v,a,aalt)
          do i = 1, nloc; do j = 1, 3
                iglob = glob(i)
-               if (use(iglob))&
+               if (is_used(iglob))&
                   &v(j,iglob) =v(j,iglob) +a(j,iglob)*dt&
                   &+aalt(j,iglob)*dta
             end do; end do
@@ -358,7 +358,7 @@ contains
 !$acc         deviceptr(x,y,z,xr,yr,zr,v)
          do i = 1, nloc
             iglob = glob(i)
-            if (use(iglob)) then
+            if (is_used(iglob)) then
                x(iglob) = x(iglob) + v(1,iglob)*dt
                y(iglob) = y(iglob) + v(2,iglob)*dt
                z(iglob) = z(iglob) + v(3,iglob)*dt
@@ -381,7 +381,7 @@ contains
 !$acc parallel loop copy(ierr) async default(present)
          do i = 1,nloc
             iglob = glob(i)
-            if (use(iglob)) then
+            if (is_used(iglob)) then
                if (abs(x(iglob)).gt.3*xcell2) then
                   !print*, "Too Far X", rank, iglob, real(x(iglob),4), real(v(1,iglob)*dt,4)
 !$acc atomic

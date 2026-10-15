@@ -31,37 +31,27 @@
 !
 #include "tinker_macro.h"
 subroutine baoabrespa (istep,dt)
-   use mlpot
-   use atmtyp
-   use atomsMirror
-   use bath
-   use boxes    , only: volbox
-   use cutoff
-   use domdec
-   use deriv    , only:info_forces,cBond,cNBond,ftot_l,comm_forces,zero_forces_rec
-   use energi
-   use freeze
-   use group
-   use inform
-   use mdstuf
-   use mdstuf1
+   use atomsMirror, only: integrate_pos,integrate_vel,save_atoms_pos
+   use bath, only: atmsph,use_piston
+   use cutoff, only: use_list
+   use domdec, only: nbloc,rank
+   use deriv    , only:info_forces,cBond,cNBond,ftot_l,comm_forces&
+      &,save_total_forces,restore_total_forces
+   use energi, only: calc_e,info_energy,reduceen
+   use freeze, only: use_rattle
+   use inform, only: abort,deb_Atom,deb_Energy,deb_Force,info_minmax_pva
+   use mdstuf1, only: derivs,ealt,ekin,eksum,eml,epot,etot,pres,stress,temp,viralt
    use mdevice  , only: reciprocal_work
-   use moldyn
+   use moldyn, only: a,aalt,dshort,nalt,stepfast
    use parallel, only: commpos, commposrec, commposrespa, reassign_respa
-   use mpi
-   use potent
-   use random_mod
-   use timestat
+   use potent, only: use_ml_embedding,use_mlpot
    use tinMemory, only: prmem_requestm
-   use tortor
-   use units
-   use uprior   , only: use_pred
-   use usage
    use utils    , only: set_to_zero1m
-   use utilbaoab
-   use virial
-   use spectra
-   use utilbaoab
+   use utilbaoab, only: apply_a_piston,apply_b_piston,apply_langevin_thermostat,&
+      &apply_o_piston,set_langevin_thermostat_coeff
+   use virial, only: use_virial,vir,zero_virial
+   use spectra, only: compute_dipole,full_dipole,ir,save_dipole_respa
+   use tinheader, only: re_p
    implicit none
    real(r_p), intent(in) :: dt
    integer, intent(in) :: istep
@@ -71,7 +61,6 @@ subroutine baoabrespa (istep,dt)
    real(r_p) part1,part2
    real(r_p), allocatable, save :: dip(:,:),dipind(:,:)
    real(8) time0,time1
-   logical save_mlpot
    logical save_pred
 !
 !     set some time values for the dynamics integration
@@ -157,7 +146,7 @@ subroutine baoabrespa (istep,dt)
 !
 !       MPI : get total energy
 !
-      call reduceen(ealt)
+      if (calc_e.or.use_virial) call reduceen(ealt)
 !
 !     Debug print information
 !
@@ -175,7 +164,7 @@ subroutine baoabrespa (istep,dt)
 !     increment average virial from fast-evolving potential terms
 !
       if (use_virial) then
-!$acc parallel loop collapse(2) async present(vir,viralt)
+!$acc parallel loop collapse(2) async(reciprocal_work%queue) present(vir,viralt)
          do i = 1,3; do j = 1,3
                viralt(j,i) = viralt(j,i) + vir(j,i)/dshort
             end do; end do
@@ -233,30 +222,9 @@ subroutine baoabrespa (istep,dt)
 !
 !     MPI : get total energy
 !
-   call reduceen(epot)
+   if (calc_e.or.use_virial) call reduceen(epot)
 
-   if(use_ml_embedding) then
-!$acc parallel loop collapse(2) async
-      do i = 1, 3; do j = 1, 3
-            viralt(j,i) = vir(j,i) + viralt(j,i)
-         end do; end do
-!     COMPUTE ML DELTA CONTRIBUTION (ml_embedding_mode)
-      use_mlpot=  .TRUE.
-      call zero_forces_rec
-      save_pred = use_pred
-      use_pred  = .FALSE.
-      if(use_embd_potoff) then
-         call gradembedding2 (eml,derivs)
-      else
-         call gradient (eml,derivs)
-      endif
-      use_pred  = save_pred
-      call reduceen(eml)
-      call comm_forces(derivs)
-!$acc serial async
-      epot = epot+eml
-!$acc end serial
-   endif
+   call grad_embd_slow(istep,eml,epot,derivs)
 !
 !     use Newton's second law to get the next accelerations;
 !     find the full-step velocities using the BAOAB recursion
@@ -277,8 +245,12 @@ subroutine baoabrespa (istep,dt)
 !     total potential and virial from sum of fast and slow parts
 !
    if (calc_e.or.use_virial) then
-!$acc serial async present(epot,ealt,vir,viralt)
+!$acc serial async(reciprocal_work%queue) present(epot,ealt)
       epot = epot + ealt
+!$acc end serial
+   end if
+   if (use_virial) then
+!$acc serial async(reciprocal_work%queue) present(vir,viralt)
       do i = 1,3; do j = 1,3
             vir(j,i) = vir(j,i) + viralt(j,i)
          end do; end do

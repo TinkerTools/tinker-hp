@@ -80,7 +80,7 @@ subroutine eprecip1vec
    real(t_p), allocatable :: qgridmpi(:,:,:,:,:)
    integer, allocatable :: reqsend(:),reqrec(:)
    integer, allocatable :: req2send(:),req2rec(:)
-   integer nprocloc,commloc,rankloc,proc
+   integer nprocloc,rankloc,proc
 !DIR$ ATTRIBUTES ALIGN:64::fuind1vec,fuind2vec,fuind3vec
    real(t_p) fuind1vec(npolereclocloop)
    real(t_p) fuind2vec(npolereclocloop)
@@ -92,11 +92,9 @@ subroutine eprecip1vec
 
    if (use_pmecore) then
       nprocloc = nrec
-      commloc  = get_recip_comm()
       rankloc  = rank_bis
    else
       nprocloc = nproc
-      commloc  = get_domain_comm()
       rankloc  = rank
    end if
 !
@@ -297,7 +295,7 @@ subroutine eprecip1vec
       tag = nprocloc*rankloc + prec_recep(i) + 1
       call MPI_IRECV(qgridmpi(1,1,1,1,i),2*n1mpimax*n2mpimax*&
          &n3mpimax,MPI_TPREC,prec_recep(i),tag,&
-         &commloc,reqrec(i),ierr)
+         &merge(get_recip_comm(),get_domain_comm(),use_pmecore),reqrec(i),ierr)
    end do
 !
 !     MPI : begin sending
@@ -307,7 +305,7 @@ subroutine eprecip1vec
       tag = nprocloc*prec_send(i) + rankloc + 1
       call MPI_ISEND(qgrid2in_2d(1,1,1,1,i+1),&
          &2*n1mpimax*n2mpimax*n3mpimax,MPI_TPREC,&
-         &prec_send(i),tag,commloc,reqsend(i),ierr)
+         &prec_send(i),tag,merge(get_recip_comm(),get_domain_comm(),use_pmecore),reqsend(i),ierr)
    end do
 !
    do i = 1, nrec_recep
@@ -381,7 +379,7 @@ subroutine eprecip1vec
       tag = nprocloc*rankloc + prec_send(i) + 1
       call MPI_IRECV(qgrid2in_2d(1,1,1,1,i+1),&
          &2*n1mpimax*n2mpimax*n3mpimax,MPI_TPREC,&
-         &prec_recep(i),tag,commloc,req2rec(i),ierr)
+         &prec_recep(i),tag,merge(get_recip_comm(),get_domain_comm(),use_pmecore),req2rec(i),ierr)
    end do
 !
 !     MPI : begin sending
@@ -390,7 +388,7 @@ subroutine eprecip1vec
       tag = nprocloc*prec_recep(i) + rankloc + 1
       call MPI_ISEND(qgrid2in_2d(1,1,1,1,1),&
          &2*n1mpimax*n2mpimax*n3mpimax,MPI_TPREC,&
-         &prec_send(i),tag,commloc,req2send(i),ierr)
+         &prec_send(i),tag,merge(get_recip_comm(),get_domain_comm(),use_pmecore),req2send(i),ierr)
    end do
 !
    time0 = mpi_wtime()
@@ -590,7 +588,7 @@ subroutine eprecip1vec
       tag = nprocloc*rankloc + prec_recep(i) + 1
       call MPI_IRECV(qgridmpi(1,1,1,1,i),2*n1mpimax*n2mpimax*&
          &n3mpimax,MPI_TPREC,prec_recep(i),tag,&
-         &commloc,reqrec(i),ierr)
+         &merge(get_recip_comm(),get_domain_comm(),use_pmecore),reqrec(i),ierr)
    end do
 !
 !     MPI : begin sending
@@ -600,7 +598,7 @@ subroutine eprecip1vec
       tag = nprocloc*prec_send(i) + rankloc + 1
       call MPI_ISEND(qgridin_2d(1,1,1,1,i+1),&
          &2*n1mpimax*n2mpimax*n3mpimax,MPI_TPREC,&
-         &prec_send(i),tag,commloc,reqsend(i),ierr)
+         &prec_send(i),tag,merge(get_recip_comm(),get_domain_comm(),use_pmecore),reqsend(i),ierr)
    end do
 !
    do i = 1, nrec_recep
@@ -652,7 +650,7 @@ subroutine eprecip1vec
       tag = nprocloc*rankloc + prec_recep(i) + 1
       call MPI_IRECV(qgridmpi(1,1,1,1,i),2*n1mpimax*n2mpimax*&
          &n3mpimax,MPI_TPREC,prec_recep(i),tag,&
-         &commloc,reqrec(i),ierr)
+         &merge(get_recip_comm(),get_domain_comm(),use_pmecore),reqrec(i),ierr)
    end do
 !
 !     MPI : begin sending
@@ -662,7 +660,7 @@ subroutine eprecip1vec
       tag = nprocloc*prec_send(i) + rankloc + 1
       call MPI_ISEND(qgridin_2d(1,1,1,1,i+1),&
          &2*n1mpimax*n2mpimax*n3mpimax,MPI_TPREC,&
-         &prec_send(i),tag,commloc,reqsend(i),ierr)
+         &prec_send(i),tag,merge(get_recip_comm(),get_domain_comm(),use_pmecore),reqsend(i),ierr)
    end do
 !
    do i = 1, nrec_recep

@@ -13,6 +13,13 @@ extern int32_t init_ml_ressources(
     int32_t nligand,
     int32_t *index_ligand);
 
+extern int32_t init_dmts(
+    const char *model_file2);
+
+extern int32_t get_model_cutoff(
+    const char *model_file,
+    float *cutoff);
+
 extern int32_t ml_models(
     uint64_t coord,
     uint64_t energy,
@@ -26,7 +33,7 @@ extern int32_t ml_models(
     uint64_t dv,
     uint64_t trueat,
     int32_t natm,
-    int32_t npairs,
+    int32_t model_padding,
     int32_t natm_full,
     int32_t dograd,
     int32_t use_lambda,
@@ -34,4 +41,5 @@ extern int32_t ml_models(
     float vlambda,
     uint64_t alch_group,
     uint64_t dedle,
-    uint64_t dedlv);
+    uint64_t dedlv,
+    char *model_file_cur);

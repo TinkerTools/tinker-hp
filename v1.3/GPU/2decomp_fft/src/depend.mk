@@ -4,7 +4,7 @@
 #  University of Texas at Austin
 #
 
-decomp_2d.o: transpose_x_to_y.f90 transpose_y_to_x.f90 transpose_y_to_z.f90 transpose_z_to_y.f90 factor.f90 halo.f90 alloc.f90
+decomp_2d.o: MOD_mdevice_channel.o transpose_x_to_y.f90 transpose_y_to_x.f90 transpose_y_to_z.f90 transpose_z_to_y.f90 factor.f90 halo.f90 alloc.f90
 fft_acml.o:  decomp_2d.o fft_common.f90 acml_plan.f90
 fft_essl.o:  decomp_2d.o glassman.o fft_common.f90 fft_common_3d.f90
 fft_fftw3.o: decomp_2d.o fft_common.f90

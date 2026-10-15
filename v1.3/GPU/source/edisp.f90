@@ -471,17 +471,15 @@ subroutine edrecip
    real*8 erfcterm
    integer, allocatable :: req(:),reqbcast(:)
    integer status(MPI_STATUS_SIZE),tag,ierr,proc
-   integer nprocloc,rankloc,commloc
+   integer nprocloc,rankloc
    real*8, allocatable :: qgridmpi(:,:,:,:,:)
 !
    if (use_pmecore) then
       nprocloc = nrec
       rankloc = rank_bis
-      commloc = get_recip_comm()
    else
       nprocloc = nproc
       rankloc = rank
-      commloc = get_domain_comm()
    end if
 !
 !     set Ewald coefficient
@@ -512,7 +510,7 @@ subroutine edrecip
    do i = 1, nrec_recep
       tag = nprocloc*rankloc + prec_recep(i) + 1
       call MPI_IRECV(qgridmpi(1,1,1,1,i),2*n1mpimax*n2mpimax*&
-         &n3mpimax,MPI_REAL8,prec_recep(i),tag,commloc,req(tag),&
+         &n3mpimax,MPI_REAL8,prec_recep(i),tag,merge(get_recip_comm(),get_domain_comm(),use_pmecore),req(tag),&
          &ierr)
    end do
 !
@@ -531,7 +529,7 @@ subroutine edrecip
       tag = nprocloc*prec_send(i) + rankloc + 1
       call MPI_ISEND(qgridin_2d(1,1,1,1,i+1),&
          &2*n1mpimax*n2mpimax*n3mpimax,MPI_REAL8,proc,tag,&
-         &commloc,req(tag),ierr)
+         &merge(get_recip_comm(),get_domain_comm(),use_pmecore),req(tag),ierr)
    end do
    do i = 1, nrec_recep
       tag = nprocloc*rankloc + prec_recep(i) + 1

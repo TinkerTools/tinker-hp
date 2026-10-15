@@ -758,16 +758,14 @@ subroutine colvars_init(dt)
    use tinheader ,only: re_p
    implicit none
    real(r_p),intent(in):: dt
-   integer ierr,rank_,COMM_,nproc_
+   integer ierr,rank_,nproc_
 
    if (app_id == pimd_a) then
       rank_ = ranktot
       nproc_ = nproctot
-      COMM_ = MPI_COMM_WORLD
    else
       rank_ = rank
       nproc_ = nproc
-      COMM_ = get_domain_comm()
    end if
 
    use_colvars = .false.
@@ -780,16 +778,19 @@ subroutine colvars_init(dt)
       call allocate_colvars
    end if
    if (nproc_.gt.1)&
-      &call MPI_BCAST(use_colvars,1,MPI_LOGICAL,0,COMM_,ierr)
+      &call MPI_BCAST(use_colvars,1,MPI_LOGICAL,0,&
+      &merge(MPI_COMM_WORLD,get_domain_comm(),app_id == pimd_a),ierr)
    if (use_colvars) then
 !$acc wait
       if (nproc_.gt.1)&
-         &call MPI_BCAST(ncvatoms,1,MPI_INT,0,COMM_,ierr)
+         &call MPI_BCAST(ncvatoms,1,MPI_INT,0,&
+         &merge(MPI_COMM_WORLD,get_domain_comm(),app_id == pimd_a),ierr)
       if (rank_.gt.0) then
          allocate (cvatoms_ids(ncvatoms))
       end if
       if (nproc_.gt.1) call MPI_BCAST&
-         &(cvatoms_ids,ncvatoms,MPI_INT,0,COMM_,ierr)
+         &(cvatoms_ids,ncvatoms,MPI_INT,0,&
+         &merge(MPI_COMM_WORLD,get_domain_comm(),app_id == pimd_a),ierr)
 
       if (rank_.gt.0) then
          allocate (cv_pos(3,ncvatoms))

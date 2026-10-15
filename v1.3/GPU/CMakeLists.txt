@@ -426,6 +426,7 @@ function(tinkerhp_configure_fortran_target target_name module_dir extra_flags)
     "${TINKERHP_WRAPPER_MODULE_DIR}"
     "${CMAKE_SOURCE_DIR}/source"
     "${TINKERHP_MAIN_MODULE_DIR}"
+    "${TINKERHP_2DECOMP_MODULE_DIR}"
   )
   target_link_libraries(${target_name} PRIVATE
     tinkerhp_2decomp_fft
@@ -436,7 +437,7 @@ endfunction()
 
 add_library(tinkerhp_modules OBJECT ${MOD_SRCS})
 tinkerhp_configure_fortran_target(tinkerhp_modules "${TINKERHP_MAIN_MODULE_DIR}" "${TINKERHP_GPU_FORTRAN_EXTRA_FLAGS}")
-add_dependencies(tinkerhp_modules tinkerhp_wrapper)
+add_dependencies(tinkerhp_modules tinkerhp_wrapper tinkerhp_2decomp_fft)
 
 add_library(tinkerhp_fortran_common OBJECT ${TINKERHP_FORTRAN_COMMON_SRCS})
 tinkerhp_configure_fortran_target(tinkerhp_fortran_common "${TINKERHP_MAIN_MODULE_DIR}" "")
@@ -826,8 +827,21 @@ if(BUILD_TESTING)
     NAME tinkerhp-dynamic-cli-contract
     COMMAND "$<TARGET_FILE:tinkerhp-dynamic-cli-contract>"
   )
-  set_tests_properties(tinkerhp-dynamic-cli-contract PROPERTIES
+  add_test(
+    NAME tinkerhp-dynamic-energy-format-fixed-contract
+    COMMAND "$<TARGET_FILE:tinkerhp-dynamic-cli-contract>" fixed
+  )
+  add_test(
+    NAME tinkerhp-dynamic-energy-format-scientific-contract
+    COMMAND "$<TARGET_FILE:tinkerhp-dynamic-cli-contract>" scientific
+  )
+  set_tests_properties(
+    tinkerhp-dynamic-cli-contract
+    tinkerhp-dynamic-energy-format-fixed-contract
+    tinkerhp-dynamic-energy-format-scientific-contract
+    PROPERTIES
     ENVIRONMENT "TINKERHP_SOURCE_DIR=${CMAKE_SOURCE_DIR};TINKER_PARAMS=."
+    RUN_SERIAL TRUE
   )
   if(TINKERHP_ENABLE_COLVARS)
     add_executable(tinkerhp-colvars-lifecycle-contract
@@ -910,6 +924,23 @@ if(BUILD_TESTING)
     SKIP_RETURN_CODE 77
     TIMEOUT 180
   )
+  if(TINKERHP_PRECISION STREQUAL "MIXED")
+    add_test(
+      NAME tinkerhp-mdstat-skipped-energy-boundary-mixed
+      COMMAND "${Python3_EXECUTABLE}"
+        "${CMAKE_SOURCE_DIR}/tests/test_mdstat_energy_boundary.py"
+        --source-dir "${CMAKE_SOURCE_DIR}"
+        --executable "$<TARGET_FILE:dynamic>"
+        --mpi-launcher mpirun
+    )
+    set_tests_properties(tinkerhp-mdstat-skipped-energy-boundary-mixed PROPERTIES
+      ENVIRONMENT "OMPI_MCA_oob_tcp_if_include=lo;OMPI_MCA_btl=self,vader"
+      PROCESSORS 1
+      RUN_SERIAL TRUE
+      SKIP_RETURN_CODE 77
+      TIMEOUT 300
+    )
+  endif()
   add_executable(tinkerhp-restart-contract tests/test_restart.f90)
   set_source_files_properties(tests/test_restart.f90 PROPERTIES
     Fortran_PREPROCESS ON)

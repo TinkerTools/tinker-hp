@@ -85,7 +85,7 @@ subroutine reassign
    real(r_p), allocatable :: buffers1(:,:),buffer1(:,:)
    integer, allocatable :: buf3bis(:,:)
    integer, allocatable :: glob1(:)
-   integer rankloc,commloc,nprocloc,proc,j,jglob
+   integer rankloc,nprocloc,proc,j,jglob
    integer nloc1
    integer nloc_save,max_atoms_recv,max_atoms_send
    integer, allocatable :: iglob_send(:,:), iglob_recv(:,:)
@@ -101,11 +101,9 @@ subroutine reassign
    call timer_enter( timer_eneig )
    if (use_pmecore) then
       nprocloc = ndir
-      commloc  = get_direct_comm()
       rankloc  = rank_bis
    else
       nprocloc = nproc
-      commloc  = get_domain_comm()
       rankloc  = rank
    end if
    allocate (glob1(n))
@@ -179,13 +177,13 @@ subroutine reassign
       proc = pneig_recep(iproc)
       tag  = nprocloc*rankloc + proc + 1
       call MPI_IRECV(buflen4(proc+1),1,MPI_INT,&
-         &proc,tag,commloc,reqrec(iproc),ierr)
+         &proc,tag,merge(get_direct_comm(),get_domain_comm(),use_pmecore),reqrec(iproc),ierr)
    end do
    do iproc = 1, nneig_send
       proc = pneig_send(iproc)
       tag  = nprocloc*proc + rankloc + 1
       call MPI_ISEND(buflen3(proc+1),1,MPI_INT,&
-         &proc,tag,commloc,reqsend(iproc),ierr)
+         &proc,tag,merge(get_direct_comm(),get_domain_comm(),use_pmecore),reqsend(iproc),ierr)
    end do
 !
    do iproc = 1, nneig_recep
@@ -437,7 +435,7 @@ subroutine reassignrespa(ialt,nalt)
    integer  req_data_send(nneig_send), req_data_recv(nneig_recep)
    integer  mpi_status1(MPI_STATUS_SIZE)
 
-   integer nprocloc, commloc, rankloc ! local (pme) mpi info
+   integer nprocloc, rankloc ! local (pme) mpi info
    integer i, ierr, iglob, iloc, iproc, ineighbor
    integer nloc_save, n_data_send_capture,max_data_recv
    integer n_ar, n_br, n_cr
@@ -457,7 +455,6 @@ subroutine reassignrespa(ialt,nalt)
    if (ialt/=nalt) return
    if (use_pmecore) then
       nprocloc = ndir
-      commloc  = get_direct_comm()
       rankloc  = rank_bis
       if (rank >= ndir) then
          call timer_enter( timer_eneig )
@@ -465,7 +462,6 @@ subroutine reassignrespa(ialt,nalt)
       end if
    else
       nprocloc = nproc
-      commloc  = get_domain_comm()
       rankloc  = rank
    end if
    if (nproc.eq.1) return

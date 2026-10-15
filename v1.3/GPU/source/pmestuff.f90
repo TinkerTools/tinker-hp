@@ -12,18 +12,20 @@
 !
 #include "tinker_precision.h"
 subroutine bspline_fill_site(i,impi)
-!$acc routine(bsplgen) seq
-   use atoms
-   use boxes
+   use atoms    , only: x,y,z
+   use boxes    , only: recip 
    use pme
-   use tinheader
+   use potent   , only: use_mpole,use_polar
+   use tinheader, only: ti_p
    implicit none
    integer i,ifr,impi
+   integer level
    real(t_p) xi,yi,zi
    real(t_p) w,fr,eps
 !
 !     offset used to shift sites off exact lattice bounds
 !
+   level = merge(4,2,use_mpole.or.use_polar) 
 #if defined(SINGLE) || defined(MIXED)
    eps = 1.0d-4
 #else
@@ -40,19 +42,19 @@ subroutine bspline_fill_site(i,impi)
    ifr = int(fr-eps)
    w = fr - real(ifr,t_p)
    igrid(1,i) = ifr - bsorder
-   call bsplgen (w,impi,thetai1(1,1,impi))
+   call bsplgen (w,impi,bsorder,level,thetai1(1,1,impi))
    w = xi*recip(1,2) + yi*recip(2,2) + zi*recip(3,2)
    fr = real(nfft2,t_p) * (w-anint(w)+0.5_ti_p)
    ifr = int(fr-eps)
    w = fr - real(ifr,t_p)
    igrid(2,i) = ifr - bsorder
-   call bsplgen (w,impi,thetai2(1,1,impi))
+   call bsplgen (w,impi,bsorder,level,thetai2(1,1,impi))
    w = xi*recip(1,3) + yi*recip(2,3) + zi*recip(3,3)
    fr = real(nfft3,t_p) * (w-anint(w)+0.5_ti_p)
    ifr = int(fr-eps)
    w = fr - real(ifr,t_p)
    igrid(3,i) = ifr - bsorder
-   call bsplgen (w,impi,thetai3(1,1,impi))
+   call bsplgen (w,impi,bsorder,level,thetai3(1,1,impi))
    return
 end
 
@@ -921,8 +923,6 @@ end
 !
 !
 subroutine cmp_to_fmp_site(cmp,fmp)
-!$acc routine seq
-!$acc routine(cart_to_frac) seq
    use sizes
    implicit none
    integer j,k
@@ -938,14 +938,12 @@ subroutine cmp_to_fmp_site(cmp,fmp)
 !     apply the transformation to get the fractional multipoles
 !
    fmp(1) = ctf(1,1) * cmp(1)
-!$acc loop seq
    do j = 2, 4
       fmp(j) = 0.0
       do k = 2, 4
          fmp(j) = fmp(j) + ctf(j,k)*cmp(k)
       end do
    end do
-!$acc loop seq
    do j = 5, 10
       fmp(j) = 0.0
       do k = 5, 10
@@ -971,7 +969,6 @@ end
 !
 !
 subroutine cart_to_frac (ctf)
-!$acc routine
    use boxes
    use pme
    use tinheader
@@ -1092,7 +1089,6 @@ subroutine cart_to_fracgpu
 end
 !
 subroutine fphi_to_cphi_site(fphi,cphi)
-!$acc routine
    use sizes
    use tinheader
    implicit none
@@ -1100,7 +1096,6 @@ subroutine fphi_to_cphi_site(fphi,cphi)
    real(t_p) ftc(10,10)
    real(t_p) cphi(10)
    real(t_p) fphi(20)
-!$acc routine(frac_to_cart) seq
 !
 !     find the matrix to convert fractional to Cartesian
 !
@@ -1141,7 +1136,6 @@ end
 !
 !
 subroutine frac_to_cart (ftc)
-!$acc routine seq
 !      use sizes
    use boxes
    use pme

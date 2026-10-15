@@ -245,7 +245,7 @@ subroutine inducepcg_shortrealgpu(matvec,nrhs,precnd,ef,mu)
 !
 !     MPI
 !
-   integer iglob, iipole, ierr, commloc
+   integer iglob, iipole, ierr
    integer req1, req2, req3, req4
    integer status(MPI_STATUS_SIZE)
    type(polar_comm_t) :: comm_ticket
@@ -268,7 +268,6 @@ subroutine inducepcg_shortrealgpu(matvec,nrhs,precnd,ef,mu)
       &write(*,'(3x,a)') 'inducepcg_shortrealgpu'
 
    ips_call   = ips_call + 1
-   commloc    = merge(get_direct_comm(),get_domain_comm(),use_pmecore)
    npoleloc_e = npoleloc
    gbuff1     =  0.0_re_p
 
@@ -370,7 +369,7 @@ subroutine inducepcg_shortrealgpu(matvec,nrhs,precnd,ef,mu)
 !$acc wait(direct_work%queue)
 !$acc host_data use_device(gbuff)
       call MPI_ALLREDUCE(MPI_IN_PLACE,gbuff,nrhs,MPI_TPREC&
-         &,MPI_SUM,commloc,ierr)
+         &,MPI_SUM,merge(get_direct_comm(),get_domain_comm(),use_pmecore),ierr)
       !call MPI_WAIT(req1,status,ierr)
 !$acc end host_data
 !$acc serial async(direct_work%queue) present(ggold1,ggold2,gbuff)
@@ -417,9 +416,9 @@ subroutine inducepcg_shortrealgpu(matvec,nrhs,precnd,ef,mu)
 !$acc wait(direct_work%queue)
 !$acc host_data use_device(gg1,gg2)
          call MPI_ALLREDUCE(MPI_IN_PLACE,gg1,1,MPI_RPREC,&
-            &MPI_SUM,commloc,ierr)
+            &MPI_SUM,merge(get_direct_comm(),get_domain_comm(),use_pmecore),ierr)
          call MPI_ALLREDUCE(MPI_IN_PLACE,gg2,1,MPI_RPREC,&
-            &MPI_SUM,commloc,ierr)
+            &MPI_SUM,merge(get_direct_comm(),get_domain_comm(),use_pmecore),ierr)
 !$acc end host_data
       end if
 
@@ -442,7 +441,7 @@ subroutine inducepcg_shortrealgpu(matvec,nrhs,precnd,ef,mu)
 !$acc wait(direct_work%queue)
 !$acc host_data use_device(gbuff1)
          call MPI_ALLREDUCE(MPI_IN_PLACE,gbuff1(1),2*nrhs,MPI_RPREC&
-            &,MPI_SUM,commloc,ierr)
+            &,MPI_SUM,merge(get_direct_comm(),get_domain_comm(),use_pmecore),ierr)
          !call MPI_WAIT(req3,status,ierr)
 !$acc end host_data
 !$acc serial async(direct_work%queue) present(ggnew1,ggnew2,ene1,ene2,gbuff1)

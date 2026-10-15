@@ -37,6 +37,13 @@ namespace THRUST_WRAPPER{
       thrust::device_ptr<int> dev_out(out);
       thrust::inclusive_scan (dev_in,dev_in+N,dev_out);
    }
+   void inclusive_scan_int_async_wrapper ( int* in, int N, int* out, cudaStream_t s )
+   {
+      thrust::device_ptr<int> dev_in(in);
+      thrust::device_ptr<int> dev_out(out);
+      thrust::inclusive_scan (thrust::cuda::par_nosync(thrust_cache).on(s),
+         dev_in,dev_in+N,dev_out);
+   }
 
    // exclusive scan wrappers
    void exclusive_scan_int_wrapper ( int* in, int N, int* out )

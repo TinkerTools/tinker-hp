@@ -125,7 +125,7 @@ subroutine commforces_energy_aMD(energy,derivs)
    real(r_p),intent(inout):: derivs(3,nbloc)
 
    integer i,j,k
-   integer commloc,ierr
+   integer ierr
    integer :: reqsend(nproc),reqrec(nproc)
    real(r_p),allocatable ::buffer(:,:,:)
    integer tagmpi
@@ -134,15 +134,13 @@ subroutine commforces_energy_aMD(energy,derivs)
 !     Communication of the total et
 !
    if (use_pmecore) then
-      commloc = get_direct_comm()
       if (ndir.eq.1.or.rank.gt.ndir-1) return
    else
-      commloc = get_domain_comm()
       if (nproc.eq.1) return
    end if
 !
    call MPI_ALLREDUCE(MPI_IN_PLACE,energy,1,MPI_RPREC,MPI_SUM,&
-      &commloc,ierr)
+      &merge(get_direct_comm(),get_domain_comm(),use_pmecore),ierr)
 !
    allocate (buffer(3,max(1,nloc),nbig_send))
 !$acc data create(buffer) async
@@ -153,7 +151,7 @@ subroutine commforces_energy_aMD(energy,derivs)
    do i = 1, nbig_send
       tagmpi = nproc*rank + pbig_send(i) + 1
       call MPI_IRECV(buffer(1,1,i),3*nloc,MPI_RPREC,pbig_send(i),&
-         &tagmpi,commloc,reqrec(i),ierr)
+         &tagmpi,merge(get_direct_comm(),get_domain_comm(),use_pmecore),reqrec(i),ierr)
    end do
 !$acc end host_data
 !
@@ -163,7 +161,7 @@ subroutine commforces_energy_aMD(energy,derivs)
       tagmpi = nproc*pbig_recep(i) + rank + 1
       call MPI_ISEND(derivs(1,bufbeg(pbig_recep(i)+1)),&
          &3*domlen(pbig_recep(i)+1),MPI_RPREC,pbig_recep(i),&
-         &tagmpi,commloc,reqsend(i),ierr)
+         &tagmpi,merge(get_direct_comm(),get_domain_comm(),use_pmecore),reqsend(i),ierr)
    end do
 !$acc end host_data
 !
@@ -332,7 +330,7 @@ subroutine eamd1 (epot)
    use sizes  ,only: tinkerdebug
    use tinheader
    implicit none
-   integer ierr,commloc
+   integer ierr
    integer iglob
    integer i,j,c
    real(r_p) dedx_amd, dedy_amd, dedz_amd

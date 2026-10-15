@@ -27,29 +27,26 @@ contains
 end module
 
 subroutine bbk (istep,dt)
-   use atmtyp
-   use atomsMirror
-   use bath
+   use atmtyp, only: mass
+   use atomsMirror, only: integrate_pos,save_atoms_pos
+   use bath, only: kelvin
    use bbk_inl
-   use cutoff
-   use domdec
+   use cutoff, only: use_list
+   use domdec, only: glob,nloc,rank
    use deriv   ,only:info_forces,cBond,cNBond,comm_forces,tdes_l&
                ,dr_stride,de_tot,derivx
-   use energi
-   use freeze
-   use inform
-   use langevin
+   use energi, only: calc_e,esum,info_energy,reduceen
+   use freeze, only: use_rattle
+   use inform, only: abort,deb_Atom,deb_Energy,deb_Force,info_minmax_pva
+   use langevin, only: Rn,gamma
    use parallel,only: commpos,commposrec,migrate_atoms
-   use mdstuf
-   use mdstuf1
-   use moldyn
-   use mpi
-   use random_mod
-   use timestat
-   use tinheader
-   use tinMemory
-   use units
-   use usage
+   use mdstuf1, only: derivs,ekin,eksum,epot,etot,pres,stress,temp
+   use moldyn, only: a,v
+   use random_mod, only: host_rand_platform,normalgpu,normalvec
+   use tinheader, only: re_p
+   use tinMemory, only: prmem_request
+   use units, only: boltzmann,convert
+   use usage, only: use,useAll
    implicit none
    integer i,j,istep,iglob
    real(r_p) dt,dt_2

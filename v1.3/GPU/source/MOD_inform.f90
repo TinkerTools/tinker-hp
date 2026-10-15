@@ -34,6 +34,7 @@
 
 #include "tinker_macro.h"
 module inform
+   use iso_c_binding , only: c_int64_t, c_int8_t
    implicit none
    integer digits,iprint
    integer iwrite,isend,n_fwriten,idumpdyn
@@ -42,6 +43,8 @@ module inform
    logical final_message_suppressed
    integer tinEssai
    integer mtc_nacc
+   character(len=16) :: debug_phase = 'other'
+   integer(c_int64_t):: debug_call  = 0_c_int64_t
 
    ! All program list
    enum,bind(C)
@@ -187,5 +190,102 @@ module inform
       module subroutine check_loc1
       end subroutine
    end interface
+
+   interface hash_me
+      module procedure hash_real4
+      module procedure hash_real8
+      module procedure hash_int
+      module procedure hash_int64
+   end interface
+
+   contains
+
+   subroutine set_debug_phase(phase)
+      character(*), intent(in) :: phase
+      integer nchar
+   
+      nchar = min(len_trim(phase),len(debug_phase))
+      debug_phase = '                '
+      if (nchar > 0) then
+         debug_phase(1:nchar) = phase(1:nchar)
+      else
+         debug_phase = 'other'
+      endif
+   end subroutine set_debug_phase
+
+   subroutine hash_update(hash,bytes)
+      integer(c_int64_t), intent(inout) :: hash
+      integer(c_int8_t), intent(in) :: bytes(:)
+      integer j
+   
+      do j = 1, size(bytes)
+         hash = ieor(hash,iand(int(bytes(j),c_int64_t),255_c_int64_t))
+         hash = hash * 1099511628211_c_int64_t
+      end do
+   end subroutine hash_update
+
+   integer(c_int64_t) function hash_empty()
+      hash_empty = -3750763034362895579_c_int64_t
+   end function hash_empty
+   
+   integer(c_int64_t) function hash_real4(vector,count)
+      real(4), intent(in) :: vector(*)
+      integer, intent(in) :: count
+      integer(c_int8_t) bytes(storage_size(vector(1))/8)
+      integer(c_int64_t) hash
+      integer i
+
+      hash = hash_empty()
+      do i = 1, count
+         bytes = transfer(vector(i),bytes)
+         call hash_update(hash,bytes)
+      end do
+      hash_real4 = hash
+   end function hash_real4
+
+   integer(c_int64_t) function hash_real8(vector,count)
+      real(8), intent(in) :: vector(*)
+      integer, intent(in) :: count
+      integer(c_int8_t) bytes(storage_size(vector(1))/8)
+      integer(c_int64_t) hash
+      integer i
+
+      hash = hash_empty()
+      do i = 1, count
+         bytes = transfer(vector(i),bytes)
+         call hash_update(hash,bytes)
+      end do
+      hash_real8 = hash
+   end function hash_real8
+
+   integer(c_int64_t) function hash_int(vector,count)
+      integer, intent(in) :: vector(*)
+      integer, intent(in) :: count
+      integer(c_int8_t) bytes(storage_size(vector(1))/8)
+      integer(c_int64_t) hash
+      integer i
+
+      hash = hash_empty()
+      do i = 1, count
+         bytes = transfer(vector(i),bytes)
+         call hash_update(hash,bytes)
+      end do
+      hash_int = hash
+   end function hash_int
+
+   integer(c_int64_t) function hash_int64(vector,count)
+      integer(8), intent(in) :: vector(*)
+      integer, intent(in) :: count
+      integer(c_int8_t) bytes(storage_size(vector(1))/8)
+      integer(c_int64_t) hash
+      integer i
+
+      hash = hash_empty()
+      do i = 1, count
+         bytes = transfer(vector(i),bytes)
+         call hash_update(hash,bytes)
+      end do
+      hash_int64 = hash
+   end function hash_int64
 
 end

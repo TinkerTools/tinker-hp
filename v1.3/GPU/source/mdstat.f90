@@ -135,17 +135,6 @@ subroutine mdstat (istep,dt,etot,epot,ekin,temp,pres)
    save  vol_sum, vol2_sum
    save  box_sum, box2_sum
    save  stress_sum, stress2_sum
-#ifdef SINGLE
-   character(1) :: edcim = '2'
-#else
-   character(1) :: edcim = '4'
-#endif
-   character(2) :: esize
-   character(5) :: f_ener
-
-   esize='14'
-   if (n>5d6) esize='17'
-   f_ener = 'f'//esize//'.'//edcim
 !
 !
 !     set number of steps for block averages of properties
@@ -203,9 +192,9 @@ subroutine mdstat (istep,dt,etot,epot,ekin,temp,pres)
 !     print energy, temperature and pressure for current step
 !
    if (rank.eq.0) then
-      if (modstep.eq.0.or.display) then
+      if (modstep.eq.0.or.display.or.modstep.eq.1) then
 !$acc update host(etot,epot,ekin,temp,pres,stress) async
-         if (.not.calc_e) then
+         if (.not.calc_e .and. (modstep.eq.0 .or. display)) then
 9           format(&
                &" -- ERROR -- mdstat ",/&
                &,"    Energy computation is disabled !!"&
@@ -215,42 +204,28 @@ subroutine mdstat (istep,dt,etot,epot,ekin,temp,pres)
          end if
       end if
       if (verbose) then
-         if (modstep .eq. 1) then
+         if (modstep .eq. 1 .or. iprint.eq.1) then
+!$acc wait
+            call set_energy_format(etot)
             if (use_bounds .and. integrate.ne.'STOCHASTIC') then
-               write(iout,'(A)',advance="no")&
-                  &"     MD Step"&
-                  &//"     E total"&
-                  &//"   E Potential"&
-                  &//"     E Kinetic"&
-                  &//"       Temp"
-               if(use_virial) then
-                  write(iout,'(A)',advance="no")&
-                     &"       Pres"
-               endif
+               call write_energy_hdr(iout,.false.,use_virial)
 !                 if(isobaric) then
 !                   write(iout,'(A)',advance="no")
 !     &                         "     Density"
 !     &                       //"      Volume"
 !                 endif
-               write(iout,*)
             end if
          end if
          if (display) then
             if  (use_bounds .and. integrate.ne.'STOCHASTIC') then
 !$acc wait
-               write(iout,'(i10,3'//f_ener//',f11.2)',advance="no")&
-                  &istep,etot,epot,ekin,temp
-               if(use_virial) then
-                  write(iout,'(f11.2)',advance="no") pres
-               endif
+               call write_energy_row(iout,istep,etot,epot,ekin,temp,0.0d0,pres,.false.,use_virial)
                !if(isobaric) then
                !  write(iout,'(f12.4,f12.2)',advance="no") dens,volbox
                !endif
-               write(iout,*)
             else
 !$acc wait
-               write (iout,'(i10,3f14.4,f11.2)')&
-                  &istep,etot,epot,ekin,temp
+               call write_energy_row(iout,istep,etot,epot,ekin,temp,0.0d0,0.0d0,.false.,.false.)
             end if
          end if
       end if

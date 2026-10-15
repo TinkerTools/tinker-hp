@@ -22,7 +22,7 @@ submodule (initialization) initialization_lifecycle
                      publish_legacy_cli
    use cflux , only: release_cflux_workspaces
    use cutoff, only: use_ewald
-   use deriv , only: dotstgrad
+   use deriv , only: dotstgrad, mem_free_deriv
    use domdec, only: nproc, nproctot, nrec, nthread, ranktot
    use energi, only: calc_e, delete_energi_on_device, etot_ave, etot_std
    use fft   , only: free_FFTgrid_p, fft_final, is_fftInit
@@ -71,7 +71,7 @@ contains
       implicit none
       type(raw_cli_t), intent(in) :: raw_cli
       type(status_t), intent(out) :: status_value
-      integer :: ierr
+      integer :: ierr, world_size, world_rank
       logical :: mpi_ready, mpi_is_finalized
       real(t_p) :: precise
 
@@ -91,23 +91,22 @@ contains
 
       nbeads = 1
       nbeads_ctr = 0
-      nproc = 1
       nthread = 1
       nrec = 0
       input = 5
       iout = 6
       call publish_legacy_cli(raw_cli)
-      call MPI_COMM_SIZE(MPI_COMM_WORLD,nproctot,ierr)
+      call MPI_COMM_SIZE(MPI_COMM_WORLD,world_size,ierr)
       if (ierr /= MPI_SUCCESS) then
          call set_status(status_value, status_invalid_argument, 'Unable to inspect MPI world size')
          return
       end if
-      call MPI_COMM_RANK(MPI_COMM_WORLD,ranktot,ierr)
+      call MPI_COMM_RANK(MPI_COMM_WORLD,world_rank,ierr)
       if (ierr /= MPI_SUCCESS) then
          call set_status(status_value, status_invalid_argument, 'Unable to inspect MPI world rank')
          return
       end if
-      if (ranktot.eq.0) call promo
+      if (world_rank.eq.0) call promo
       p_tiny = precise(1)
       small = precise(2)
       p_huge = precise(3)
@@ -521,6 +520,9 @@ contains
          call release_polar_workspace(direct_work%queue)
          call release_tmatxb_workspace(direct_work%queue)
 !$acc wait
+         call scaling_postop
+         call dealloc_shared_scaling
+         call mem_free_deriv
 #ifdef _OPENACC
          call thrust_clear_cache_memory(sd_prmem)
 #endif
@@ -535,6 +537,7 @@ contains
          end if
          call delete_energi_on_device()
          call delete_vir_device()
+!$acc wait
 #ifdef USE_NVSHMEM
          call nvshmem_finalize()
 #endif

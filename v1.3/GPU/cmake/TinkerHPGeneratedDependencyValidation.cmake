@@ -59,18 +59,54 @@ foreach(_metadata_file IN LISTS _metadata_files)
   endif()
 endforeach()
 
-if(NOT _module_maps)
-  message(FATAL_ERROR
-    "No generated FortranModules.json was found; build the configured targets "
-    "before running this closure test")
-endif()
+set(_validation_fixture_prefix
+  "${TINKERHP_BUILD_DIR}/cmake-configuration-validation/")
+set(_primary_module_maps)
+set(_primary_dyndep_files)
+set(_primary_compiler_dependency_files)
+set(_primary_compatibility_dependency_files)
+foreach(_metadata_file IN LISTS _module_maps)
+  string(FIND "${_metadata_file}" "${_validation_fixture_prefix}"
+    _fixture_index)
+  if(_fixture_index EQUAL -1)
+    list(APPEND _primary_module_maps "${_metadata_file}")
+  endif()
+endforeach()
+foreach(_metadata_file IN LISTS _dyndep_files)
+  string(FIND "${_metadata_file}" "${_validation_fixture_prefix}"
+    _fixture_index)
+  if(_fixture_index EQUAL -1)
+    list(APPEND _primary_dyndep_files "${_metadata_file}")
+  endif()
+endforeach()
+foreach(_metadata_file IN LISTS _compiler_dependency_files)
+  string(FIND "${_metadata_file}" "${_validation_fixture_prefix}"
+    _fixture_index)
+  if(_fixture_index EQUAL -1)
+    list(APPEND _primary_compiler_dependency_files "${_metadata_file}")
+  endif()
+endforeach()
+foreach(_metadata_file IN LISTS _compatibility_dependency_files)
+  string(FIND "${_metadata_file}" "${_validation_fixture_prefix}"
+    _fixture_index)
+  if(_fixture_index EQUAL -1)
+    list(APPEND _primary_compatibility_dependency_files
+      "${_metadata_file}")
+  endif()
+endforeach()
+
 if(EXISTS "${TINKERHP_BUILD_DIR}/build.ninja")
-  if(NOT _dyndep_files OR NOT _compiler_dependency_files)
+  if(NOT _primary_module_maps)
+    message(FATAL_ERROR
+      "No generated FortranModules.json was found; build the configured targets "
+      "before running this closure test")
+  endif()
+  if(NOT _primary_dyndep_files OR NOT _primary_compiler_dependency_files)
     message(FATAL_ERROR
       "Ninja build is missing Fortran dyndep or compiler dependency metadata")
   endif()
 elseif(EXISTS "${TINKERHP_BUILD_DIR}/Makefile")
-  if(NOT _compatibility_dependency_files)
+  if(NOT _primary_compatibility_dependency_files)
     message(FATAL_ERROR
       "Makefile build is missing CMake or Make dependency metadata")
   endif()
@@ -80,6 +116,9 @@ endif()
 message(STATUS
   "Checked ${_metadata_files} generated dependency metadata files; "
   "retired compatibility surfaces absent")
-message(STATUS "Fortran dyndep metadata: ${_dyndep_files}")
-message(STATUS "Compiler dependency metadata: ${_compiler_dependency_files}")
-message(STATUS "Compatibility dependency metadata: ${_compatibility_dependency_files}")
+message(STATUS "Primary Fortran module metadata: ${_primary_module_maps}")
+message(STATUS "Primary Fortran dyndep metadata: ${_primary_dyndep_files}")
+message(STATUS
+  "Primary compiler dependency metadata: ${_primary_compiler_dependency_files}")
+message(STATUS
+  "Primary compatibility dependency metadata: ${_primary_compatibility_dependency_files}")

@@ -119,11 +119,15 @@ module domdec
    logical Bdecomp1d,Bdecomp2d,Bdecomp3d
    integer,parameter:: masterRank=0
    integer nxdd,nydd,nzdd
-   integer nproctot,ranktot
-   integer,target:: nproc,rank
-   integer nproc_polymer,rank_polymer
+   ! Cannot be views since they are consumed by OpenACC kernels.
+   ! Fortunately, they are set only once per run.
+   integer, protected :: nproc=-1, rank=-1
+   ! Read-only compatibility views. The storage is owned by parallel_t;
+   ! these pointers are rebound only at the platform lifecycle boundary.
+   integer, protected, pointer :: nproctot => null(), ranktot => null()
+   integer, protected, pointer :: nproc_polymer => null(), rank_polymer => null()
+   integer, protected, pointer :: hostrank => null()
    integer rank_bis,nthread,nrec,ndir
-   integer hostrank
    integer n_recep1, n_send1, nrec_recep,nrec_send
    integer n_recep2, n_send2, nrecdir_recep,nrecdir_send
    integer nrecdir_recep2,nrecdir_send2
@@ -169,9 +173,31 @@ module domdec
             , bbegproc(:),bendproc(:)&
             , cbegproc(:),cendproc(:)
 
-!$acc declare create(rank,rank_bis)
 !$acc declare create(prec_send)
 !$acc declare create(bufbeg1,bufbeg2)
 !$acc declare create(xbegproc,xendproc,ybegproc,yendproc,zbegproc,zendproc)
 
-end
+contains
+
+   subroutine bind_parallel_views(world_size, world_rank, domain_size, domain_rank, &
+         &replica_size, replica_rank, host_rank)
+      integer, target, intent(inout) :: world_size, world_rank
+      integer, target, intent(inout) :: domain_size, domain_rank
+      integer, target, intent(inout) :: replica_size, replica_rank, host_rank
+
+      nproctot      => world_size
+      ranktot       => world_rank
+      nproc         = domain_size
+      rank          = domain_rank
+      nproc_polymer => replica_size
+      rank_polymer  => replica_rank
+      hostrank      => host_rank
+   end subroutine bind_parallel_views
+
+   subroutine clear_parallel_views()
+      nullify(nproctot, ranktot, nproc_polymer, rank_polymer, hostrank)
+      rank=-1
+      nproc=-1
+   end subroutine clear_parallel_views
+
+end module domdec

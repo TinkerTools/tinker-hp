@@ -136,15 +136,7 @@ subroutine empole3cgpu
       &then
       call timer_enter (timer_real )
       if (use_mreal) then
-#ifdef _OPENACC
          call emreal3d_p
-#else
-         if (use_chgpen) then
-            call emreal3d
-         else
-            call emreal3d_p
-         end if
-#endif
       end if
 !
 !     compute the self-energy part of the Ewald summation
@@ -990,7 +982,7 @@ subroutine emrecipgpu
    use tinheader ,only: ti_p,re_p
    implicit none
    integer ierr,iipole,proc,iglob
-   integer status(MPI_STATUS_SIZE),tag,commloc
+   integer status(MPI_STATUS_SIZE),tag
    integer i,j,k
    integer k1,k2,k3
    integer m1,m2,m3
@@ -1016,11 +1008,9 @@ subroutine emrecipgpu
    if (use_pmecore) then
       nprocloc = nrec
       rankloc  = rank_bis
-      commloc  =  get_recip_comm()
    else
       nprocloc = nproc
       rankloc  = rank
-      commloc  = get_domain_comm()
    end if
    f = electric / dielec
 !
@@ -1079,7 +1069,7 @@ subroutine emrecipgpu
 !$acc host_data use_device(qgridmpi)
       call MPI_IRECV(qgridmpi(1,1,1,1,i),2*n1mpimax*n2mpimax*&
          &n3mpimax,MPI_TPREC,prec_recep(i),tag,&
-         &commloc,reqrec(i),ierr)
+         &merge(get_recip_comm(),get_domain_comm(),use_pmecore),reqrec(i),ierr)
 !$acc end host_data
    end do
 !
@@ -1092,7 +1082,7 @@ subroutine emrecipgpu
 !$acc host_data use_device(qgridin_2d)
       call MPI_ISEND(qgridin_2d(1,1,1,1,i+1),&
          &2*n1mpimax*n2mpimax*n3mpimax,MPI_TPREC,&
-         &proc,tag,commloc,reqsend(i),ierr)
+         &proc,tag,merge(get_recip_comm(),get_domain_comm(),use_pmecore),reqsend(i),ierr)
 !$acc end host_data
    end do
 !
@@ -1215,7 +1205,7 @@ subroutine emrecipgpu
 !$acc host_data use_device(qgridin_2d)
       call MPI_IRECV(qgridin_2d(1,1,1,1,i+1),&
          &2*n1mpimax*n2mpimax*n3mpimax,MPI_TPREC,&
-         &prec_send(i),tag,commloc,req2rec(i),ierr)
+         &prec_send(i),tag,merge(get_recip_comm(),get_domain_comm(),use_pmecore),req2rec(i),ierr)
 !$acc end host_data
    end do
 !
@@ -1227,7 +1217,7 @@ subroutine emrecipgpu
 !$acc host_data use_device(qgridin_2d)
       call MPI_ISEND(qgridin_2d,&
          &2*n1mpimax*n2mpimax*n3mpimax,MPI_TPREC,&
-         &prec_recep(i),tag,commloc,req2send(i),ierr)
+         &prec_recep(i),tag,merge(get_recip_comm(),get_domain_comm(),use_pmecore),req2send(i),ierr)
 !$acc end host_data
    end do
 !

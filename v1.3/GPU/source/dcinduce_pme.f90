@@ -14,25 +14,23 @@
 !
 #include "tinker_precision.h"
 subroutine dcinduce_pme
-   use atmlst
-   use divcon
-   use domdec
-   use parallel, only: get_domain_comm
-   use ewald
-   use iounit
-   use math
-   use mpole
-   use parallel, only: comm_state_t=>polar_comm_t, polar_post_comm, polar_finish, &
-      &polar_post_dip_comm, polar_finish_dip_comm
-   use parallel, only: commrecdirfields, commrecdirfieldsgpu, commrecdirsolv, commrecdirsolvgpu
-   use parallel, only: commfield, commfieldgpu, commfieldshort
-   use pme
-   use polar
-   use polpot
-   use potent
-   use units
-   use uprior
-   use mpi
+   use atmlst   , only: poleglob, polerecglob
+   use divcon   , only: clsttype, precomp
+   use domdec   , only: ndir, nproc, rank
+   use ewald    , only: aewald
+   use iounit   , only: iout
+   use math     , only: sqrtpi
+   use mpole    , only: npolebloc, npoleloc, npolerecloc, rpole
+   use parallel , only: get_domain_comm, polar_comm_t, polar_post_comm, polar_finish, &
+                  polar_post_dip_comm, polar_finish_dip_comm, commrecdirfields, &
+                  commfield, commfieldgpu, commfieldshort
+   use pme      , only: cphirec, fphirec
+   use polar    , only: polarity, uind, uinp
+   use polpot   , only: polgsf, polprt
+   use potent   , only: use_lambdadyn, use_polar, use_polarshortreal
+   use tinheader, only: ti_p
+   use uprior   , only: bpred, maxualt, nualt, udalt, upalt, use_pred
+   use mpi      , only: MPI_BARRIER, MPI_STATUS_SIZE, MPI_WTIME
    implicit none
 !
 !     with separate cores for reciprocal part
@@ -43,7 +41,7 @@ subroutine dcinduce_pme
 !
    integer ierr, iipole, proc,tag
    integer, allocatable :: reqrecdirsend(:),reqrecdirrec(:)
-   type(comm_state_t) :: comm_ticket, dip_ticket
+   type(polar_comm_t) :: comm_ticket, dip_ticket
    integer status(MPI_STATUS_SIZE)
 !
    parameter (nrhs=2)
@@ -301,23 +299,24 @@ end
 
 
 subroutine inducedc_pme(matvec,nrhs,dodiis,ef,mu,murec)
-   use parallel, only: get_domain_comm, get_direct_comm
-   use atmlst
-   use divcon
-   use domdec
-   use ewald
-   use iounit
-   use math
-   use mpole
-   use parallel, only: comm_state_t=>polar_comm_t, polar_post_comm, polar_finish, &
-      &polar_post_dip_comm, polar_finish_dip_comm
-   use parallel, only: commrecdirfields, commrecdirfieldsgpu, commrecdirsolv, commrecdirsolvgpu
-   use parallel, only: commfield, commfieldgpu, commfieldshort
-   use polar
-   use polpot
-   use tinheader
-   use timestat
-   use mpi
+   use atmlst   , only: poleglob
+   use divcon   , only: atmofst, clsttype, grplst, klst, km, kofst, maxdim, nocomdiis, &
+                   &npergrp, precomp, ytab, zmat, zmatDn
+   use domdec   , only: ndir, nproc, rank
+   use ewald    , only: aewald
+   use iounit   , only: iout
+   use math     , only: sqrtpi
+   use mpole    , only: ipole, npolebloc, npoleloc, npolerecloc, poleloc
+   use parallel , only: get_domain_comm, get_direct_comm, &
+                  polar_comm_t, polar_post_comm, polar_finish, &
+                  polar_post_dip_comm, polar_finish_dip_comm, commrecdirfields, &
+                  commrecdirfieldsgpu, commrecdirsolv, commrecdirsolvgpu, &
+                  commfield, commfieldgpu, commfieldshort
+   use polar    , only: npolar, polarity, uind, uinp
+   use polpot   , only: poleps, polalg, polgsf, politer, polprt
+   use tinheader, only: ti_p
+   use mpi      , only: MPI_IALLREDUCE, MPI_IN_PLACE, MPI_STATUS_SIZE, MPI_SUM, MPI_TPREC, &
+                  MPI_WAIT
    implicit none
 !
 !     solves the polarizable dipoles linear equations by jacobi
@@ -349,7 +348,7 @@ subroutine inducedc_pme(matvec,nrhs,dodiis,ef,mu,murec)
    real(t_p), allocatable ::buffermpimu(:,:,:)
    integer ierr, tag, proc
    integer,allocatable :: reqrecdirrec(:),reqrecdirsend(:)
-   type(comm_state_t) :: comm_ticket, dip_ticket
+   type(polar_comm_t) :: comm_ticket, dip_ticket
    integer reqnorm,reqdiis(2*ndismx+1)
    integer status(MPI_STATUS_SIZE)
 !
@@ -2208,16 +2207,11 @@ subroutine commfield2(nrhs,ef)
    use mpi
    implicit none
    integer nrhs,i,j,k,tag,status(MPI_STATUS_SIZE)
-   integer ierr,commloc
+   integer ierr
    integer, allocatable :: req(:)
    real(t_p) ef(3,nrhs,*)
    real(t_p), allocatable :: buffer(:,:,:,:)
 !
-   if (use_pmecore) then
-      commloc = get_direct_comm()
-   else
-      commloc = get_domain_comm()
-   end if
 !
    allocate (buffer(3,nrhs,max(npoleloc,1),n_send1))
    allocate (req(nproc*nproc))
@@ -2227,14 +2221,14 @@ subroutine commfield2(nrhs,ef)
    do i = 1, n_send1
       tag = nproc*rank + p_send1(i) + 1
       call MPI_IRECV(buffer(1,1,1,i),3*nrhs*npoleloc,MPI_TPREC,&
-         &p_send1(i),tag,commloc,req(tag),ierr)
+         &p_send1(i),tag,merge(get_direct_comm(),get_domain_comm(),use_pmecore),req(tag),ierr)
    end do
 !
    do i = 1, n_recep1
       tag = nproc*p_recep1(i) + rank + 1
       call MPI_ISEND(ef(1,1,bufbegpole(p_recep1(i)+1)),&
          &3*nrhs*domlen(p_recep1(i)+1),MPI_TPREC,p_recep1(i),&
-         &tag,commloc,req(tag),ierr)
+         &tag,merge(get_direct_comm(),get_domain_comm(),use_pmecore),req(tag),ierr)
    end do
 
    call dc_factor
@@ -2275,16 +2269,11 @@ subroutine commfield2short(nrhs,ef)
    use mpi
    implicit none
    integer nrhs,i,j,k,tag,status(MPI_STATUS_SIZE)
-   integer ierr,commloc
+   integer ierr
    integer, allocatable :: req(:)
    real(t_p) ef(3,nrhs,*)
    real(t_p), allocatable :: buffer(:,:,:,:)
 !
-   if (use_pmecore) then
-      commloc = get_direct_comm()
-   else
-      commloc = get_domain_comm()
-   end if
 
    allocate (buffer(3,nrhs,max(npoleloc,1),n_send1))
    allocate (req(nproc*nproc))
@@ -2294,14 +2283,14 @@ subroutine commfield2short(nrhs,ef)
    do i = 1, n_sendshort1
       tag = nproc*rank + p_sendshort1(i) + 1
       call MPI_IRECV(buffer(1,1,1,i),3*nrhs*npoleloc,MPI_TPREC,&
-         &p_sendshort1(i),tag,commloc,req(tag),ierr)
+         &p_sendshort1(i),tag,merge(get_direct_comm(),get_domain_comm(),use_pmecore),req(tag),ierr)
    end do
 !
    do i = 1, n_recepshort1
       tag = nproc*p_recepshort1(i) + rank + 1
       call MPI_ISEND(ef(1,1,bufbegpole(p_recepshort1(i)+1)),&
          &3*nrhs*domlen(p_recepshort1(i)+1),MPI_TPREC,p_recepshort1(i),&
-         &tag,commloc,req(tag),ierr)
+         &tag,merge(get_direct_comm(),get_domain_comm(),use_pmecore),req(tag),ierr)
    end do
 
    call dc_factor

@@ -596,7 +596,6 @@ end
 !
 subroutine def_lambdadyn
    use domdec, only: nproc,nproctot,rank,ranktot
-   use parallel, only: get_domain_comm
    use deriv, only: d2edlambda2,d2edlambdae2,d2edlambdav2,&
       &dlambdaelambda,dlambdavlambda
    use inform, only: app_id,iprint,pimd_a,verbose
@@ -609,16 +608,14 @@ subroutine def_lambdadyn
    implicit none
    integer ierr
    logical disp
-   integer rank_,nproc_,COMM_
+   integer rank_,nproc_
 
       if (app_id == pimd_a) then
         rank_ = ranktot
         nproc_ = nproctot
-        COMM_ = MPI_COMM_WORLD
       else
         rank_ = rank
         nproc_ = nproc
-        COMM_ = get_domain_comm()
       end if
 
 !     checks if the intervall bounds for vlambda and elambda are consistent

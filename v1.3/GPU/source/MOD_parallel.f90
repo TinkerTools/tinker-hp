@@ -108,6 +108,7 @@ module parallel
       integer :: communicator = MPI_COMM_NULL
       integer :: size = 0
       integer :: rank = 0
+      integer :: index = 0
    end type replica_t
 
    type :: root_exch_t
@@ -117,6 +118,8 @@ module parallel
    type :: parallel_t
       ! Noncopyable MPI topology owner. Components are loaned through
       ! the handle queries and legacy adapter; reset_topology releases every loan.
+      integer :: world_size = 0
+      integer :: world_rank = 0
       type(domain_t) :: domain
       type(host_t) :: host
       type(replica_t) :: replica

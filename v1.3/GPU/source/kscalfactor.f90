@@ -13,6 +13,7 @@ module kscalfactor_inl
    use scaling, only: maxscaling, maxscaling1
    integer maxgangs,vecl,worksize1
    integer,allocatable:: workS(:,:),workS_p(:,:)
+   logical :: scaling_device_ready=.false.
    parameter(maxgangs=1024,vecl=128,&
       &worksize1=maxgangs*vecl)
 contains
@@ -60,6 +61,7 @@ subroutine scaling_preop(istep)
    use domdec ,only: nlocnl,rank
    use inform ,only: deb_Path
    use interfaces ,only: polar_scaling,polar_scaling1,polar_scaling_p
+   use kscalfactor_inl, only: scaling_device_ready
    use mplpot ,only: n_mscale
    use mpole  ,only: npolelocnl,npolebloc
    use polgrp
@@ -70,16 +72,15 @@ subroutine scaling_preop(istep)
    use vdwpot ,only: n_vscale
    implicit none
    integer,intent(in)::istep
-   logical,save :: first_in=.true.
    integer(mipk) szo_workspace
    integer(mipk),parameter :: max_sfworkSpace=2*(int(2,mipk)**30)
    integer nplocnl_e
    real(8) wsSize
 
-   if (first_in) then
+   if (.not.scaling_device_ready) then
 !$acc enter data create(max_factorn, &
 !$acc   n_vscale,n_mscale,n_uscale,n_dpscale,n_dpuscale,n_cscale)
-      first_in    = .false.
+      scaling_device_ready = .true.
    end if
 
    !Initialize scaling structure data on device
@@ -382,10 +383,21 @@ subroutine fuse_scaling_factor_p
 end subroutine
 
 subroutine dealloc_shared_scaling
+   use chgpot, only: n_cscale
    use couple
+   use kscalfactor_inl, only: scaling_device_ready, workS, workS_p
+   use mplpot, only: n_mscale
    use polgrp
+   use polpot, only: n_dpscale, n_dpuscale, n_uscale
    use tinMemory
+   use vdwpot, only: n_vscale
    implicit none
+
+   if (scaling_device_ready) then
+!$acc exit data delete(max_factorn, &
+!$acc   n_vscale,n_mscale,n_uscale,n_dpscale,n_dpuscale,n_cscale)
+      scaling_device_ready = .false.
+   end if
 
    call shmem_request(numscal_n,winnumscal_n,[0],config=mhostacc)
    call shmem_request(scalbeg_n,winscalbeg_n,[0],config=mhostacc)
@@ -395,6 +407,8 @@ subroutine dealloc_shared_scaling
    call shmem_request(scalbeg_p,winscalbeg_p,[0],config=mhostacc)
    call shmem_request(allscal_p,winallscal_p,[0],config=mhostacc)
    call shmem_request(typscal_p,wintypscal_p,[0],config=mhostacc)
+   if (allocated(workS)) call prmem_request(workS,0,0,async=.true.)
+   if (allocated(workS_p)) call prmem_request(workS_p,0,0,async=.true.)
 end
 
 
@@ -3108,11 +3122,7 @@ subroutine scaling_postop
    use tinMemory
    implicit none
 
-   if (.not.allocated(pair_factorn)) then
-      print*, "ERROR !! call scaling_postop an inconvenient way"
-      print*, "         Alteration of the source code "
-      call fatal
-   end if
+   if (.not.allocated(pair_factorn)) return
 
 !$acc exit data delete(pair_factorn,scal_factorn,n_factorn, &
 !$acc    scan_factorn) async

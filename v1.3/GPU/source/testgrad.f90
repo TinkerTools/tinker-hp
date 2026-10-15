@@ -18,7 +18,6 @@
 #include "tinker_macro.h"
 program testgrad
    use config, only: raw_cli_t, capture_raw_cli
-   use domdec, only: rank
    use parallel, only: get_domain_comm
    use iounit, only: iout
    use mdevice, only: bind_device
@@ -34,7 +33,6 @@ program testgrad
    call MPI_INIT(ierr)
    call MPI_COMM_RANK(MPI_COMM_WORLD,world_rank,ierr)
    iout = 6
-   rank = world_rank
    call testgrad_bis(raw_cli,status_value)
    if (failed(status_value)) then
       if (world_rank.eq.0) write(iout,*) trim(status_value%message)
@@ -44,14 +42,18 @@ program testgrad
    end if
    call MPI_BARRIER(MPI_COMM_WORLD,ierr)
    call MPI_FINALIZE(ierr)
-end
+
+   contains
 
 subroutine testgrad_bis(raw_cli,status_value)
    use atomsMirror
+   use bound, only: use_bounds
+   use boxes, only: volbox
    use cell
    use config, only: config_t, max_raw_cli_args, parse_common_cli, raw_cli_length, raw_cli_t
    use deriv
    use domdec
+   use gradient_inl, only: enr2en
    use parallel, only: get_domain_comm
    use energi
    use sizes
@@ -65,6 +67,7 @@ subroutine testgrad_bis(raw_cli,status_value)
    use structure, only: structure_t
    use tinheader ,only: ti_p,re_p
    use usage
+   use virial, only: dedv, vir, virnum, use_virial
    use mpi
    implicit none
    type(raw_cli_t), intent(in) :: raw_cli
@@ -72,10 +75,15 @@ subroutine testgrad_bis(raw_cli,status_value)
    integer i,j,next,iglob,ierr
    integer iloc,value_count,value_index
    real(r_p) etot,f,f0,eps,eps0,old,energy
+   real(r_p), parameter :: virial_eps=1.0e-3_re_p
    real(r_p) eb0,ea0,eba0,eub0,eaa0,eopb0
    real(r_p) eopd0,eid0,eit0,et0,ept0,eat0,ebt0
    real(r_p) ett0,ev0,er0,edsp0,ect0,ec0,em0,ep0
    real(r_p) eg0,ex0
+   real(r_p) virial_analytic,virial_numeric,virial_residual
+   real(r_p) virial_relative_residual
+   real(r_p) virial_analytic_tensor(3,3),virial_tensor_norm
+   real(r_p) grad_diff_norm,grad_scale,grad_relative_error
    real(r_p) totnorm,ntotnorm,rms,nrms
    real(r_p), allocatable :: denorm(:)
    real(r_p), allocatable :: ndenorm(:)
@@ -106,6 +114,7 @@ subroutine testgrad_bis(raw_cli,status_value)
    real(r_p), allocatable :: ndex(:,:)
    logical exist,query
    logical doanalyt,donumer,dofull
+   logical virnum_save,use_virial_save
    character*1 answer
    character*1 axis(3)
    character*240 record
@@ -118,6 +127,12 @@ subroutine testgrad_bis(raw_cli,status_value)
    type(channel_t) reciprocal_work
    type(status_t) cleanup_status
    data axis  / 'X','Y','Z' /
+   interface
+      subroutine dedvcalc(delta_)
+         use tinheader, only: re_p
+         real(r_p), optional, intent(in) :: delta_
+      end subroutine dedvcalc
+   end interface
 !
 !     set up the structure and mechanics calculation
 !
@@ -212,26 +227,52 @@ subroutine testgrad_bis(raw_cli,status_value)
 !
    allocate (detot(3,nbloc))
    detot = 0_ti_p
+!$acc enter data create(etot)
+!$acc enter data copyin(detot)
    call assign_direct
    call reassignpme(.false.)
    call reinitnl(0)
    call mechanicstep(0)
    call nblist(0)
-!
-!     compute the analytical gradient components
-!
+   !
+   !     compute the analytical gradient components
+   !
    if (doanalyt) then
+      virnum_save = virnum
+      use_virial_save = use_virial
+      virnum = .true.
+      use_virial = .true.
+      call zero_forces
       call gradient (etot,detot)
+!$acc wait
+!$acc update self(etot)
+!$acc update self(vir)
+!$acc wait
 !
 !    MPI : communicate analytical forces and torques
 !
       ! Diagnostic consumer; the exchange remains owned by deriv.
       call commforceststgrad(detot)
       call commforcesrec(detot)
+      if (nproc.eq.1) then
+         if (ftot_l) then
+            call get_ftot(detot,nbloc)
+         end if
+!$acc update self(detot(1:3,1:nbloc)) async(reciprocal_work%queue)
+!$acc wait(reciprocal_work%queue)
+      end if
 !
 !    MPI : get total energies from gradient routine
 !
       call reduceen(etot)
+      if (use_bounds) then
+         virial_analytic_tensor = vir
+         virial_tensor_norm = sqrt(sum(virial_analytic_tensor**2))
+         virial_analytic = (vir(1,1)+vir(2,2)+vir(3,3)) /&
+            &(3.0_re_p*volbox)
+      end if
+      virnum = virnum_save
+      use_virial = use_virial_save
    end if
 !
 !     print the total potential energy of the system
@@ -286,7 +327,8 @@ subroutine testgrad_bis(raw_cli,status_value)
          &12x,'EXDISP',&
          &/,15x,'EAT')
       write (iout,190)  eb,ea,eba,eub,ex,eaa,eopb,eopd,eid,ec,&
-         &eit,et,ept,ebt,er,ett,ev,em,ep,edsp,ect,&
+         &eit,et,ept,ebt,enr2en(er),ett,ev,em,ep,enr2en(edsp),&
+         &enr2en(ect),&
          &eat
 190   format (/,6x,5f15.4,/,6x,5f15.4,/,6x,5f15.4,/,6x,5f15.4,&
          &/,6x,2f15.4)
@@ -399,6 +441,9 @@ subroutine testgrad_bis(raw_cli,status_value)
                old = z(i)
                z(i) = z(i) - 0.5_re_p*eps
             end if
+!$acc update device(x(i),y(i),z(i))
+            call reCast_position
+!$acc wait
             f0 = energy ()
             call allreduceen(f0)
             eb0 = eb
@@ -432,6 +477,9 @@ subroutine testgrad_bis(raw_cli,status_value)
             else if (j .eq. 3) then
                z(i) = z(i) + eps
             end if
+!$acc update device(x(i),y(i),z(i))
+            call reCast_position
+!$acc wait
             f = energy ()
             call allreduceen(f)
             if (j .eq. 1) then
@@ -441,6 +489,9 @@ subroutine testgrad_bis(raw_cli,status_value)
             else if (j .eq. 3) then
                z(i) = old
             end if
+!$acc update device(x(i),y(i),z(i))
+            call reCast_position
+!$acc wait
 !
 !   si i dans domenloc alors nde et affichage
 !
@@ -498,16 +549,28 @@ subroutine testgrad_bis(raw_cli,status_value)
 !  250                format (/,i6,5f14.6,/,5x,a1,5f14.6,/,' Anlyt',
 !     &                          5f14.6,/,6x,5f14.6,/,6x,4f14.6)
 !                  else
-               write (iout,260) i,deb(j,iloc),dea(j,iloc),&
-                  &deba(j,iloc),deub(j,iloc),dex(j,iloc),&
-                  &axis(j),&
-                  &deaa(j,iloc),deopb(j,iloc),deopd(j,iloc),&
-                  &deid(j,iloc),dec(j,iloc),deit(j,iloc),&
-                  &det(j,iloc),&
-                  &dept(j,iloc),debt(j,iloc),der(j,iloc),&
-                  &dett(j,iloc),dev(j,iloc),dem(j,iloc),&
-                  &dep(j,iloc),dedsp(j,iloc),dect(j,iloc),&
-                  &deat(j,iloc)
+               if (associated(deb).and.associated(dea).and.&
+                  &associated(deba).and.associated(deub).and.&
+                  &associated(dex).and.associated(deaa).and.&
+                  &associated(deopb).and.associated(deopd).and.&
+                  &associated(deid).and.associated(dec).and.&
+                  &associated(deit).and.associated(det).and.&
+                  &associated(dept).and.associated(debt).and.&
+                  &associated(der).and.associated(dett).and.&
+                  &associated(dev).and.associated(dem).and.&
+                  &associated(dep).and.associated(dedsp).and.&
+                  &associated(dect).and.associated(deat)) then
+                  write (iout,260) i,deb(j,iloc),dea(j,iloc),&
+                     &deba(j,iloc),deub(j,iloc),dex(j,iloc),&
+                     &axis(j),&
+                     &deaa(j,iloc),deopb(j,iloc),deopd(j,iloc),&
+                     &deid(j,iloc),dec(j,iloc),deit(j,iloc),&
+                     &det(j,iloc),&
+                     &dept(j,iloc),debt(j,iloc),der(j,iloc),&
+                     &dett(j,iloc),dev(j,iloc),dem(j,iloc),&
+                     &dep(j,iloc),dedsp(j,iloc),dect(j,iloc),&
+                     &deat(j,iloc)
+               end if
 260            format (/,i6,5f15.4,/,5x,a1,5f15.4,/,' Anlyt',&
                   &5f15.4,/,6x,5f15.4,/,6x,2f15.4)
 !                  end if
@@ -618,6 +681,8 @@ subroutine testgrad_bis(raw_cli,status_value)
    end if
    totnorm = 0.0_re_p
    ntotnorm = 0.0_re_p
+   grad_diff_norm = 0.0_re_p
+   grad_scale = 0.0_re_p
    do i = 1, nloc
       iglob = glob(i)
       if (doanalyt .and. use(iglob)) then
@@ -640,6 +705,10 @@ subroutine testgrad_bis(raw_cli,status_value)
          ndenorm(i) = ndetot(1,i)**2 + ndetot(2,i)**2 +&
             &ndetot(3,i)**2
          ntotnorm = ntotnorm + ndenorm(i)
+         if (doanalyt) then
+            grad_diff_norm = grad_diff_norm + sum((detot(:,i)-ndetot(:,i))**2)
+            grad_scale = grad_scale + max(sum(detot(:,i)**2),sum(ndetot(:,i)**2))
+         end if
          ndenorm(i) = sqrt(ndenorm(i))
 !            if (digits .ge. 8) then
 !               write (iout,370)  iglob,(ndetot(j,i),j=1,3),ndenorm(i)
@@ -668,9 +737,24 @@ subroutine testgrad_bis(raw_cli,status_value)
       call MPI_REDUCE(ntotnorm,ntotnorm,1,MPI_RPREC,MPI_SUM,0,&
          &get_domain_comm(),ierr)
    end if
+   if (doanalyt.and.donumer) then
+      if (rank.eq.0) then
+         call MPI_REDUCE(MPI_IN_PLACE,grad_diff_norm,1,MPI_RPREC,MPI_SUM,0,&
+            &get_domain_comm(),ierr)
+         call MPI_REDUCE(MPI_IN_PLACE,grad_scale,1,MPI_RPREC,MPI_SUM,0,&
+            &get_domain_comm(),ierr)
+      else
+         call MPI_REDUCE(grad_diff_norm,grad_diff_norm,1,MPI_RPREC,MPI_SUM,0,&
+            &get_domain_comm(),ierr)
+         call MPI_REDUCE(grad_scale,grad_scale,1,MPI_RPREC,MPI_SUM,0,&
+            &get_domain_comm(),ierr)
+      end if
+   end if
 !
 !     perform deallocation of some local arrays
 !
+!$acc exit data delete(etot)
+!$acc exit data delete(detot)
    deallocate (detot)
    deallocate (ndetot)
    deallocate (denorm)
@@ -747,11 +831,47 @@ subroutine testgrad_bis(raw_cli,status_value)
 520   format (' Numer',6x,'RMS Gradient over All Atoms',4x,f16.4)
 !         end if
    end if
+   if (doanalyt.and.donumer.and.rank.eq.0) then
+      grad_relative_error = sqrt(grad_diff_norm) /&
+         &sqrt(max(grad_scale,tiny(1.0_re_p)))
+      write (iout,525) sqrt(grad_diff_norm),grad_relative_error
+525   format (/,' Gradient L2 Difference :',8x,f16.8,/,&
+         &6x,'Relative Difference',6x,f16.8)
+   end if
 !
 !     perform any final tasks before program exit
 !
+   if (doanalyt) then
+      if (use_bounds) then
+         virnum = .true.
+         use_virial = .true.
+         call dedvcalc(virial_eps)
+         virial_numeric = dedv
+         virial_residual = virial_analytic - virial_numeric
+         virial_relative_residual = abs(virial_residual) /&
+            &max(max(abs(virial_analytic),abs(virial_numeric)),tiny(1.0_re_p))
+      end if
+      virnum = virnum_save
+      use_virial = use_virial_save
+   end if
+   if (doanalyt.and.use_bounds.and.rank.eq.0) then
+      write (iout,125) virial_analytic,virial_numeric,virial_residual,&
+         &virial_relative_residual
+125   format (/,' Isotropic Virial dE/dV Check :',/&
+         &6x,'Anlyt',6x,f16.8,/,6x,'Numer',6x,f16.8,/,6x,&
+         &'Residual',3x,f16.8,/,6x,'Relative Residual',f16.8)
+      write (iout,126) ((virial_analytic_tensor(i,j),j=1,3),i=1,3),&
+         &virial_tensor_norm
+126   format (/,' Analytical Virial Tensor :',/,&
+         &6x,'XX',6x,f16.8,6x,'XY',6x,f16.8,6x,'XZ',6x,f16.8,/,&
+         &6x,'YX',6x,f16.8,6x,'YY',6x,f16.8,6x,'YZ',6x,f16.8,/,&
+         &6x,'ZX',6x,f16.8,6x,'ZY',6x,f16.8,6x,'ZZ',6x,f16.8,/,&
+         &6x,'Frobenius Norm',2x,f16.8)
+   end if
    call final(status_value)
    call finalize_device(cleanup_status)
    call release(platform, cleanup_status)
    if (failed(cleanup_status)) status_value = cleanup_status
 end subroutine testgrad_bis
+
+end program testgrad

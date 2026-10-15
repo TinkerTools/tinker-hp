@@ -33,6 +33,7 @@ module decomp_2d_cufft
 #ifdef _OPENACC
   use decomp_2d  ! 2D decomposition module
   use decomp_2d_fft
+  use mdevice_channel, only: channel_t
   use openacc
   use cufft      ! cuda_fft library module
   implicit none
@@ -47,7 +48,7 @@ module decomp_2d_cufft
   ! Declare generic interfaces to handle different inputs
   ! (~ interface from lib2decomp)
   public :: init_cufft_engine, finalize_cufft_engine, &
-            get_rec_dir_queue, decomp_2d_cufft_3d, &
+            decomp_2d_cufft_3d, &
             decomp2d_cufftGetSize
 
   interface decomp_2d_cufft_3d
@@ -140,8 +141,9 @@ contains
   end subroutine
 
   ! This routine performs one-time initialisations for the FFT engine
-  subroutine init_cufft_engine
+  subroutine init_cufft_engine(channel)
     implicit none
+    type(channel_t), intent(in) :: channel
     integer :: ierr
 
     if (nrank==0.and.dcp_verbose) then
@@ -157,12 +159,12 @@ contains
 
     if (nproc.eq.1) then
        call cuc2c_1m_3D_plan(cuplan_xyz, ph, CUFFT_FORWARD )
-       ierr = ierr + cufftSetStream(cuplan_xyz,acc_get_cuda_stream(rec_queue))
+       ierr = ierr + cufftSetStream(cuplan_xyz,channel%stream)
     else
        call cuc2c_1m_z_plan (cuplan_z, ph, CUFFT_FORWARD )
        call cuc2c_1m_xy_plan(cuplan_xy, ph, CUFFT_FORWARD )
-       ierr = ierr + cufftSetStream(cuplan_z, acc_get_cuda_stream(rec_queue))
-       ierr = ierr + cufftSetStream(cuplan_xy,acc_get_cuda_stream(rec_queue))
+       ierr = ierr + cufftSetStream(cuplan_z, channel%stream)
+       ierr = ierr + cufftSetStream(cuplan_xy,channel%stream)
     end if
 
     if (ierr.ne.0) &
@@ -269,14 +271,6 @@ contains
       call decomp_2d_abort(CUFFT_ERROR, "Invalid argument : isign should be DECOMP_2D_FFT_FORWARD/BACKWARD" )
     end if
     decomp2d_mpi_fcall=1
-  end subroutine
-
-  ! get direct and reciproqual queue from tinker
-  subroutine get_rec_dir_queue(recip,direc)
-    implicit none
-    integer, intent(in) :: recip,direc
-    dir_queue = direc
-    rec_queue = recip
   end subroutine
 
   function decomp2d_cufftGetSize() result(ss)

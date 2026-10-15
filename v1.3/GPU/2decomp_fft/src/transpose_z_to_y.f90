@@ -352,7 +352,7 @@
     call Decomp2d_MPI_ALLTOALLV(src, decomp%z2cnts, decomp%z2disp,complex_type, &
                             work2_c, decomp%y2cnts, decomp%y2disp,complex_type, &
                             DECOMP_2D_COMM_ROW, ierror)
-!   !$acc wait(rec_queue)
+!   !$acc wait(decomp_state%reciprocal_channel%queue)
 !   !$acc host_data use_device(src,work2_c)
 !   call MPI_ALLTOALLV(    src, decomp%z2cnts, decomp%z2disp,complex_type, &
 !                      work2_c, decomp%y2cnts, decomp%y2disp,complex_type, &
@@ -360,7 +360,7 @@
 !   !$acc end host_data
     else
        s1 = decomp%z2cnts(0)
-       !$acc parallel loop default(present) async(rec_queue)
+       !$acc parallel loop default(present) async(decomp_state%reciprocal_channel%queue)
        do i=1,s1
           work2_c(i) = src(i,1,1)
        end do
@@ -580,7 +580,7 @@
        pos = decomp%z2disp(m) + 1
 #endif
 #endif
-!$acc parallel loop collapse(3) async(rec_queue)
+!$acc parallel loop collapse(3) async(decomp_state%reciprocal_channel%queue)
        do k=i1,i2
           do j=1,n2
              do i=1,n1
@@ -718,7 +718,7 @@
 #endif
 #endif
 
-!$acc parallel loop num_gangs(n3*n1*(i2-i1+1)/(128*4)) collapse(3) async(rec_queue)
+!$acc parallel loop num_gangs(n3*n1*(i2-i1+1)/(128*4)) collapse(3) async(decomp_state%reciprocal_channel%queue)
        do k=1,n3
           do j=i1,i2
              do i=1,n1

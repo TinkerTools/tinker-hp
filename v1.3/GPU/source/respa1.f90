@@ -34,36 +34,28 @@
 !
 #include "tinker_macro.h"
 subroutine respa1(istep,dt)
-   use mlpot
-   use atmtyp
-   use atomsMirror
-   use cutoff
-   use domdec
-   use deriv
-   use energi  ,only: info_energy,calc_e,reduceen
-   use freeze
-   use group
-   use inform
-   use mdstuf1
-   use moldyn
+   use atomsMirror, only: integrate_vel
+   use cutoff, only: use_list
+   use domdec, only: nbloc,rank
+   use deriv, only: cNBond,comm_forces,ftot_l,info_forces
+   use energi, only: calc_e,info_energy,reduceen
+   use freeze, only: use_rattle
+   use inform, only: abort,deb_Atom,deb_Energy,deb_Force,info_minmax_pva
+   use mdstuf1, only: ealt,ekin,eksum,epot,etot,derivs,pres,stress,temp,viralt
    use parallel, only: commposrec
-   use timestat
    use potent
-   use uprior  ,only: use_pred
-   use utils   ,only: set_to_zero1m
-   use tinMemory,only: prmem_requestm
+   use utils, only: set_to_zero1m
+   use tinMemory, only: prmem_requestm
    use mdevice, only: reciprocal_work
-   use units
-   use usage
-   use virial
-   use mpi
+   use moldyn, only: a,dinter,dshort
+   use tinheader, only: re_p
+   use virial, only: use_virial,vir
    implicit none
    integer i,j,iglob
    integer istep
    real(r_p) dt,dt_2
    real(r_p) dta,dta_2,dta2
    real(8) time0,time1
-   logical save_pred
 !
 !     set some time values for the dynamics integration
 !
@@ -71,7 +63,6 @@ subroutine respa1(istep,dt)
    dta   = dt / dinter
    dta_2 = 0.5_re_p * dta
    dta2  = dta / dshort
-   if(use_ml_embedding) use_mlpot=.FALSE.
 !
 !     store the current atom positions, then find half-step
 !     velocities via velocity Verlet recursion
@@ -122,25 +113,6 @@ subroutine respa1(istep,dt)
 !
    call reduceen(epot)
 
-   if(use_ml_embedding) then
-!$acc parallel loop collapse(2) async
-      do i = 1, 3; do j = 1, 3
-            viralt(j,i) = vir(j,i) + viralt(j,i)
-         end do; end do
-!     COMPUTE ML DELTA CONTRIBUTION (ml_embedding_mode=2)
-      use_mlpot= .TRUE.
-      call zero_forces_rec
-      save_pred = use_pred
-      use_pred = .FALSE.
-      call gradient (eml,derivs)
-      use_pred = save_pred
-      call reduceen(eml)
-      call comm_forces(derivs)
-!$acc serial async
-      epot = epot+eml
-!$acc end serial
-   endif
-!
 !     use Newton's second law to get the slow accelerations;
 !     find full-step velocities using velocity Verlet recursion
 !
@@ -188,210 +160,25 @@ subroutine respa1(istep,dt)
    call mdstat (istep,dt,etot,epot,eksum,temp,pres)
 end
 !
-!     ##########################################################################
-!     ##                                                                      ##
-!     ##  subroutine gradint  --  intermediate energy & gradient components  ##
-!     ##                                                                      ##
-!     ##########################################################################
-!
-!
-!     for the fast-evolving local valence potential energy terms
-!
-!
-subroutine gradint (energy,derivs)
-   use cutoff
-   use deriv
-   use domdec
-   use energi
-   use polpot
-   use potent
-   use colvars
-   use plumed
-   implicit none
-   real(r_p) energy
-   real(r_p) derivs(3,*)
-   real(t_p) save_tcgomega
-   integer i,j
-   logical save_bond,save_angle
-   logical save_strbnd,save_urey
-   logical save_angang,save_opbend
-   logical save_opdist,save_improp
-   logical save_imptor,save_tors
-   logical save_pitors,save_strtor
-   logical save_angtor,save_tortor,save_geom
-   logical save_extra
-   logical save_mrec,save_disprec
-   logical save_prec,save_crec
-   integer save_polalg,save_tcgorder
-   logical save_tcgprec,save_tcgguess,save_tcgpeek
-   logical save_smdvel, save_smdfor
-   logical save_colvars
-   logical save_plumed
-!
-!     save the original state of fast-evolving potentials
-!
-   save_bond   = use_bond
-   save_angle  = use_angle
-   save_strbnd = use_strbnd
-   save_urey   = use_urey
-   save_angang = use_angang
-   save_opbend = use_opbend
-   save_opdist = use_opdist
-   save_improp = use_improp
-   save_imptor = use_imptor
-   save_tors   = use_tors
-   save_pitors = use_pitors
-   save_strtor = use_strtor
-   save_angtor = use_angtor
-   save_tortor = use_tortor
-   save_geom   = use_geom
-   save_extra  = use_extra
-   save_crec   = use_crec
-   save_mrec   = use_mrec
-   save_prec   = use_prec
-   save_disprec  = use_disprec
-   save_polalg = polalg
-   save_tcgorder = tcgorder
-   save_tcgprec  = tcgprec
-   save_tcgguess = tcgguess
-   save_tcgpeek  = tcgpeek
-   save_tcgomega = tcgomega
-   save_smdvel   = use_smd_velconst
-   save_smdfor   = use_smd_forconst
-   save_colvars = use_colvars
-   save_plumed = lplumed
-!
-!     turn off fast-evolving valence potential energy terms
-!
-   use_bond   = .false.
-   use_angle  = .false.
-   use_strbnd = .false.
-   use_urey   = .false.
-   use_angang = .false.
-   use_opbend = .false.
-   use_opdist = .false.
-   use_improp = .false.
-   use_imptor = .false.
-   use_tors   = .false.
-   use_pitors = .false.
-   use_strtor = .false.
-   use_angtor = .false.
-   use_tortor = .false.
-   use_geom   = .false.
-   use_extra  = .false.
-   use_crec   = .false.
-   use_mrec   = .false.
-   use_prec   = .false.
-   use_disprec= .false.
-   use_cself  = .false.
-   use_mself  = .false.
-   use_pself  = .false.
-   use_dispself       = .false.
-   use_cshortreal     = .true.
-   use_mpoleshortreal = .true.
-   use_vdwshort       = .true.
-   use_polarshortreal = .true.
-   use_repulsshort    = .true.
-   use_dispshort      = .true.
-   use_dispshortreal  = .true.
-   use_chgtrnshort    = .true.
-   polalg     = polalgshort
-   tcgorder   = tcgordershort
-   tcgprec    = tcgprecshort
-   tcgguess   = tcgguessshort
-   tcgpeek    = tcgpeekshort
-   tcgomega   = tcgomegashort
-   use_smd_velconst   = .false.
-   use_smd_forconst   = .false.
-   bonded_l    = .false.
-   shortnonbonded_l   = .true.
-   use_colvars = .false.
-   lplumed = .false.
-!
-!     get energy and gradient for slow-evolving potential terms
-!
-   call gradient (energy,derivs)
-!
-!     restore the original state of fast-evolving potentials
-!
-   use_bond   = save_bond
-   use_angle  = save_angle
-   use_strbnd = save_strbnd
-   use_urey   = save_urey
-   use_angang = save_angang
-   use_opbend = save_opbend
-   use_opdist = save_opdist
-   use_improp = save_improp
-   use_imptor = save_imptor
-   use_tors   = save_tors
-   use_pitors = save_pitors
-   use_strtor = save_strtor
-   use_angtor = save_angtor
-   use_tortor = save_tortor
-   use_geom   = save_geom
-   use_extra  = save_extra
-   use_crec   = save_crec
-   use_mrec   = save_mrec
-   use_prec   = save_prec
-   use_disprec= save_disprec
-   use_cself  = .true.
-   use_mself  = .true.
-   use_pself  = .true.
-   use_dispself       = .true.
-   use_cshortreal     = .false.
-   use_mpoleshortreal = .false.
-   use_vdwshort       = .false.
-   use_polarshortreal = .false.
-   use_repulsshort    = .false.
-   use_dispshort      = .false.
-   use_dispshortreal  = .false.
-   use_chgtrnshort    = .false.
-   polalg     = save_polalg
-   tcgorder   = save_tcgorder
-   tcgprec    = save_tcgprec
-   tcgguess   = save_tcgguess
-   tcgpeek    = save_tcgpeek
-   use_smd_velconst   = save_smdvel
-   use_smd_forconst   = save_smdfor
-   bonded_l   = .true.
-   shortnonbonded_l   = .false.
-   use_colvars = save_colvars
-   lplumed = save_plumed
-
-   if (calc_e) then
-!$acc serial present(esave,ep) async
-      esave = ep
-!$acc end serial
-   end if
-end
 !
 !     subroutine respaint1 :
 !     find intermediate-evolving velocities and positions via velocity Verlet recursion
 !
 subroutine respaint1(ealt,viralt,dta,dta2)
-   use mlpot
-   use atomsMirror ,only: integrate_vel
-   use atmtyp
-   use cutoff
-   use deriv
-   use domdec
-   use deriv   ,only: zero_forces_rec
-   use energi  ,only: info_energy,calc_e,reduceen
-   use freeze
-   use inform
+   use atomsMirror, only: integrate_vel
+   use domdec, only: nbloc,rank
+   use deriv, only: cSNBond,comm_forces,ftot_l,info_forces
+   use energi, only: calc_e,info_energy,reduceen
+   use freeze, only: use_rattle
+   use inform, only: abort,deb_Atom,deb_Energy,deb_Force,info_minmax_pva
    use mdstuf1 ,only: ealt2,viralt2,derivs
-   use moldyn
-   use mutant
+   use moldyn, only: aalt,dinter,nalt,stepint
    use potent
-   use timestat
-   use uprior  ,only: use_pred
-   use utils   ,only: set_to_zero1m
-   use tinMemory,only:prmem_requestm
+   use utils, only: set_to_zero1m
+   use tinMemory, only: prmem_requestm
    use mdevice, only: reciprocal_work
-   use units
-   use usage
-   use virial
-   use mpi
+   use tinheader, only: re_p
+   use virial, only: use_virial,vir,zero_virial
    implicit none
    integer i,j,k,iglob
    logical save_pred
@@ -420,7 +207,7 @@ subroutine respaint1(ealt,viralt,dta,dta2)
 !
 !     get the fast-evolving potential energy and atomic forces
 !
-      call gradint(ealt,derivs)
+      call gradient_helper(ealt,derivs,3,.false.)
 !
 !      communicate forces
 !
@@ -460,25 +247,20 @@ end
 !     find fast-evolving velocities and positions via velocity Verlet recursion
 !
 subroutine respafast1(ealt,viralt,dta)
-   use atmtyp
-   use atomsMirror
-   use cutoff
-   use domdec
-   use deriv
-   use energi  ,only: info_energy,reduceen
-   use freeze
-   use inform
+   use atomsMirror, only: integrate_pos,integrate_vel,save_atoms_pos
+   use domdec, only: nbloc,rank
+   use deriv, only: cBond,comm_forces,ftot_l,info_forces
+   use energi, only: info_energy,reduceen
+   use freeze, only: use_rattle
+   use inform, only: deb_Atom,deb_Energy,deb_Force,info_minmax_pva
    use mdstuf1 ,only: derivs
-   use moldyn
-   use mpi
-   use timestat
-   use utils   ,only: set_to_zero1m
-   use tinMemory,only:prmem_requestm
+   use moldyn, only: aalt2,dshort,nalt2,stepfast
+   use utils, only: set_to_zero1m
+   use tinMemory, only: prmem_requestm
    use mdevice, only: reciprocal_work
-   use parallel ,only: commposrespa, reassign_respa
-   use units
-   use usage
-   use virial
+   use parallel, only: commposrespa,reassign_respa
+   use tinheader, only: re_p
+   use virial, only: use_virial,vir,zero_virial
    implicit none
    integer i,j,k,iglob
    real(r_p) dta,dta_2

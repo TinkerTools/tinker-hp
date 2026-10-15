@@ -5,13 +5,15 @@
 !
 #include "tinker_macro.h"
 submodule (parallel) parallel_lifecycle
+   use decomp_2d, only: reciprocal_channel_loan_active
    use beads     , only: contract, nbeads, nbeads_ctr
-   use domdec
+   use domdec, only: bind_parallel_views, clear_parallel_views, ndir
    use inform    , only: initDebugEnv
    use mpi
-   use replicas  , only: nreps, rank_reploc, use_reps
+   use replicas  , only: bind_replica_view, clear_replica_view, nreps, use_reps
    use status    , only: clear_status, failed, set_status, status_invalid_argument
-   use tinmemory
+   use tinmemory, only: active_shared_windows, extra_alloc
+   use lifecycle_observer, only: LifecycleTopology, record_lifecycle_event
    implicit none
 
 contains
@@ -23,6 +25,7 @@ contains
       integer, intent(in) :: topology_kind
       type(status_t), intent(out) :: status_value
       integer :: ierr, color, nbeads_para
+      integer :: domain_processes, replica_index
 
       call clear_status(status_value)
       call reset_topology(platform)
@@ -30,8 +33,8 @@ contains
          call set_status(status_value, status_invalid_argument, 'Unknown MPI topology kind')
          return
       end if
-      call MPI_Comm_size(MPI_COMM_WORLD, nproctot, ierr)
-      call MPI_Comm_rank(MPI_COMM_WORLD, ranktot, ierr)
+      call MPI_Comm_size(MPI_COMM_WORLD, platform%world_size, ierr)
+      call MPI_Comm_rank(MPI_COMM_WORLD, platform%world_rank, ierr)
       if (ierr /= MPI_SUCCESS) then
          call set_status(status_value, status_invalid_argument, 'Unable to inspect MPI world')
          return
@@ -42,25 +45,27 @@ contains
          return
       end if
       if (configuration%replicas_enabled) then
-         if (configuration%replica_count <= 0 .or. nproctot < configuration%replica_count .or. &
-               mod(nproctot, configuration%replica_count) /= 0) then
+         if (configuration%replica_count <= 0 .or. platform%world_size < configuration%replica_count .or. &
+               mod(platform%world_size, configuration%replica_count) /= 0) then
             call set_status(status_value, status_invalid_argument, 'Invalid classical replica MPI topology')
             return
          end if
-         nproc = nproctot / configuration%replica_count
+         domain_processes = platform%world_size / configuration%replica_count
       else if (topology_kind == topology_polymer) then
          nbeads_para = merge(nbeads_ctr, nbeads, contract .and. nbeads_ctr > 1)
-         if (nbeads_para <= 0 .or. (nproctot >= nbeads_para .and. mod(nproctot, nbeads_para) /= 0)) then
+         if (nbeads_para <= 0 .or. (platform%world_size >= nbeads_para .and. &
+               mod(platform%world_size, nbeads_para) /= 0)) then
             call set_status(status_value, status_invalid_argument, 'Invalid PIMD MPI topology')
             return
          end if
-         nproc = merge(1, nproctot / nbeads_para, nproctot < nbeads_para)
+         domain_processes = merge(1, platform%world_size / nbeads_para, platform%world_size < nbeads_para)
       else
-         nproc = nproctot
+         domain_processes = platform%world_size
       end if
 
-      rank_reploc = ranktot / nproc
-      call MPI_Comm_split(MPI_COMM_WORLD, rank_reploc, ranktot, platform%domain%communicator, ierr)
+      replica_index = platform%world_rank / domain_processes
+      call MPI_Comm_split(MPI_COMM_WORLD, replica_index, platform%world_rank, &
+         &platform%domain%communicator, ierr)
       if (ierr /= MPI_SUCCESS) then
          call reset_topology(platform)
          call set_status(status_value, status_invalid_argument, 'Unable to create MPI domain topology')
@@ -92,7 +97,8 @@ contains
          return
       end if
       if (topology_kind == topology_polymer) then
-         call MPI_Comm_split(MPI_COMM_WORLD, platform%domain%rank, ranktot, platform%replica%communicator, ierr)
+         call MPI_Comm_split(MPI_COMM_WORLD, platform%domain%rank, platform%world_rank, &
+            &platform%replica%communicator, ierr)
          if (ierr /= MPI_SUCCESS) then
             call reset_topology(platform)
             call set_status(status_value, status_invalid_argument, 'Unable to create MPI polymer topology')
@@ -102,7 +108,8 @@ contains
          call MPI_Comm_rank(platform%replica%communicator, platform%replica%rank, ierr)
       else if (configuration%replicas_enabled) then
          color = merge(0, MPI_UNDEFINED, platform%domain%rank == 0)
-         call MPI_Comm_split(MPI_COMM_WORLD, color, ranktot, platform%root_exchange%communicator, ierr)
+         call MPI_Comm_split(MPI_COMM_WORLD, color, platform%world_rank, &
+            &platform%root_exchange%communicator, ierr)
          if (ierr /= MPI_SUCCESS) then
             call reset_topology(platform)
             call set_status(status_value, status_invalid_argument, 'Unable to create MPI root exchange topology')
@@ -110,6 +117,7 @@ contains
          end if
       end if
 
+      platform%replica%index = replica_index
       call publish_legacy_topology(platform, configuration)
       call initDebugEnv
       call activate_domain(platform)
@@ -132,8 +140,6 @@ contains
       call reinitnl(0)
       call refresh_domain_layout(platform%domain)
       call activate_domain(platform)
-      platform%domain%size = nproc
-      platform%domain%rank = rank
    end subroutine configure_layout
 
    module subroutine reset_topology(platform)
@@ -182,7 +188,8 @@ contains
       end if
 
       local_failure = merge(1, 0, failed(status_value))
-      if (active_polar_tickets() > 0) local_failure = 1
+      if (active_polar_tickets() > 0 .or. active_shared_windows() .or. &
+            &reciprocal_channel_loan_active()) local_failure = 1
       if (has_inconsistent_topology(platform)) local_failure = 1
       call MPI_Allreduce(local_failure, global_failure, 1, MPI_INTEGER, MPI_MAX, MPI_COMM_WORLD, ierr)
       if (ierr /= MPI_SUCCESS) then
@@ -258,6 +265,7 @@ contains
       integer, intent(out), optional :: cleanup_status
       integer :: first_error
 
+      if (has_live_topology(platform)) call record_lifecycle_event(LifecycleTopology)
       first_error = MPI_SUCCESS
       call release_migration_workspace()
       call deactivate_domain(platform)
@@ -276,12 +284,11 @@ contains
       platform%host = host_t()
       platform%replica = replica_t()
       platform%root_exchange = root_exch_t()
-      nproc = 0
-      rank = 0
-      nproc_polymer = 0
-      rank_polymer = 0
-      hostrank = 0
-      rank_reploc = 0
+      call clear_parallel_views()
+      call clear_replica_view()
+      platform%world_size = 0
+      platform%world_rank = 0
+      platform%replica%index = 0
       use_reps = .false.
       nreps = 0
       extra_alloc = .false.
@@ -327,13 +334,13 @@ contains
             &platform%domain%recip_comm /= MPI_COMM_NULL) has_inconsistent_topology = .true.
       if (platform%domain%direct_comm /= MPI_COMM_NULL .or. &
             &platform%domain%recip_comm /= MPI_COMM_NULL) then
-         if (rank < ndir .and. platform%domain%direct_comm == MPI_COMM_NULL) &
+         if (platform%domain%rank < ndir .and. platform%domain%direct_comm == MPI_COMM_NULL) &
             &has_inconsistent_topology = .true.
-         if (rank >= ndir .and. platform%domain%direct_comm /= MPI_COMM_NULL) &
+         if (platform%domain%rank >= ndir .and. platform%domain%direct_comm /= MPI_COMM_NULL) &
             &has_inconsistent_topology = .true.
-         if (rank < ndir .and. platform%domain%recip_comm /= MPI_COMM_NULL) &
+         if (platform%domain%rank < ndir .and. platform%domain%recip_comm /= MPI_COMM_NULL) &
             &has_inconsistent_topology = .true.
-         if (rank >= ndir .and. platform%domain%recip_comm == MPI_COMM_NULL) &
+         if (platform%domain%rank >= ndir .and. platform%domain%recip_comm == MPI_COMM_NULL) &
             &has_inconsistent_topology = .true.
       end if
       if (use_reps .and. platform%domain%rank == 0 .and. &
@@ -388,14 +395,12 @@ contains
 
    subroutine publish_legacy_topology(platform, configuration)
       implicit none
-      type(parallel_t), intent(in) :: platform
+      type(parallel_t), intent(inout) :: platform
       type(config_t), intent(in) :: configuration
 
-      nproc = platform%domain%size
-      rank = platform%domain%rank
-      hostrank = platform%host%rank
-      nproc_polymer = platform%replica%size
-      rank_polymer = platform%replica%rank
+      call bind_parallel_views(platform%world_size, platform%world_rank, platform%domain%size, &
+         &platform%domain%rank, platform%replica%size, platform%replica%rank, platform%host%rank)
+      call bind_replica_view(platform%replica%index)
       use_reps = configuration%replicas_enabled
       nreps = configuration%replica_count
    end subroutine publish_legacy_topology

@@ -23,23 +23,20 @@
 !     a single PME atomic site along a particular direction
 !
 !
-subroutine bsplgen (w,isite,thetai)
+subroutine bsplgen (w,isite,bsorder,level,thetai)
 !$acc routine
-   use tinheader
-   use pme,only:bsorder,maxorder
-   use potent,only:use_mpole,use_polar
+   use tinheader, only: ti_p
+   use pme      , only: maxorder
    implicit none
    integer i,j,k
    integer isite
-   integer level
+   integer, intent(in):: level,bsorder
    real(t_p) w,denom
    real(t_p) thetai(4,bsorder)
    real(t_p) temp(maxorder,maxorder)
 !
 !     set B-spline depth for partial charges or multipoles
 !
-   level = 2
-   if (use_mpole .or. use_polar)  level = 4
 !
 !     initialization to get to 2nd order recursion
 !
@@ -126,27 +123,18 @@ end
 
  ! bslgen special version
  ! To be used only with point charge forcefield (use_charge)
-subroutine bsplgen_chg (w,isite,thetai)
+subroutine bsplgen_chg (w,isite,bsorder,thetai)
 !$acc routine
    use tinheader,only: ti_p
-   use pme      ,only: bsorder,maxorder
-   use potent   ,only: use_charge
+   use pme      ,only: maxorder
    implicit none
    integer i,j,k
    integer isite
    integer,parameter:: level=2
+   integer, intent(in):: bsorder
    real(t_p) w,denom
    real(t_p) thetai(level,bsorder)
    real(t_p) temp(maxorder,maxorder)
-
-#ifdef TINKER_DEBUG
-!$acc routine(fatal_acc)
-   if (.not.use_charge) then
-      print*,"FATAL ERROR !! bsplgen routine is specific to point",&
-         &"charge"
-      call fatal_acc
-   end if
-#endif
 !
 !     initialization to get to 2nd order recursion
 !
@@ -216,7 +204,7 @@ subroutine bspline_fill_sitegpu(config)
    implicit none
    integer,intent(in),optional::config
    integer c_mpole,c_charge,c_disp,c_n
-   integer i,ifr,k,cfg,iipole,iichg
+   integer i,ifr,k,cfg,iipole,iichg,level
    integer,pointer,save:: glob_p(:),type_p(:)
    real(t_p) xi,yi,zi
    real(t_p) w,fr
@@ -230,6 +218,7 @@ subroutine bspline_fill_sitegpu(config)
    else
       cfg = c_mpole
    end if
+   level = merge(4, 2, use_mpole.or.use_polar)
 
    if (cfg.eq.c_mpole) then
       glob_p => ipole
@@ -280,19 +269,19 @@ subroutine bspline_fill_sitegpu(config)
          ifr  = int(fr-pme_eps)
          w    = fr - real(ifr,t_p)
          igrid(1,i) = ifr - bsorder
-         call bsplgen (w,k,thetai1(1,1,k))
+         call bsplgen (w,k,bsorder,level,thetai1(1,1,k))
          w    = xi*recip(1,2) + yi*recip(2,2) + zi*recip(3,2)
          fr   = real(nfft2,t_p)* (w-anint(w)+0.5_ti_p)
          ifr  = int(fr-pme_eps)
          w    = fr - real(ifr,t_p)
          igrid(2,i) = ifr - bsorder
-         call bsplgen (w,k,thetai2(1,1,k))
+         call bsplgen (w,k,bsorder,level,thetai2(1,1,k))
          w    = xi*recip(1,3) + yi*recip(2,3) + zi*recip(3,3)
          fr   = real(nfft3,t_p)* (w-anint(w)+0.5_ti_p)
          ifr  = int(fr-pme_eps)
          w    = fr - real(ifr,t_p)
          igrid(3,i) = ifr - bsorder
-         call bsplgen (w,k,thetai3(1,1,k))
+         call bsplgen (w,k,bsorder,level,thetai3(1,1,k))
       end do
 
    else if (cfg.eq.c_charge.or.cfg.eq.c_disp) then
@@ -314,19 +303,19 @@ subroutine bspline_fill_sitegpu(config)
          ifr  = int(fr-pme_eps)
          w    = fr - real(ifr,t_p)
          igrid(1,i) = ifr - bsorder
-         call bsplgen_chg (w,k,thetai1(1,1,k))
+         call bsplgen_chg (w,k,bsorder,thetai1(1,1,k))
          w    = xi*recip(1,2) + yi*recip(2,2) + zi*recip(3,2)
          fr   = real(nfft2,t_p) * (w-anint(w)+0.5_ti_p)
          ifr  = int(fr-pme_eps)
          w    = fr - real(ifr,t_p)
          igrid(2,i) = ifr - bsorder
-         call bsplgen_chg (w,k,thetai2(1,1,k))
+         call bsplgen_chg (w,k,bsorder,thetai2(1,1,k))
          w    = xi*recip(1,3) + yi*recip(2,3) + zi*recip(3,3)
          fr   = real(nfft3,t_p) * (w-anint(w)+0.5_ti_p)
          ifr  = int(fr-pme_eps)
          w    = fr - real(ifr,t_p)
          igrid(3,i) = ifr - bsorder
-         call bsplgen_chg (w,k,thetai3(1,1,k))
+         call bsplgen_chg (w,k,bsorder,thetai3(1,1,k))
       end do
 
    end if
@@ -1140,21 +1129,12 @@ subroutine grid_pchg_force
       &,igrd0,jgrd0,kgrd0,i,j,k,i0,j0,k0,it1,it2,it3&
       &,istart,iend,jstart,jend,kstart,kend&
       &,istartl,iendl,jstartl,jendl,kstartl,kendl&
-      &,iproc,proc,commloc,nprocloc
-
+      &,iproc,proc
    real(t_p) f,fi,dn1,dn2,dn3,de1,de2,de3,t1,t2,t3&
       &,dt1,dt2,dt3,term
 
-   if (use_pmecore) then
-      nprocloc = nrec
-      commloc  = get_recip_comm()
-      rankloc = rank_bis
-   else
-      nprocloc = nproc
-      commloc  = get_domain_comm()
-      rankloc = rank
-   end if
    if (deb_Path) write(*,'(3x,a)') "grid_pchg_force"
+   rankloc = merge(rank_bis,rank,use_pmecore)
 
    istartl = istart1(rankloc+1)
    jstartl = jstart1(rankloc+1)
@@ -1166,10 +1146,11 @@ subroutine grid_pchg_force
    dn1     = real(nfft1,t_p)
    dn2     = real(nfft2,t_p)
    dn3     = real(nfft3,t_p)
+   term    = 0
 
 !$acc parallel loop gang vector async(reciprocal_work%queue) &
 !$acc         present(chgrecglob,iion,locrec,igrid, &
-!$acc     pchg,thetai1(1,1,1),thetai2(1,1,1),thetai3(1,1,1),qgridin_2d, &
+!$acc     pchg,thetai1,thetai2,thetai3,qgridin_2d, &
 !$acc     decrec)
    do isite = 1, nionrecloc
       iichg = chgrecglob(isite)
@@ -2330,7 +2311,6 @@ subroutine fphi_mpole_sitecu
 end subroutine
 
 subroutine grid_disp_forcecu
-   use parallel, only: get_domain_comm, get_recip_comm
    use atoms  ,only: n
    use atmlst ,only: disprecglob
    use boxes  ,only: recip
@@ -2350,23 +2330,15 @@ subroutine grid_disp_forcecu
    integer iichg,iglob,iloc,iatm,isite,rankloc&
       &,igrd0,jgrd0,kgrd0,i,j,k,i0,j0,k0,it1,it2,it3&
       &,istat,ied,jstat,jed,kstat,ked&
-      &,iproc,proc,commloc,nprocloc
+      &,iproc,proc
    integer,save:: gS,gS1
    real(t_p) f,fi,dn1,dn2,dn3,de1,de2,de3,t1,t2,t3&
       &,dt1,dt2,dt3,term
    logical,save:: f_in=.true.
 
-   if (use_pmecore) then
-      nprocloc = nrec
-      commloc  = get_recip_comm()
-      rankloc  = rank_bis
-   else
-      nprocloc = nproc
-      commloc  = get_domain_comm()
-      rankloc  = rank
-   end if
    if (deb_Path) write(*,'(3x,a)') ' grid_disp_forcecu'
 
+   rankloc = merge(rank_bis,rank,use_pmecore)
    istat = istart1(rankloc+1)
    jstat = jstart1(rankloc+1)
    kstat = kstart1(rankloc+1)
@@ -2411,7 +2383,6 @@ subroutine grid_disp_forcecu
 end subroutine
 
 subroutine grid_pchg_forcecu
-   use parallel, only: get_domain_comm, get_recip_comm
    use atoms  ,only: n
    use atmlst ,only: chgrecglob
    use boxes  ,only: recip
@@ -2432,23 +2403,15 @@ subroutine grid_pchg_forcecu
    integer iichg,iglob,iloc,iatm,isite,rankloc&
       &,igrd0,jgrd0,kgrd0,i,j,k,i0,j0,k0,it1,it2,it3&
       &,istat,ied,jstat,jed,kstat,ked&
-      &,iproc,proc,commloc,nprocloc
+      &,iproc,proc
    integer,save:: gS,gS1
    real(t_p) f,fi,dn1,dn2,dn3,de1,de2,de3,t1,t2,t3&
       &,dt1,dt2,dt3,term
    logical,save:: f_in=.true.
 
-   if (use_pmecore) then
-      nprocloc = nrec
-      commloc  = get_recip_comm()
-      rankloc = rank_bis
-   else
-      nprocloc = nproc
-      commloc  = get_domain_comm()
-      rankloc  = rank
-   end if
    if (deb_Path) write(*,'(3x,a)') 'grid_pchg_forcecu'
 
+   rankloc = merge(rank_bis,rank,use_pmecore)
    istat = istart1(rankloc+1)
    jstat = jstart1(rankloc+1)
    kstat = kstart1(rankloc+1)

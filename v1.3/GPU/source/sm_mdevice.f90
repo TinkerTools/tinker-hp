@@ -15,6 +15,7 @@ submodule (mdevice) mdevice_lifecycle
    use status , only: clear_status, failed, set_status, StatusDeviceError, status_invalid_argument
    use inform , only: Tinker_shellEnv, warning, set_warning
    use domdec  , only: rank, nproc, hostrank
+   use lifecycle_observer, only: LifecycleDevice, record_lifecycle_event
    use tinheader, only: ti_p
    use tinMemory, only: mipk
 #ifdef _OPENACC
@@ -697,6 +698,7 @@ contains
       integer, intent(out), optional :: status_code
       integer :: cuda_status, cleanup_status
 
+      call record_lifecycle_event(LifecycleDevice)
       cleanup_status = 0
 
 #ifdef _OPENACC

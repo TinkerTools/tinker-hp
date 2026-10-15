@@ -47,15 +47,12 @@ end
 !
 subroutine fatal_acc
 !$acc routine
-   use domdec,only:rank
    implicit none
 
-   if (rank.eq.0) then
-      print*,'\n TINKER is Unable to Continue; Terminating',&
-         &' the Current Calculation \n'
-      !print*,'-----Press Crtl-C to stop the calculation-----'
-      stop
-   end if
+   print*,'\n TINKER is Unable to Continue; Terminating',&
+          ' the Current Calculation \n'
+   !print*,'-----Press Crtl-C to stop the calculation-----'
+   stop
 end
 !
 !

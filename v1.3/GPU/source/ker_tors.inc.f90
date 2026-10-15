@@ -173,8 +173,8 @@ if (rtru .ne. 0.0_ti_p) then
 !     scale the interaction based on its group membership
 !
    if (use_group.and.IAND(tfea,grp).NE.0) then
-      e      =  e     * fgrp
-      dedphi = dedphi * fgrp
+      IF (IAND(tver,ene).NE.0)   e    = e      * fgrp
+      IF (IAND(tver,grd).NE.0) dedphi = dedphi * fgrp
    end if
 !
 !     increment the total torsional angle energy
@@ -264,4 +264,3 @@ if (rtru .ne. 0.0_ti_p) then
    END IF
 end if
 end subroutine
-

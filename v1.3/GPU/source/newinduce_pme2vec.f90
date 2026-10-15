@@ -945,17 +945,12 @@ subroutine commfieldvec(nrhs,ef)
    use mpi
    implicit none
    integer nrhs,i,j,k,tag,status(MPI_STATUS_SIZE)
-   integer ierr,commloc
+   integer ierr
    integer, allocatable :: reqrec(:), reqsend(:)
    real(t_p) ef(3,nrhs,*)
 !new  real(t_p) ef(max(1,npolebloc),3,nrhs)
    real(t_p), allocatable :: buffer(:,:,:,:)
 !
-   if (use_pmecore) then
-      commloc = get_direct_comm()
-   else
-      commloc = get_domain_comm()
-   end if
 !
    allocate (buffer(3,nrhs,max(npoleloc,1),n_send1))
 !new  allocate (buffer(max(npoleloc,1),3,nrhs,n_send1))
@@ -965,7 +960,7 @@ subroutine commfieldvec(nrhs,ef)
    do i = 1, n_send1
       tag = nproc*rank + p_send1(i) + 1
       call MPI_IRECV(buffer(1,1,1,i),3*nrhs*npoleloc,MPI_TPREC,&
-         &p_send1(i),tag,commloc,reqrec(i),ierr)
+         &p_send1(i),tag,merge(get_direct_comm(),get_domain_comm(),use_pmecore),reqrec(i),ierr)
    end do
 !
    do i = 1, n_recep1
@@ -973,7 +968,7 @@ subroutine commfieldvec(nrhs,ef)
       call MPI_ISEND(ef(1,1,bufbegpole(p_recep1(i)+1)),&
 !new    call MPI_ISEND(ef(bufbegpole(p_recep1(i)+1),1,1),
          &3*nrhs*domlenpole(p_recep1(i)+1),MPI_TPREC,p_recep1(i),&
-         &tag,commloc,reqsend(i),ierr)
+         &tag,merge(get_direct_comm(),get_domain_comm(),use_pmecore),reqsend(i),ierr)
    end do
 !
    do i = 1, n_send1

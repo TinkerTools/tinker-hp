@@ -21,7 +21,7 @@ subroutine fft_setup(nrec,rank_bis,istart1,iend1,isize1,jstart1, &
    use tinMemory,only: s_cufft
    use sizes    ,only: tinkerdebug
 #ifdef _OPENACC
-   use mdevice  ,only: direct_work,reciprocal_work
+   use mdevice  ,only: reciprocal_work
    use decomp_2d_cufft
 #endif
 
@@ -76,8 +76,8 @@ subroutine fft_setup(nrec,rank_bis,istart1,iend1,isize1,jstart1, &
    call decomp_2d_fft_init
 !
 #ifdef _OPENACC
-   call get_rec_dir_queue(reciprocal_work%queue,direct_work%queue)
-   call init_cufft_engine
+   call bind_reciprocal_channel(reciprocal_work)
+   call init_cufft_engine(reciprocal_work)
    s_cufft = decomp2d_cufftGetSize()
 #endif
    is_fftInit = .true.
@@ -385,7 +385,7 @@ subroutine commGridFront( qgrid,rule )
    integer,intent(in)::rule
    real(t_p) qgrid(2,n1mpimax,n2mpimax,n3mpimax,nrec_send+1)
 
-   integer i,ierr,tag0,tag1,commloc,proc,MPI_TYPE,MSG_sz
+   integer i,ierr,tag0,tag1,proc,MPI_TYPE,MSG_sz
    integer mpi_status1(MPI_STATUS_SIZE)
    integer qIdx3
    logical decomp1d
@@ -402,11 +402,6 @@ subroutine commGridFront( qgrid,rule )
       front_split_rcv = MPI_REQUEST_NULL
    end if
    call timer_enter(timer_recreccomm)
-   if (use_pmecore) then
-      commloc  = get_recip_comm()
-   else
-      commloc  = get_domain_comm()
-   end if
    decomp1d = GridDecomp1d.and.(2*nfloor.lt.n3mpimax)
 
    if (rule.eq.r_comm) then
@@ -423,20 +418,20 @@ subroutine commGridFront( qgrid,rule )
 !$acc host_data use_device(qgridmpi,qgrid)
       do i = 1, nrec_recep
          call MPI_IRECV(qgridmpi(1,1,1,1,i),MSG_sz,MPI_TYPE&
-            &,prec_recep(i),tag0,commloc,front_recv_req(i),ierr)
+            &,prec_recep(i),tag0,merge(get_recip_comm(),get_domain_comm(),use_pmecore),front_recv_req(i),ierr)
          if (decomp1d)&
             &call MPI_IRECV(qgridmpi(1,1,1,qIdx3,i),MSG_sz,MPI_TYPE&
-            &,prec_recep(i),tag1,commloc,front_split_rcv(i),ierr)
+            &,prec_recep(i),tag1,merge(get_recip_comm(),get_domain_comm(),use_pmecore),front_split_rcv(i),ierr)
       end do
 
       !MPI : begin sending
 !$acc wait(reciprocal_work%queue)
       do i = 1, nrec_send
          call MPI_ISEND(qgrid(1,1,1,1,i+1),MSG_sz,MPI_TYPE&
-            &,prec_send(i),tag0,commloc,front_send_req(i),ierr)
+            &,prec_send(i),tag0,merge(get_recip_comm(),get_domain_comm(),use_pmecore),front_send_req(i),ierr)
          if (decomp1d)&
             &call MPI_ISEND(qgrid(1,1,1,qIdx3,i+1),MSG_sz,MPI_TYPE&
-            &,prec_send(i),tag1,commloc,front_split_snd(i),ierr)
+            &,prec_send(i),tag1,merge(get_recip_comm(),get_domain_comm(),use_pmecore),front_split_snd(i),ierr)
       end do
 !$acc end host_data
 
@@ -485,7 +480,7 @@ subroutine commGridBack( qgrid,rule )
    integer,intent(in)::rule
    real(t_p) qgrid(2,n1mpimax,n2mpimax,n3mpimax,nrec_send+1)
 
-   integer i,j,ierr,tag0,tag1,commloc,proc,MPI_TYPE,MSG_szs,MSG_szr
+   integer i,j,ierr,tag0,tag1,proc,MPI_TYPE,MSG_szs,MSG_szr
    integer off,off1,qIdx3
    logical decomp1d
    parameter(tag0=0,tag1=1)
@@ -500,11 +495,6 @@ subroutine commGridBack( qgrid,rule )
       back_split_rcv = MPI_REQUEST_NULL
    end if
    call timer_enter(timer_recreccomm)
-   if (use_pmecore) then
-      commloc  = get_recip_comm()
-   else
-      commloc  = get_domain_comm()
-   end if
    decomp1d = GridDecomp1d.and.(2*nfloor.lt.n3mpimax)
 
    if (rule.eq.r_comm) then
@@ -523,20 +513,20 @@ subroutine commGridBack( qgrid,rule )
 !$acc    host_data use_device(qgrid)
       do i = 1, nrec_send
          call MPI_IRECV(qgrid(1,1,1,1,i+1),MSG_szs,MPI_TYPE,&
-            &prec_send(i),tag0,commloc,back_recv_req(i),ierr)
+            &prec_send(i),tag0,merge(get_recip_comm(),get_domain_comm(),use_pmecore),back_recv_req(i),ierr)
          if (decomp1d)&
             &call MPI_IRECV(qgrid(1,1,1,qIdx3,i+1),MSG_szs,MPI_TYPE,&
-            &prec_send(i),tag1,commloc,back_split_rcv(i),ierr)
+            &prec_send(i),tag1,merge(get_recip_comm(),get_domain_comm(),use_pmecore),back_split_rcv(i),ierr)
       end do
 
       !MPI : begin sending
 !$acc wait(reciprocal_work%queue)
       do i = 1, nrec_recep
          call MPI_ISEND(qgrid(1,1,1,1,1),MSG_szr,MPI_TYPE,&
-            &prec_recep(i),tag0,commloc,back_send_req(i),ierr)
+            &prec_recep(i),tag0,merge(get_recip_comm(),get_domain_comm(),use_pmecore),back_send_req(i),ierr)
          if (decomp1d)&
             &call MPI_ISEND(qgrid(1,1,1,qIdx3,1),MSG_szr,MPI_TYPE,&
-            &prec_recep(i),tag1,commloc,back_split_snd(i),ierr)
+            &prec_recep(i),tag1,merge(get_recip_comm(),get_domain_comm(),use_pmecore),back_split_snd(i),ierr)
       end do
 !$acc end host_data
    else if (rule.eq.r_wait) then

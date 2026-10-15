@@ -9,11 +9,11 @@
 
 #include "tinker_macro.h"
 module timestat
-   use domdec, only: rank,nproc,nproctot
+   use domdec  , only: nproc,nproctot,rank
    use parallel, only: get_domain_comm
-   use mpi   , only: MPI_Wtime, MPI_COMM_WORLD, MPI_REAL8&
-      &, MPI_SUM, MPI_MAX, MPI_MIN, MPI_ALLREDUCE&
-      &, MPI_REDUCE, MPI_IN_PLACE
+   use mpi     , only: MPI_Wtime, MPI_COMM_WORLD, MPI_REAL8&
+               , MPI_SUM, MPI_MAX, MPI_MIN, MPI_ALLREDUCE&
+               , MPI_REDUCE, MPI_IN_PLACE
    implicit none
    ! Timers Parameters
    integer tinkertime

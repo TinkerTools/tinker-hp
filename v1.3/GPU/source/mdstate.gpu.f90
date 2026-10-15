@@ -18,6 +18,7 @@ submodule(mdstate) submdstate
    use random_mod ,only:randomgpu,normalgpu
 #endif
    use titles
+   use tinheader  ,only: re_p
    use tinmemory  ,only: mem_move,prmem_requestm
    use utils
    use mdevice    ,only: reciprocal_work
@@ -28,6 +29,53 @@ submodule(mdstate) submdstate
    logical respa_l,respa1_l
    real(r_p) ,pointer:: ms_alt2(:)
 contains
+
+   module subroutine set_energy_format(total_energy)
+      real(r_p), intent(in) :: total_energy
+
+      if (has_energy_fmt) return
+      if (abs(total_energy) > 1.0e8_re_p) then
+         energy_format = 'G15.7'
+      else
+         energy_format = 'F15.4'
+      end if
+      has_energy_fmt = .true.
+   end subroutine
+
+   module subroutine write_energy_hdr(iout, include_temp_cl, include_pressure)
+      integer, intent(in) :: iout
+      logical, intent(in) :: include_temp_cl, include_pressure
+
+      if (include_temp_cl) then
+         write(iout,'(A10,3A15,2A11)',advance='no') "MD Step", &
+            &"E total","E Potential","E Kinetic","Temp","Temp_cl"
+      else
+         write(iout,'(A10,3A15,A11)',advance='no') "MD Step", &
+            &"E total","E Potential","E Kinetic","Temp"
+      end if
+      if (include_pressure) write(iout,'(A11)',advance='no') "Pres"
+      write(iout,*)
+   end subroutine
+
+   module subroutine write_energy_row(iout, istep, total_energy, potential_energy, &
+      &kinetic_energy, temperature, temp_cent, pressure, include_temp_cl, &
+      &include_pressure)
+      integer, intent(in) :: iout, istep
+      real(r_p), intent(in) :: total_energy, potential_energy, kinetic_energy
+      real(r_p), intent(in) :: temperature, temp_cent, pressure
+      logical, intent(in) :: include_temp_cl, include_pressure
+
+      if (include_temp_cl) then
+         write(iout,'(i10,3'//energy_format//',2f11.2)',advance='no') istep, &
+            &total_energy, potential_energy, kinetic_energy, temperature, &
+            &temp_cent
+      else
+         write(iout,'(i10,3'//energy_format//',f11.2)',advance='no') istep, &
+            &total_energy, potential_energy, kinetic_energy, temperature
+      end if
+      if (include_pressure) write(iout,'(f11.2)',advance='no') pressure
+      write(iout,*)
+   end subroutine
 
    subroutine mds_checkdyn
       implicit none

@@ -109,6 +109,13 @@ else if (bndtyp_i .eq. BND_FLATBOTTOM) then
    endif
 end if
 !
+!     scale the interaction based on its group membership
+!
+if (use_group.AND.IAND(fea,grp).NE.0) then
+   IF (IAND(ver,ene).NE.0)        e  =  e    * fgrp
+   IF (IAND(ver,grd+vir).NE.0) deddt = deddt * fgrp
+end if
+!
 !     compute chain rule terms needed for derivatives
 !
 IF (IAND(ver,grd+vir).NE.0) THEN
@@ -119,11 +126,6 @@ IF (IAND(ver,grd+vir).NE.0) THEN
    ded%y = de* yab
    ded%z = de* zab
 END IF
-
-if (use_group.AND.IAND(fea,grp).NE.0) then
-   e     =  e    * fgrp
-   deddt = deddt * fgrp
-end if
 !
 !     increment the total bond energy and first derivatives
 !

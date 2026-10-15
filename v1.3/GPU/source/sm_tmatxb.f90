@@ -11,6 +11,7 @@
 !
 #include "tinker_macro.h"
 submodule(tmatxb) tmatxb_lifecycle
+   use lifecycle_observer, only: LifecycleTmatxb, record_lifecycle_event
 contains
    module subroutine transposez_r6(src,dst,loc,sloc,siz,queue)
       implicit none
@@ -36,6 +37,7 @@ contains
       integer,intent(in):: queue
 
       if (.not.allocated(tmatxb_workspace)) return
+      call record_lifecycle_event(LifecycleTmatxb)
 !$acc wait(queue)
 !$acc exit data delete(tmatxb_workspace)
       s_prmem = s_prmem - size(tmatxb_workspace)*szoTp

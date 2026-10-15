@@ -49,7 +49,6 @@ subroutine prmkey (text)
    character*240 record
    character*240 string
 !
-!
 !     parse the line to extract any possible keyword
 !
    record = text
@@ -137,6 +136,8 @@ subroutine prmkey (text)
       elseif (value .eq. 'NONE') then
          use_mlpot = .false.
       end if
+   else if (keyword(1:6) .eq. 'DMTS ') then
+     use_dmts = .true.
    else if (keyword(1:14) .eq. 'BONDTERM-EMBD ') then
       call getword (record,value,next)
       if (value .eq. 'NONE') then
@@ -266,7 +267,6 @@ subroutine prmkey (text)
          use_mpole = .false.
          use_mlist = .false.
       end if
-!$acc update device(use_mpole)
    else if (keyword(1:14) .eq. 'MULTIPOLETERM ') then
       call getword (record,value,next)
       if (value .eq. 'ONLY')  call potoff
@@ -281,7 +281,6 @@ subroutine prmkey (text)
       if (value .eq. 'ONLY')  call potoff
       use_polar = .true.
       if (value .eq. 'NONE')  use_polar = .false.
-!$acc update device(use_polar)
    else if (keyword(1:12) .eq. 'SOLVATETERM ') then
       call getword (record,value,next)
       if (value .eq. 'ONLY')  call potoff
@@ -795,6 +794,5 @@ subroutine potoff
    use_chgtrn = .false.
    use_chgflx = .false.
    use_mlpot = .false.
-!$acc update device (use_mpole,use_polar)
    return
 end

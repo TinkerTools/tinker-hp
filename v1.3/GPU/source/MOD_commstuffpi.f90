@@ -178,7 +178,7 @@ contains
 
       integer ibeadbeg,ibeadend, nbeadsproc, nbeadssend
       integer ibeadbeg_ctr,ibeadend_ctr, nbeadsproc_ctr
-      integer nprocloc, commloc, rankloc ! local (pme) mpi info
+      integer nprocloc, rankloc ! local (pme) mpi info
       integer i,k,j, ierr, iglob, iloc, iproc, ineighbor
       integer nloc_save, n_data_send_capture,max_data_recv
       integer nloc_capture
@@ -199,14 +199,12 @@ contains
 
       if (use_pmecore) then
          nprocloc = ndir
-         commloc  = get_direct_comm()
          rankloc  = rank_bis
          if(rank >= ndir) then
             call timer_enter( timer_eneig )
          end if
       else
          nprocloc = nproc
-         commloc  = get_domain_comm()
          rankloc  = rank
       end if
       if (nproc.eq.1) return
@@ -774,7 +772,7 @@ contains
       integer i,iproc,iprec
       integer iglob,iloc,j,k
       integer tag,ierr,ibufbeg,idomlen
-      integer rankloc,commloc,nprocloc
+      integer rankloc,nprocloc
       integer status(MPI_STATUS_SIZE)
       real(r_p),pointer :: buffer(:,:,:),buffers(:,:,:)
       real(r_p),pointer :: buffer_rp1(:),buffer_rp2(:)
@@ -805,11 +803,9 @@ contains
 !
       if (use_pmecore) then
          nprocloc = nrec
-         commloc  = get_recip_comm()
          rankloc  = rank_bis
       else
          nprocloc = nproc
-         commloc  = get_domain_comm()
          rankloc  = rank
       end if
 !
@@ -911,7 +907,7 @@ contains
          tag = nprocloc*rankloc + prec_recep(i) + 1
          call MPI_IRECV(buffer(1,1,bufbegrec(prec_recep(i)+1))&
             &,3*domlenrec(prec_recep(i)+1)*nbeadssend,MPI_RPREC&
-            &,prec_recep(i),tag,commloc,reqrec(i),ierr)
+            &,prec_recep(i),tag,merge(get_recip_comm(),get_domain_comm(),use_pmecore),reqrec(i),ierr)
       end do
 !
 !     MPI : move in buffer
@@ -932,7 +928,7 @@ contains
          tag = nprocloc*prec_send(i) + rankloc+1
          call MPI_ISEND(buffers,3*nlocrec*nbeadssend&
             &,MPI_RPREC,prec_send(i)&
-            &,tag,commloc,reqsend(i),ierr)
+            &,tag,merge(get_recip_comm(),get_domain_comm(),use_pmecore),reqsend(i),ierr)
       end do
 !$acc end host_data
 !
@@ -1493,7 +1489,7 @@ contains
       integer i,j,k,tag,ierr,iproc,iglob,iloc,ilocrec,ibufbeg
       integer jloc,jglob,jlocrec,ii
       integer sz1,sz2,sz3
-      integer rankloc,commloc,nprocloc
+      integer rankloc,nprocloc
       integer reqsend(nproc),reqrec(nproc)
       integer status(MPI_STATUS_SIZE)
       real(r_p),pointer:: buffer(:,:,:,:)
@@ -1532,11 +1528,9 @@ contains
 !
       if (use_pmecore) then
          nprocloc = nrec
-         commloc  = get_recip_comm()
          rankloc  = rank_bis
       else
          nprocloc = nproc
-         commloc  = get_domain_comm()
          rankloc  = rank
       end if
 !
@@ -1568,7 +1562,7 @@ contains
       do i = 1, nrec_send
          tag = nprocloc*rankloc + prec_send(i) + 1
          call MPI_IRECV(buffer(1,1,1,i),3*nlocrec*nbeadsproc,MPI_RPREC&
-            &,prec_send(i),tag,commloc,reqrec(i),ierr)
+            &,prec_send(i),tag,merge(get_recip_comm(),get_domain_comm(),use_pmecore),reqrec(i),ierr)
       end do
 !$acc end host_data
 !
@@ -1591,7 +1585,7 @@ contains
          call MPI_ISEND(temprecbuf(1,1,bufbegrec(prec_recep(i)+1))&
             &,3*domlenrec(prec_recep(i)+1)*nbeadsproc&
             &,MPI_RPREC&
-            &,prec_recep(i),tag,commloc,reqsend(i),ierr)
+            &,prec_recep(i),tag,merge(get_recip_comm(),get_domain_comm(),use_pmecore),reqsend(i),ierr)
       end do
 !$acc end host_data
 !

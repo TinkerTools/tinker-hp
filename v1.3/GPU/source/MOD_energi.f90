@@ -261,7 +261,7 @@ module subroutine reduceen(epot)
    use tinheader
    use tinmemory ,only: mem_move
    implicit none
-   integer ierr,commloc
+   integer ierr
    integer(8) nine
    real(r_p), intent(inout) :: epot
    real(r_p) buffer1(10),buffer2(20)
@@ -271,11 +271,6 @@ module subroutine reduceen(epot)
    if (ndir.eq.1) return
 
    call timer_enter(timer_reduceen)
-   if (use_pmecore) then
-      commloc = get_direct_comm()
-   else
-      commloc = get_domain_comm()
-   end if
 !$acc data create(buffer1,buffer2,vir_copy) &
 !$acc     present_or_copy(epot) &
 !$acc     present(eb,eba,eub,eopb,et,ept,ett,ebt,ea &
@@ -350,9 +345,9 @@ module subroutine reduceen(epot)
    ! The debug energy subset follows the direct subgroup when PME cores are split.
    ! Keep this routing adapter until the domain privately owns that subgroup.
    if (rank.eq.0) then
-      call MPI_REDUCE(MPI_IN_PLACE,buffer2,20,MPI_RPREC,MPI_SUM,0,commloc,ierr)
+      call MPI_REDUCE(MPI_IN_PLACE,buffer2,20,MPI_RPREC,MPI_SUM,0,merge(get_direct_comm(),get_domain_comm(),use_pmecore),ierr)
    else
-      call MPI_REDUCE(buffer2,buffer2,20,MPI_RPREC,MPI_SUM,0,commloc,ierr)
+      call MPI_REDUCE(buffer2,buffer2,20,MPI_RPREC,MPI_SUM,0,merge(get_direct_comm(),get_domain_comm(),use_pmecore),ierr)
    end if
 !$acc end host_data
 !

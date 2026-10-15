@@ -11,6 +11,7 @@
 !
 #include "tinker_macro.h"
 submodule(polar) polar_lifecycle
+   use lifecycle_observer, only: LifecyclePolar, record_lifecycle_event
 contains
    module subroutine release_polar_workspace(queue)
       use tinMemory, only: s_prmem,sd_prmem,szoTp
@@ -18,6 +19,7 @@ contains
       integer,intent(in):: queue
 
       if (.not.allocated(polar_workspace)) return
+      call record_lifecycle_event(LifecyclePolar)
 !$acc wait(queue)
 !$acc exit data delete(polar_workspace)
       s_prmem = s_prmem - size(polar_workspace)*szoTp

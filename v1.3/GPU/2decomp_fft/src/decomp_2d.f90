@@ -14,6 +14,7 @@
 module decomp_2d
 
   use MPI
+  use mdevice_channel, only: channel_t
 #ifdef _OPENACC
   use openacc
 #endif
@@ -50,17 +51,31 @@ module decomp_2d
   ! some key global variables
   integer, save, public :: nx_global, ny_global, nz_global  ! global size
 
-  integer, save, public :: commloc ! local communicator
-  integer, save, public :: nrank  ! local MPI rank 
-  integer, save, public :: nproc  ! total number of processors
-  integer, save, public :: dir_queue,rec_queue ! async queue fo GPU
+  type, public :: decomp_t
+     integer :: commloc = MPI_COMM_NULL
+     integer :: nrank = -1
+     integer :: nproc = 0
+     integer :: DECOMP_2D_COMM_CART_X = MPI_COMM_NULL
+     integer :: DECOMP_2D_COMM_CART_Y = MPI_COMM_NULL
+     integer :: DECOMP_2D_COMM_CART_Z = MPI_COMM_NULL
+     integer :: DECOMP_2D_COMM_ROW = MPI_COMM_NULL
+     integer :: DECOMP_2D_COMM_COL = MPI_COMM_NULL
+     type(channel_t), pointer :: reciprocal_channel => null()
+  end type decomp_t
+
+  type(decomp_t), target, save, public :: decomp_state
+  integer, pointer, public, protected :: commloc
+  integer, pointer, public, protected :: nrank
+  integer, pointer, public, protected :: nproc
 
   ! parameters for 2D Cartesian topology 
   integer, save, dimension(2) :: dims, coord
   logical, save, dimension(2) :: periodic
-  integer, save, public :: DECOMP_2D_COMM_CART_X, &
-       DECOMP_2D_COMM_CART_Y, DECOMP_2D_COMM_CART_Z 
-  integer, save :: DECOMP_2D_COMM_ROW, DECOMP_2D_COMM_COL
+  integer, pointer, public, protected :: DECOMP_2D_COMM_CART_X
+  integer, pointer, public, protected :: DECOMP_2D_COMM_CART_Y
+  integer, pointer, public, protected :: DECOMP_2D_COMM_CART_Z
+  integer, pointer, public, protected :: DECOMP_2D_COMM_ROW
+  integer, pointer, public, protected :: DECOMP_2D_COMM_COL
 
   ! define neighboring blocks (to be used in halo-cell support)
   !  first dimension 1=X-pencil, 2=Y-pencil, 3=Z-pencil
@@ -183,6 +198,8 @@ module decomp_2d
 
   ! public user routines
   public :: decomp_2d_init, decomp_2d_finalize, &
+       bind_reciprocal_channel, clear_reciprocal_channel, &
+       reciprocal_channel_loan_active, &
        transpose_x_to_y, transpose_y_to_z,      &
        transpose_z_to_y, transpose_y_to_x,      &
        Decomp2d_mpi_alltoallv,                  &
@@ -369,6 +386,14 @@ contains
     character(len=80) fname
 #endif
 !
+    commloc => decomp_state%commloc
+    nrank => decomp_state%nrank
+    nproc => decomp_state%nproc
+    DECOMP_2D_COMM_CART_X => decomp_state%DECOMP_2D_COMM_CART_X
+    DECOMP_2D_COMM_CART_Y => decomp_state%DECOMP_2D_COMM_CART_Y
+    DECOMP_2D_COMM_CART_Z => decomp_state%DECOMP_2D_COMM_CART_Z
+    DECOMP_2D_COMM_ROW => decomp_state%DECOMP_2D_COMM_ROW
+    DECOMP_2D_COMM_COL => decomp_state%DECOMP_2D_COMM_COL
     commloc = comm_loc
 !
 
@@ -600,7 +625,31 @@ contains
     if (DECOMP_2D_COMM_COL /= MPI_COMM_NULL) &
        call MPI_Comm_free(DECOMP_2D_COMM_COL, ierror)
 
+    decomp_state%commloc = MPI_COMM_NULL
+    decomp_state%nrank = -1
+    decomp_state%nproc = 0
+    decomp_state%DECOMP_2D_COMM_CART_X = MPI_COMM_NULL
+    decomp_state%DECOMP_2D_COMM_CART_Y = MPI_COMM_NULL
+    decomp_state%DECOMP_2D_COMM_CART_Z = MPI_COMM_NULL
+    decomp_state%DECOMP_2D_COMM_ROW = MPI_COMM_NULL
+    decomp_state%DECOMP_2D_COMM_COL = MPI_COMM_NULL
+    call clear_reciprocal_channel()
+
   end subroutine decomp_2d_finalize
+
+  subroutine bind_reciprocal_channel(channel)
+    type(channel_t), target, intent(in) :: channel
+
+    decomp_state%reciprocal_channel => channel
+  end subroutine bind_reciprocal_channel
+
+  subroutine clear_reciprocal_channel
+    nullify(decomp_state%reciprocal_channel)
+  end subroutine clear_reciprocal_channel
+
+  logical function reciprocal_channel_loan_active()
+    reciprocal_channel_loan_active = associated(decomp_state%reciprocal_channel)
+  end function reciprocal_channel_loan_active
 
 
   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -1604,7 +1653,7 @@ contains
     end if
 
 #if 0
-    !$acc wait(rec_queue)
+    !$acc wait(decomp_state%reciprocal_channel%queue)
     !$acc host_data use_device(sendbuf,recvbuf)
     call mpi_ialltoallv( sendbuf,sendcounts,sdispls,sendtype, &
                          recvbuf,recvcounts,rdispls,recvtype, &
@@ -1615,7 +1664,7 @@ contains
 
     !$acc host_data use_device(sendbuf,recvbuf)
 
-    !$acc wait(rec_queue)
+    !$acc wait(decomp_state%reciprocal_channel%queue)
     !Init send
     do i = 1,n-1
        send_rank = alltoall_send_pattern(i)
@@ -1642,7 +1691,7 @@ contains
     rloc  = rdispls(irank+1)+1
 
     if (nsend.gt.0) then
-       !$acc parallel loop async(rec_queue) deviceptr(recvbuf,sendbuf)
+       !$acc parallel loop async(decomp_state%reciprocal_channel%queue) deviceptr(recvbuf,sendbuf)
        do i = 0,nsend-1
           recvbuf(rloc+i) = sendbuf(sloc+i)
        end do
