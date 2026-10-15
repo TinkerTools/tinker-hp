@@ -9,6 +9,109 @@ if(NOT DEFINED TINKERHP_VALIDATION_DIR)
   set(TINKERHP_VALIDATION_DIR "${CMAKE_CURRENT_BINARY_DIR}/cmake-configuration-validation")
 endif()
 
+# Dimension-prefixed test labels: scope, claim, and method values of the test
+# vocabulary in GLOSSARY.md. Labels are read from the generated
+# CTestTestfile.cmake of each taxonomy fixture.
+set(tinkerhp_scope_values static unit integration system)
+set(tinkerhp_claim_values functional numerical-regression scientific-result performance)
+set(tinkerhp_method_values conformance differential failure-robustness property metamorphic)
+set_property(GLOBAL PROPERTY TINKERHP_TEST_TAXONOMY_CONTENTS "")
+
+function(tinkerhp_append_taxonomy_contents text)
+  get_property(contents GLOBAL PROPERTY TINKERHP_TEST_TAXONOMY_CONTENTS)
+  set_property(GLOBAL PROPERTY TINKERHP_TEST_TAXONOMY_CONTENTS "${contents}\n${text}")
+endfunction()
+
+function(tinkerhp_read_test_labels contents name output)
+  set(${output} "" PARENT_SCOPE)
+  set(marker "set_tests_properties([=[${name}]=] PROPERTIES")
+  string(FIND "${contents}" "${marker}" marker_index)
+  if(marker_index EQUAL -1)
+    return()
+  endif()
+  string(SUBSTRING "${contents}" ${marker_index} -1 record_tail)
+  string(FIND "${record_tail}" "\n" line_end)
+  string(SUBSTRING "${record_tail}" 0 ${line_end} record)
+  string(REGEX MATCH "LABELS \"[^\"]*\"" labels_field "${record}")
+  if(labels_field STREQUAL "")
+    return()
+  endif()
+  string(REGEX REPLACE "LABELS \"([^\"]*)\"" "\\1" labels "${labels_field}")
+  set(${output} "${labels}" PARENT_SCOPE)
+endfunction()
+
+function(tinkerhp_assert_test_dimensions name labels)
+  if(labels STREQUAL "")
+    message(FATAL_ERROR "${name} has no labels")
+  endif()
+  foreach(dimension scope claim method)
+    set(values "${tinkerhp_${dimension}_values}")
+    set(found FALSE)
+    foreach(label IN LISTS labels)
+      if(label MATCHES "^${dimension}:(.*)$")
+        set(found TRUE)
+        if(NOT CMAKE_MATCH_1 IN_LIST values)
+          message(FATAL_ERROR "${name} has non-canonical label ${label}")
+        endif()
+      endif()
+    endforeach()
+    if(NOT found)
+      message(FATAL_ERROR "${name} is missing a ${dimension}: label")
+    endif()
+  endforeach()
+endfunction()
+
+function(tinkerhp_assert_test_taxonomy name precision fpa colvars nn)
+  set(build_dir "${TINKERHP_VALIDATION_DIR}/${name}")
+  execute_process(
+    COMMAND "${CMAKE_COMMAND}" -S "${TINKERHP_SOURCE_DIR}" -B "${build_dir}" -G Ninja
+      -DTINKERHP_INTERNAL_VALIDATE_ONLY=ON
+      -DBUILD_TESTING=ON
+      -DCMAKE_C_COMPILER=gcc
+      -DCMAKE_CXX_COMPILER=g++
+      -DCMAKE_Fortran_COMPILER=gfortran
+      -DTINKERHP_PRECISION=${precision}
+      -DTINKERHP_ENABLE_FPA=${fpa}
+      -DTINKERHP_ENABLE_COLVARS=${colvars}
+      -DTINKERHP_ENABLE_NN=${nn}
+      -DTINKERHP_ENABLE_PLUMED=ON
+      -DTINKERHP_ENABLE_PARALLEL_SCIENTIFIC_TESTS=ON
+      -DTINKERHP_ENABLE_PERFORMANCE_TESTS=ON
+    RESULT_VARIABLE result
+  )
+  if(NOT result EQUAL 0)
+    message(FATAL_ERROR "${name} taxonomy configuration failed")
+  endif()
+
+  file(READ "${build_dir}/CTestTestfile.cmake" tests)
+  string(REGEX MATCHALL "add_test\\(\\[=\\[[A-Za-z0-9_.-]+\\]=\\]" registrations "${tests}")
+  list(LENGTH registrations registration_count)
+  if(registration_count EQUAL 0)
+    message(FATAL_ERROR "${name} registered no CTests")
+  endif()
+  foreach(registration IN LISTS registrations)
+    string(REGEX REPLACE "add_test\\(\\[=\\[(.*)\\]=\\]" "\\1" test_name "${registration}")
+    tinkerhp_read_test_labels("${tests}" "${test_name}" labels)
+    tinkerhp_assert_test_dimensions("${test_name}" "${labels}")
+  endforeach()
+  tinkerhp_append_taxonomy_contents("${tests}")
+endfunction()
+
+function(tinkerhp_assert_representative_test_labels name expected)
+  get_property(contents GLOBAL PROPERTY TINKERHP_TEST_TAXONOMY_CONTENTS)
+  tinkerhp_read_test_labels("${contents}" "${name}" labels)
+  if(labels STREQUAL "")
+    message(FATAL_ERROR "${name} is not registered in any taxonomy fixture")
+  endif()
+  tinkerhp_assert_test_dimensions("${name}" "${labels}")
+  list(SORT labels)
+  set(expected_labels "${expected}")
+  list(SORT expected_labels)
+  if(NOT labels STREQUAL expected_labels)
+    message(FATAL_ERROR "${name} labels are [${labels}]; expected [${expected_labels}]")
+  endif()
+endfunction()
+
 function(tinkerhp_validate_configuration name precision link_mode fpa ortho colvars nvtx no_mutation suffix required_pattern forbidden_pattern)
   set(build_dir "${TINKERHP_VALIDATION_DIR}/${name}")
   execute_process(
@@ -113,8 +216,8 @@ function(tinkerhp_validate_configuration name precision link_mode fpa ortho colv
   endif()
 endfunction()
 
-function(tinkerhp_assert_shared_colvars_acceptance_registration)
-  set(build_dir "${TINKERHP_VALIDATION_DIR}/shared-colvars-acceptance")
+function(tinkerhp_assert_acceptance_registration name link_mode precision fpa colvars architecture binary_suffix)
+  set(build_dir "${TINKERHP_VALIDATION_DIR}/${name}")
   execute_process(
     COMMAND "${CMAKE_COMMAND}" -S "${TINKERHP_SOURCE_DIR}" -B "${build_dir}" -G Ninja
       -DTINKERHP_INTERNAL_VALIDATE_ONLY=ON
@@ -122,28 +225,44 @@ function(tinkerhp_assert_shared_colvars_acceptance_registration)
       -DCMAKE_C_COMPILER=gcc
       -DCMAKE_CXX_COMPILER=g++
       -DCMAKE_Fortran_COMPILER=gfortran
-      -DTINKERHP_PRECISION=MIXED
-      -DTINKERHP_LINK_MODE=SHARED
-      -DTINKERHP_ENABLE_FPA=ON
-      -DTINKERHP_ENABLE_COLVARS=ON
-      -DTINKERHP_GPU_ARCHITECTURES=75
+      -DTINKERHP_PRECISION=${precision}
+      -DTINKERHP_LINK_MODE=${link_mode}
+      -DTINKERHP_ENABLE_FPA=${fpa}
+      -DTINKERHP_ENABLE_COLVARS=${colvars}
+      -DTINKERHP_GPU_ARCHITECTURES=${architecture}
     RESULT_VARIABLE result
   )
   if(NOT result EQUAL 0)
-    message(FATAL_ERROR "shared Colvars acceptance-test configuration failed")
+    message(FATAL_ERROR "${name} acceptance-test configuration failed")
   endif()
 
   file(READ "${build_dir}/CTestTestfile.cmake" tests)
   foreach(expected
-      "tinkerhp-shared-colvars-acceptance"
-      "\"mpirun\" \"-n\" \"1\""
-      "bin/dynamic_clv.fpa\" \"dhfr2dyn\" \"10\" \"2\" \"20\" \"2\" \"300\" \"-k\" \"dhfr2dyn_r\""
-      "WORKING_DIRECTORY \"${TINKERHP_SOURCE_DIR}/examples\"")
+      "-Ddynamic=${build_dir}/bin/dynamic${binary_suffix}"
+      "-Droot_dir=${build_dir}/acceptance-test"
+      "tests/run_acceptance.cmake")
     string(FIND "${tests}" "${expected}" expected_index)
     if(expected_index EQUAL -1)
-      message(FATAL_ERROR "shared Colvars acceptance test is missing ${expected}")
+      message(FATAL_ERROR "${name} acceptance test is missing ${expected}")
     endif()
   endforeach()
+  string(REGEX MATCH "add_test\\(\\[=\\[tinkerhp-acceptance\\]=\\][^\n]*\n[^\n]*" acceptance_block "${tests}")
+  if(acceptance_block STREQUAL "")
+    message(FATAL_ERROR "${name} acceptance test registration was not found")
+  endif()
+  string(FIND "${acceptance_block}" "WORKING_DIRECTORY" working_directory_index)
+  if(NOT working_directory_index EQUAL -1)
+    message(FATAL_ERROR "${name} acceptance test sets a working directory")
+  endif()
+  foreach(expected "OMPI_MCA_btl=self,vader" "RUN_SERIAL" "-Dsource_dir=${TINKERHP_SOURCE_DIR}")
+    string(FIND "${acceptance_block}" "${expected}" expected_index)
+    if(expected_index EQUAL -1)
+      message(FATAL_ERROR "${name} acceptance test is missing ${expected}")
+    endif()
+  endforeach()
+  tinkerhp_read_test_labels("${tests}" tinkerhp-acceptance acceptance_labels)
+  tinkerhp_assert_test_dimensions(tinkerhp-acceptance "${acceptance_labels}")
+  tinkerhp_append_taxonomy_contents("${tests}")
 endfunction()
 
 function(tinkerhp_assert_parallel_scientific_registration name precision)
@@ -1728,6 +1847,166 @@ function(tinkerhp_assert_no_preset_prefix prefix kind)
   endforeach()
 endfunction()
 
+function(tinkerhp_assert_nn_mlpot_analyze_registration
+    name tests build_dir variant executable precision fpa colvars)
+  set(baseline_name
+    "tinkerhp-functional-analyze-mlpot-only-watersmall-${variant}-one-rank")
+  set(parallel_name
+    "tinkerhp-functional-analyze-mlpot-only-watersmall-${variant}-two-ranks")
+  set(output_root "${build_dir}/mlpot-only-analyze-${variant}")
+  set(fixture "mlpot_only_analyze_${variant}_one_rank")
+
+  set(common_command_checks
+    "${TINKERHP_SOURCE_DIR}/tests/runtime_refactor_oracle.py"
+    "--executable\" \"${build_dir}/bin/${executable}"
+    "--build-report\" \"${build_dir}/tinkerhp-build-report.txt"
+    "--precision\" \"${precision}"
+    "--backend\" \"GPU"
+    "--mpi-launcher\" \"mpirun"
+    "--fixture-dir\" \"${TINKERHP_SOURCE_DIR}/examples"
+    "--key\" \"watersmall_ml.key"
+    "--primary-xyz\" \"watersmall.xyz"
+    "--fixture\" \"watersmall.xyz"
+    "--fixture\" \"watersmall_ml.key"
+    "--model-file\" \"${TINKERHP_SOURCE_DIR}/ml_models/ani2x.fnx"
+    "--replace-output-dir"
+    "\"--\" \"watersmall\" \"E\" \"-k\" \"watersmall_ml.key")
+
+  tinkerhp_extract_ctest_line(
+    "${tests}" add_test "${baseline_name}" baseline_registration)
+  if(baseline_registration STREQUAL "")
+    message(FATAL_ERROR "${name} did not register ${baseline_name}")
+  endif()
+  set(baseline_command_checks
+    ${common_command_checks}
+    "--profile\" \"analyze-baseline"
+    "--mpi-ranks\" \"1"
+    "--mpi-layout\" \"1x1x1"
+    "--output-dir\" \"${output_root}/one-rank")
+  foreach(required IN LISTS baseline_command_checks)
+    string(FIND "${baseline_registration}" "${required}" required_index)
+    if(required_index EQUAL -1)
+      message(FATAL_ERROR "${baseline_name} command is missing ${required}")
+    endif()
+  endforeach()
+  tinkerhp_extract_ctest_line(
+    "${tests}" set_tests_properties "${baseline_name}" baseline_properties)
+  foreach(required
+      "LABELS \"scope:integration;claim:functional;method:conformance\""
+      "ENVIRONMENT \"OMPI_MCA_oob_tcp_if_include=lo;OMPI_MCA_btl=self,vader\""
+      "FIXTURES_SETUP \"${fixture}\""
+      "PROCESSORS \"1\""
+      "RUN_SERIAL \"TRUE\"")
+    string(FIND "${baseline_properties}" "${required}" required_index)
+    if(required_index EQUAL -1)
+      message(FATAL_ERROR "${baseline_name} properties are missing ${required}")
+    endif()
+  endforeach()
+
+  tinkerhp_extract_ctest_line(
+    "${tests}" add_test "${parallel_name}" parallel_registration)
+  if(parallel_registration STREQUAL "")
+    message(FATAL_ERROR "${name} did not register ${parallel_name}")
+  endif()
+  set(parallel_command_checks
+    ${common_command_checks}
+    "--profile\" \"analyze"
+    "--mpi-ranks\" \"2"
+    "--mpi-layout\" \"1x1x2"
+    "--sequential-report\" \"${output_root}/one-rank/report.json"
+    "--expected-decomposition\" \"auto"
+    "--output-dir\" \"${output_root}/two-ranks")
+  foreach(required IN LISTS parallel_command_checks)
+    string(FIND "${parallel_registration}" "${required}" required_index)
+    if(required_index EQUAL -1)
+      message(FATAL_ERROR "${parallel_name} command is missing ${required}")
+    endif()
+  endforeach()
+  foreach(registration IN ITEMS
+      "${baseline_registration}" "${parallel_registration}")
+    string(FIND "${registration}" "--feature\" \"FPA" fpa_index)
+    if(precision STREQUAL "MIXED" AND fpa AND fpa_index EQUAL -1)
+      message(FATAL_ERROR "${name} Analyze registration omits its FPA feature")
+    elseif((NOT precision STREQUAL "MIXED" OR NOT fpa) AND NOT fpa_index EQUAL -1)
+      message(FATAL_ERROR "${name} Analyze registration declares unsupported FPA")
+    endif()
+    string(FIND "${registration}" "--feature\" \"COLVARS" colvars_index)
+    if(colvars AND colvars_index EQUAL -1)
+      message(FATAL_ERROR "${name} Analyze registration omits its Colvars feature")
+    elseif(NOT colvars AND NOT colvars_index EQUAL -1)
+      message(FATAL_ERROR "${name} Analyze registration declares disabled Colvars")
+    endif()
+  endforeach()
+
+  tinkerhp_extract_ctest_line(
+    "${tests}" set_tests_properties "${parallel_name}" parallel_properties)
+  foreach(required
+      "LABELS \"scope:integration;claim:functional;claim:numerical-regression;method:differential\""
+      "ENVIRONMENT \"OMPI_MCA_oob_tcp_if_include=lo;OMPI_MCA_btl=self,vader\""
+      "FIXTURES_REQUIRED \"${fixture}\""
+      "PROCESSORS \"2\""
+      "RUN_SERIAL \"TRUE\"")
+    string(FIND "${parallel_properties}" "${required}" required_index)
+    if(required_index EQUAL -1)
+      message(FATAL_ERROR "${parallel_name} properties are missing ${required}")
+    endif()
+  endforeach()
+
+  set(existing_tests
+    tinkerhp-runtime-refactor-oracle-contract
+    tinkerhp-cmake-configuration-contract)
+  if(precision STREQUAL "DOUBLE")
+    list(APPEND existing_tests tinkerhp-functional-analyze-beads-watersmall-double)
+  elseif(fpa)
+    list(APPEND existing_tests tinkerhp-functional-analyze-beads-watersmall-fpa)
+  endif()
+  foreach(existing_test IN LISTS existing_tests)
+    tinkerhp_extract_ctest_line(
+      "${tests}" add_test "${existing_test}" existing_registration)
+    if(existing_registration STREQUAL "")
+      message(FATAL_ERROR "${name} lost existing CTest identifier ${existing_test}")
+    endif()
+  endforeach()
+endfunction()
+
+function(tinkerhp_assert_non_nn_test_baseline name tests)
+  string(FIND
+    "${tests}" "tinkerhp-functional-analyze-mlpot-only-watersmall-nn-" registration_index)
+  if(NOT registration_index EQUAL -1)
+    message(FATAL_ERROR "${name} unexpectedly registered NN-only Analyze tests")
+  endif()
+  foreach(existing_test
+      tinkerhp-runtime-refactor-oracle-contract
+      tinkerhp-cmake-configuration-contract)
+    tinkerhp_extract_ctest_line(
+      "${tests}" add_test "${existing_test}" existing_registration)
+    if(existing_registration STREQUAL "")
+      message(FATAL_ERROR "${name} lost existing CTest identifier ${existing_test}")
+    endif()
+  endforeach()
+endfunction()
+
+function(tinkerhp_assert_no_nn_mlpot_analyze_registration name build_dir colvars)
+  set(command
+    "${CMAKE_COMMAND}" -S "${TINKERHP_SOURCE_DIR}" -B "${build_dir}" -G Ninja
+    -DTINKERHP_INTERNAL_VALIDATE_ONLY=ON
+    -DBUILD_TESTING=ON
+    -DCMAKE_C_COMPILER=gcc
+    -DCMAKE_CXX_COMPILER=g++
+    -DCMAKE_Fortran_COMPILER=gfortran
+    -DTINKERHP_PRECISION=MIXED
+    -DTINKERHP_ENABLE_FPA=ON
+    -DTINKERHP_ENABLE_NN=OFF
+    -DTINKERHP_ENABLE_COLVARS=${colvars}
+    -DTINKERHP_ENABLE_PARALLEL_SCIENTIFIC_TESTS=OFF)
+  execute_process(COMMAND ${command} RESULT_VARIABLE result)
+  if(NOT result EQUAL 0)
+    message(FATAL_ERROR "${name} configuration failed")
+  endif()
+  file(READ "${build_dir}/CTestTestfile.cmake" tests)
+  tinkerhp_assert_non_nn_test_baseline("${name}" "${tests}")
+endfunction()
+
 function(tinkerhp_write_fake_python path version modules has_library)
   file(WRITE "${path}" "#!/bin/sh\nif [ \"$1\" = \"-c\" ]; then\n  case \"$2\" in\n    *version_info*) echo \"${version}\"; exit 0 ;;\n    *sysconfig*) printf '%s\\n%s\\n' '/fake-deephp/lib' 'libpython3.11.so'; exit 0 ;;\n    *) exit ${modules} ;;\n  esac\nfi\nexit 0\n")
   set(library_dir "${path}.lib")
@@ -1747,6 +2026,14 @@ function(tinkerhp_write_fake_python path version modules has_library)
 endfunction()
 
 function(tinkerhp_validate_nn_configuration name origin version modules cuda has_library expect_success)
+  set(precision MIXED)
+  set(fpa ON)
+  if(ARGC GREATER 7)
+    set(precision "${ARGV7}")
+  endif()
+  if(ARGC GREATER 8)
+    set(fpa "${ARGV8}")
+  endif()
   set(fixture_dir "${TINKERHP_VALIDATION_DIR}/deephp-fixtures/${name}")
   set(project_dir "${fixture_dir}/deep-hp")
   set(fake_python "${fixture_dir}/python")
@@ -1769,9 +2056,12 @@ function(tinkerhp_validate_nn_configuration name origin version modules cuda has
   set(command
     "${CMAKE_COMMAND}" -S "${TINKERHP_SOURCE_DIR}" -B "${build_dir}" -G Ninja
     -DTINKERHP_INTERNAL_VALIDATE_ONLY=ON
+    -DBUILD_TESTING=ON
     -DCMAKE_C_COMPILER=gcc -DCMAKE_CXX_COMPILER=g++ -DCMAKE_Fortran_COMPILER=gfortran
     -DTINKERHP_ENABLE_NN=ON
-    -DTINKERHP_PRECISION=MIXED
+    -DTINKERHP_ENABLE_PARALLEL_SCIENTIFIC_TESTS=OFF
+    -DTINKERHP_ENABLE_FPA=${fpa}
+    -DTINKERHP_PRECISION=${precision}
     -DDEEPHP_PROJECT_DIR=${project_dir}
     -DTINKERHP_INTERNAL_VALIDATE_CUDA_VERSION=${cuda}
   )
@@ -1812,6 +2102,32 @@ function(tinkerhp_validate_nn_configuration name origin version modules cuda has
     return()
   endif()
 
+  file(READ "${build_dir}/CTestTestfile.cmake" tests)
+  if(precision STREQUAL "DOUBLE")
+    set(precision_tag double)
+    set(precision_suffix .gpu)
+  elseif(fpa)
+    set(precision_tag fpa)
+    set(precision_suffix .fpa)
+  else()
+    set(precision_tag mixed)
+    set(precision_suffix .mixed)
+  endif()
+  set(colvars FALSE)
+  set(executable "analyze_nn${precision_suffix}")
+  set(binary_suffix "_nn${precision_suffix}")
+  if(name STREQUAL "nn-colvars")
+    set(colvars TRUE)
+    set(test_variant "nn-colvars-${precision_tag}")
+    set(executable "analyze_nn_clv${precision_suffix}")
+    set(binary_suffix "_nn_clv${precision_suffix}")
+  else()
+    set(test_variant "nn-${precision_tag}")
+  endif()
+  tinkerhp_assert_nn_mlpot_analyze_registration(
+    "${name}" "${tests}" "${build_dir}" "${test_variant}" "${executable}"
+    "${precision}" "${fpa}" "${colvars}")
+
   file(READ "${build_dir}/tinkerhp-build-report.txt" report)
   string(FIND "${report}" "Deep-HP environment origin: ${origin}" origin_index)
   if(origin_index EQUAL -1)
@@ -1833,11 +2149,7 @@ function(tinkerhp_validate_nn_configuration name origin version modules cuda has
       message(FATAL_ERROR "${name} did not report the managed CUDA profile")
     endif()
   endif()
-  if(name STREQUAL "nn-colvars")
-    set(expected_suffix "_nn_clv.fpa")
-  else()
-    set(expected_suffix "_nn.fpa")
-  endif()
+  set(expected_suffix "${binary_suffix}")
   string(FIND "${report}" "Binary suffix: ${expected_suffix}" suffix_index)
   if(suffix_index EQUAL -1)
     message(FATAL_ERROR "${name} did not report suffix ${expected_suffix}")
@@ -1982,6 +2294,8 @@ function(tinkerhp_assert_testing_mode name override expected)
     if(NOT EXISTS "${test_file}")
       message(FATAL_ERROR "${name} did not register CTest tests")
     endif()
+    file(READ "${test_file}" tests)
+    tinkerhp_assert_non_nn_test_baseline("${name}" "${tests}")
   elseif(EXISTS "${test_file}")
     message(FATAL_ERROR "${name} unexpectedly registered CTest tests")
   endif()
@@ -2134,7 +2448,8 @@ tinkerhp_validate_configuration(double-shared DOUBLE SHARED ON OFF OFF OFF OFF .
 tinkerhp_validate_configuration(double-shared-colvars DOUBLE SHARED ON OFF ON OFF OFF _clv.gpu "" USE_DETERMINISTIC_REDUCTION)
 tinkerhp_validate_configuration(mixed-fpa-shared MIXED SHARED ON OFF OFF OFF OFF .fpa USE_DETERMINISTIC_REDUCTION "")
 tinkerhp_validate_configuration(mixed-fpa-shared-colvars MIXED SHARED ON OFF ON OFF OFF _clv.fpa USE_DETERMINISTIC_REDUCTION "")
-tinkerhp_assert_shared_colvars_acceptance_registration()
+tinkerhp_assert_acceptance_registration(acceptance-shared SHARED MIXED ON ON 86 _clv.fpa)
+tinkerhp_assert_acceptance_registration(acceptance-static STATIC DOUBLE OFF OFF 80 .gpu)
 tinkerhp_assert_parallel_scientific_registration(parallel-scientific-double DOUBLE)
 tinkerhp_assert_parallel_scientific_registration(parallel-scientific-mixed MIXED)
 tinkerhp_assert_parallel_bench6_fpa_registration(parallel-bench6-fpa-enabled ON ON TRUE)
@@ -2236,10 +2551,15 @@ tinkerhp_validate_nn_configuration(nn-created-cuda12 managed-created 3.11.8 0 12
 tinkerhp_validate_nn_configuration(nn-created-cuda13 managed-created 3.11.8 0 13.1 TRUE TRUE)
 tinkerhp_validate_nn_configuration(nn-colvars explicit 3.11.8 0 12.5 TRUE TRUE)
 tinkerhp_validate_nn_configuration(nn-composition explicit 3.11.8 0 12.5 TRUE TRUE)
+tinkerhp_validate_nn_configuration(nn-double-registration explicit 3.11.8 0 12.5 TRUE TRUE DOUBLE ON)
+tinkerhp_validate_nn_configuration(nn-mixed-no-fpa-registration explicit 3.11.8 0 12.5 TRUE TRUE MIXED OFF)
 tinkerhp_validate_nn_configuration(nn-managed-wrong-version managed-local 3.10.14 0 12.5 TRUE FALSE)
 tinkerhp_validate_nn_configuration(nn-explicit-missing-module explicit 3.11.8 1 12.5 TRUE FALSE)
 tinkerhp_validate_nn_configuration(nn-created-unsupported-cuda managed-created 3.11.8 0 11.8 TRUE FALSE)
 tinkerhp_validate_nn_configuration(nn-explicit-missing-libpython explicit 3.11.8 0 12.5 FALSE FALSE)
+tinkerhp_assert_no_nn_mlpot_analyze_registration(
+  no-nn-colvars-analyze-registration
+  "${TINKERHP_VALIDATION_DIR}/no-nn-colvars-analyze-registration" ON)
 tinkerhp_assert_deferred_feature_rejected(openmp TINKERHP_ENABLE_OPENMP)
 tinkerhp_assert_deferred_feature_rejected(nvshmem TINKERHP_ENABLE_NVSHMEM)
 tinkerhp_assert_invalid_link_mode_rejected()
@@ -2277,3 +2597,46 @@ if(NOT ortho_commands STREQUAL plain_commands)
     "Orthogonal-box-only mode changed compilation beyond ORTHOGONAL_BOX_SHAPE_ONLY."
   )
 endif()
+
+# Test taxonomy: every maintained registration carries scope, claim, and method
+# labels, and representative registrations carry their exact expected labels.
+# The six fixtures cover the DOUBLE and MIXED configurations with and without
+# Colvars. FPA is enabled only in the MIXED fixtures, which hold every FPA-gated
+# registration. NN is enabled in all six, so the ML-only Analyze variants are
+# covered.
+tinkerhp_assert_test_taxonomy(taxonomy-double DOUBLE OFF ON ON)
+tinkerhp_assert_test_taxonomy(taxonomy-double-no-colvars DOUBLE OFF OFF ON)
+tinkerhp_assert_test_taxonomy(taxonomy-mixed-fpa MIXED ON ON ON)
+tinkerhp_assert_test_taxonomy(taxonomy-mixed-fpa-no-colvars MIXED ON OFF ON)
+tinkerhp_assert_test_taxonomy(taxonomy-mixed MIXED OFF ON ON)
+tinkerhp_assert_test_taxonomy(taxonomy-mixed-no-colvars MIXED OFF OFF ON)
+tinkerhp_assert_representative_test_labels(tinkerhp-runtime-refactor-oracle-contract
+  "scope:unit;claim:functional;method:conformance")
+tinkerhp_assert_representative_test_labels(tinkerhp-cmake-configuration-contract
+  "scope:static;claim:functional;method:conformance")
+tinkerhp_assert_representative_test_labels(tinkerhp-scientific-dynamic-dhfr-b-double
+  "scope:integration;claim:functional;claim:numerical-regression;method:conformance")
+tinkerhp_assert_representative_test_labels(tinkerhp-scientific-pimd-watersmall-double
+  "scope:integration;claim:functional;claim:scientific-result;method:conformance")
+tinkerhp_assert_representative_test_labels(tinkerhp-scientific-minimize-iceii-double
+  "scope:integration;claim:functional;claim:numerical-regression;method:conformance")
+tinkerhp_assert_representative_test_labels(tinkerhp-parallel-scientific-analyze-dhfr-double
+  "scope:integration;claim:functional;claim:numerical-regression;method:differential")
+tinkerhp_assert_representative_test_labels(tinkerhp-functional-analyze-mlpot-only-watersmall-nn-double-one-rank
+  "scope:integration;claim:functional;method:conformance")
+tinkerhp_assert_representative_test_labels(tinkerhp-functional-analyze-mlpot-only-watersmall-nn-double-two-ranks
+  "scope:integration;claim:functional;claim:numerical-regression;method:differential")
+tinkerhp_assert_representative_test_labels(tinkerhp-functional-pibar-invalid-mode-double
+  "scope:integration;claim:functional;method:failure-robustness")
+tinkerhp_assert_representative_test_labels(tinkerhp-colvars-runtime-failure-1
+  "scope:integration;claim:functional;method:failure-robustness")
+tinkerhp_assert_representative_test_labels(tinkerhp-performance-dynamic-dhfr-b-fpa
+  "performance;scope:integration;claim:functional;claim:performance;method:conformance")
+tinkerhp_assert_representative_test_labels(tinkerhp-functional-pimd-restart-missing-double
+  "scope:integration;claim:functional;method:failure-robustness")
+tinkerhp_assert_representative_test_labels(tinkerhp-dynamic-cli-contract
+  "scope:integration;claim:functional;method:conformance")
+tinkerhp_assert_representative_test_labels(tinkerhp-pimd-dcd-contract
+  "scope:integration;claim:functional;method:conformance")
+tinkerhp_assert_representative_test_labels(tinkerhp-acceptance
+  "scope:integration;claim:functional;method:conformance")

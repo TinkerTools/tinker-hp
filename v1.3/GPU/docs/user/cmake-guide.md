@@ -94,8 +94,10 @@ cmake --build --preset gpu-all-fpa-shared
 ```
 
 The private SM75 presets select an explicit architecture for sandbox and
-acceptance workflows. They are not part of the public 34-preset matrix. Run
-the SM75 Colvars acceptance test after its build with:
+acceptance workflows. They are not part of the public 34-preset matrix. The
+acceptance test `tinkerhp-acceptance` is registered for every build and runs in
+a private workspace under the build directory. Run it after a build with
+`ctest -R tinkerhp-acceptance`, or through the preset that filters on it:
 
 ```bash
 ctest --preset gpu-sm75-fpa-shared-colvars

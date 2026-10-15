@@ -1,0 +1,31 @@
+# In this example, the same set of atoms and reference coordinates
+# are used to restrain the position, orientation, and conformation
+# of a group of atoms, relative to a reference group.
+colvarsTrajFrequency 1000
+colvarsRestartFrequency 1000
+
+colvar {
+  name l
+  extendedLagrangian on
+  extendedLangevinDamping 1000
+  extendedtemp 300
+  extendedmass  150000
+
+  lowerBoundary 0.5
+  upperBoundary 1.0
+  reflectingLowerBoundary
+  reflectingUpperBoundary
+  width 0.01
+  alchLambda {
+  }
+  outputTotalForce
+  outputAppliedforce
+}
+
+
+abf {
+  colvars l
+  fullSamples 200
+  historyFreq 1000
+#  shared
+}

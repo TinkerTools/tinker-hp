@@ -798,18 +798,25 @@ option(BUILD_TESTING "Build Tinker-HP tests." OFF)
 include(CTest)
 if(BUILD_TESTING)
   find_package(Python3 REQUIRED COMPONENTS Interpreter)
+  # Dimension-prefixed labels (scope, claim, method) follow the test vocabulary
+  # in GLOSSARY.md. APPEND keeps labels already set on a test.
+  function(tinkerhp_label_test name)
+    set_property(TEST "${name}" APPEND PROPERTY LABELS ${ARGN})
+  endfunction()
   add_test(
     NAME tinkerhp-runtime-refactor-oracle-contract
     COMMAND "${Python3_EXECUTABLE}" -m unittest discover
       -s "${CMAKE_SOURCE_DIR}/tests"
       -p test_runtime_refactor_oracle.py
   )
+  tinkerhp_label_test(tinkerhp-runtime-refactor-oracle-contract scope:unit claim:functional method:conformance)
   add_test(
     NAME tinkerhp-generated-dependency-closure
     COMMAND "${CMAKE_COMMAND}"
       -DTINKERHP_BUILD_DIR=${CMAKE_BINARY_DIR}
       -P "${CMAKE_SOURCE_DIR}/cmake/TinkerHPGeneratedDependencyValidation.cmake"
   )
+  tinkerhp_label_test(tinkerhp-generated-dependency-closure scope:static claim:functional method:conformance)
   add_test(
     NAME tinkerhp-cmake-configuration-contract
     COMMAND "${CMAKE_COMMAND}"
@@ -817,6 +824,7 @@ if(BUILD_TESTING)
       -DTINKERHP_VALIDATION_DIR=${CMAKE_BINARY_DIR}/cmake-configuration-validation
       -P "${CMAKE_SOURCE_DIR}/cmake/TinkerHPConfigurationValidation.cmake"
   )
+  tinkerhp_label_test(tinkerhp-cmake-configuration-contract scope:static claim:functional method:conformance)
   add_executable(tinkerhp-dynamic-cli-contract tests/test_dynamic_cli.f90)
   set_source_files_properties(tests/test_dynamic_cli.f90 PROPERTIES
     Fortran_PREPROCESS ON)
@@ -827,14 +835,17 @@ if(BUILD_TESTING)
     NAME tinkerhp-dynamic-cli-contract
     COMMAND "$<TARGET_FILE:tinkerhp-dynamic-cli-contract>"
   )
+  tinkerhp_label_test(tinkerhp-dynamic-cli-contract scope:integration claim:functional method:conformance)
   add_test(
     NAME tinkerhp-dynamic-energy-format-fixed-contract
     COMMAND "$<TARGET_FILE:tinkerhp-dynamic-cli-contract>" fixed
   )
+  tinkerhp_label_test(tinkerhp-dynamic-energy-format-fixed-contract scope:integration claim:functional method:conformance)
   add_test(
     NAME tinkerhp-dynamic-energy-format-scientific-contract
     COMMAND "$<TARGET_FILE:tinkerhp-dynamic-cli-contract>" scientific
   )
+  tinkerhp_label_test(tinkerhp-dynamic-energy-format-scientific-contract scope:integration claim:functional method:conformance)
   set_tests_properties(
     tinkerhp-dynamic-cli-contract
     tinkerhp-dynamic-energy-format-fixed-contract
@@ -863,6 +874,8 @@ if(BUILD_TESTING)
           PROCESSORS ${rank_count}
           RUN_SERIAL TRUE
       )
+      tinkerhp_label_test(tinkerhp-colvars-lifecycle-contract-${rank_count}
+        scope:integration claim:functional method:conformance)
     endforeach()
     function(tinkerhp_add_colvars_runtime_test name ranks)
       add_test(
@@ -880,6 +893,11 @@ if(BUILD_TESTING)
         RUN_SERIAL TRUE
         TIMEOUT 180
       )
+      if("--failure" IN_LIST ARGN)
+        tinkerhp_label_test("${name}" scope:integration claim:functional method:failure-robustness)
+      else()
+        tinkerhp_label_test("${name}" scope:integration claim:functional method:conformance)
+      endif()
     endfunction()
     tinkerhp_add_colvars_runtime_test(tinkerhp-colvars-runtime-activation-1 1)
     tinkerhp_add_colvars_runtime_test(tinkerhp-colvars-runtime-activation-2 2)
@@ -904,6 +922,7 @@ if(BUILD_TESTING)
         RUN_SERIAL TRUE
         TIMEOUT 180
       )
+      tinkerhp_label_test("${name}" scope:integration claim:functional method:conformance)
     endfunction()
     tinkerhp_add_plumed_runtime_test(tinkerhp-plumed-runtime-activation-1)
   endif()
@@ -918,6 +937,7 @@ if(BUILD_TESTING)
       --backend "${TINKERHP_BACKEND}"
       --mpi-layout 1x1x1
   )
+  tinkerhp_label_test(tinkerhp-minimize-xyz-contract scope:integration claim:functional method:conformance)
   set_tests_properties(tinkerhp-minimize-xyz-contract PROPERTIES
     ENVIRONMENT "OMPI_MCA_oob_tcp_if_include=lo;OMPI_MCA_btl=self,vader"
     RUN_SERIAL TRUE
@@ -933,6 +953,7 @@ if(BUILD_TESTING)
         --executable "$<TARGET_FILE:dynamic>"
         --mpi-launcher mpirun
     )
+    tinkerhp_label_test(tinkerhp-mdstat-skipped-energy-boundary-mixed scope:integration claim:functional method:conformance)
     set_tests_properties(tinkerhp-mdstat-skipped-energy-boundary-mixed PROPERTIES
       ENVIRONMENT "OMPI_MCA_oob_tcp_if_include=lo;OMPI_MCA_btl=self,vader"
       PROCESSORS 1
@@ -951,6 +972,7 @@ if(BUILD_TESTING)
     NAME tinkerhp-restart-contract
     COMMAND "$<TARGET_FILE:tinkerhp-restart-contract>"
   )
+  tinkerhp_label_test(tinkerhp-restart-contract scope:integration claim:functional method:conformance)
   add_executable(tinkerhp-mdtraj-contract tests/test_mdtraj.f90)
   set_source_files_properties(tests/test_mdtraj.f90 PROPERTIES
     Fortran_PREPROCESS ON)
@@ -961,6 +983,7 @@ if(BUILD_TESTING)
     NAME tinkerhp-mdtraj-contract
     COMMAND "$<TARGET_FILE:tinkerhp-mdtraj-contract>"
   )
+  tinkerhp_label_test(tinkerhp-mdtraj-contract scope:integration claim:functional method:conformance method:failure-robustness)
   set_tests_properties(tinkerhp-mdtraj-contract PROPERTIES
     ENVIRONMENT "TINKERHP_SOURCE_DIR=${CMAKE_SOURCE_DIR};TINKER_PARAMS=."
   )
@@ -971,6 +994,7 @@ if(BUILD_TESTING)
       --source-dir "${CMAKE_SOURCE_DIR}"
       --mpi-launcher mpirun
   )
+  tinkerhp_label_test(tinkerhp-replica-restart-contract scope:integration claim:functional method:conformance method:failure-robustness)
   set_tests_properties(tinkerhp-replica-restart-contract PROPERTIES
     ENVIRONMENT "OMPI_MCA_oob_tcp_if_include=lo;OMPI_MCA_btl=self,vader"
     RUN_SERIAL TRUE
@@ -991,6 +1015,9 @@ if(BUILD_TESTING)
       WORKING_DIRECTORY "${CMAKE_SOURCE_DIR}/examples"
       ENVIRONMENT "TINKERHP_SOURCE_DIR=${CMAKE_SOURCE_DIR};TINKER_PARAMS=.;OMPI_MCA_oob_tcp_if_include=lo;OMPI_MCA_btl=self,vader"
     )
+    tinkerhp_label_test(tinkerhp-initialization-contract-phase-${phase}
+      scope:integration claim:functional method:conformance
+      method:failure-robustness)
   endforeach()
   add_executable(tinkerhp-parallel-contract tests/test_parallel.f90)
   set_source_files_properties(tests/test_parallel.f90 PROPERTIES
@@ -1016,6 +1043,7 @@ if(BUILD_TESTING)
     NAME tinkerhp-parallel-contract
     COMMAND mpirun -n 1 "$<TARGET_FILE:tinkerhp-parallel-contract>"
   )
+  tinkerhp_label_test(tinkerhp-parallel-contract scope:integration claim:functional method:conformance method:failure-robustness)
   set_tests_properties(tinkerhp-parallel-contract PROPERTIES
     ENVIRONMENT "TINKERHP_SOURCE_DIR=${CMAKE_SOURCE_DIR};TINKER_PARAMS=.;TINKER_ASYNC_COVER=1;OMPI_MCA_oob_tcp_if_include=lo;OMPI_MCA_btl=self,vader"
   )
@@ -1023,6 +1051,7 @@ if(BUILD_TESTING)
     NAME tinkerhp-parallel-halo-contract
     COMMAND mpirun -n 2 "$<TARGET_FILE:tinkerhp-parallel-contract>"
   )
+  tinkerhp_label_test(tinkerhp-parallel-halo-contract scope:integration claim:functional method:conformance method:failure-robustness)
   set_tests_properties(tinkerhp-parallel-halo-contract PROPERTIES
     ENVIRONMENT "TINKERHP_SOURCE_DIR=${CMAKE_SOURCE_DIR};TINKER_PARAMS=.;TINKER_ASYNC_COVER=1;OMPI_MCA_oob_tcp_if_include=lo;OMPI_MCA_btl=self,vader"
     PROCESSORS 2
@@ -1032,6 +1061,7 @@ if(BUILD_TESTING)
     NAME tinkerhp-parallel-root-exchange-contract
     COMMAND mpirun -n 4 "$<TARGET_FILE:tinkerhp-parallel-topology-contract>"
   )
+  tinkerhp_label_test(tinkerhp-parallel-root-exchange-contract scope:integration claim:functional method:conformance method:failure-robustness)
   set_tests_properties(tinkerhp-parallel-root-exchange-contract PROPERTIES
     ENVIRONMENT "TINKERHP_SOURCE_DIR=${CMAKE_SOURCE_DIR};TINKER_PARAMS=.;OMPI_MCA_oob_tcp_if_include=lo;OMPI_MCA_btl=self,vader"
     PROCESSORS 4
@@ -1051,6 +1081,7 @@ if(BUILD_TESTING)
     NAME tinkerhp-parallel-release-contract
     COMMAND mpirun -n 2 "$<TARGET_FILE:tinkerhp-parallel-release-contract>"
   )
+  tinkerhp_label_test(tinkerhp-parallel-release-contract scope:integration claim:functional method:conformance method:failure-robustness)
   set_tests_properties(tinkerhp-parallel-release-contract PROPERTIES
     ENVIRONMENT "TINKERHP_SOURCE_DIR=${CMAKE_SOURCE_DIR};TINKER_PARAMS=.;OMPI_MCA_oob_tcp_if_include=lo;OMPI_MCA_btl=self,vader"
     PROCESSORS 2
@@ -1066,6 +1097,7 @@ if(BUILD_TESTING)
     NAME tinkerhp-mdevice-contract
     COMMAND mpirun -n 1 "$<TARGET_FILE:tinkerhp-mdevice-contract>"
   )
+  tinkerhp_label_test(tinkerhp-mdevice-contract scope:integration claim:functional method:conformance method:failure-robustness)
   set_tests_properties(tinkerhp-mdevice-contract PROPERTIES
     ENVIRONMENT "TINKERHP_SOURCE_DIR=${CMAKE_SOURCE_DIR};TINKER_PARAMS=.;OMPI_MCA_oob_tcp_if_include=lo;OMPI_MCA_btl=self,vader"
   )
@@ -1079,6 +1111,7 @@ if(BUILD_TESTING)
     NAME tinkerhp-workspace-lifecycle-contract
     COMMAND mpirun -n 1 "$<TARGET_FILE:tinkerhp-workspace-lifecycle-contract>"
   )
+  tinkerhp_label_test(tinkerhp-workspace-lifecycle-contract scope:integration claim:functional method:conformance)
   set_tests_properties(tinkerhp-workspace-lifecycle-contract PROPERTIES
     ENVIRONMENT "TINKERHP_SOURCE_DIR=${CMAKE_SOURCE_DIR};TINKER_PARAMS=.;OMPI_MCA_oob_tcp_if_include=lo;OMPI_MCA_btl=self,vader"
   )
@@ -1092,6 +1125,7 @@ if(BUILD_TESTING)
     NAME tinkerhp-pme-lifecycle-contract
     COMMAND mpirun -n 1 "$<TARGET_FILE:tinkerhp-pme-lifecycle-contract>"
   )
+  tinkerhp_label_test(tinkerhp-pme-lifecycle-contract scope:integration claim:functional method:conformance)
   set_tests_properties(tinkerhp-pme-lifecycle-contract PROPERTIES
     ENVIRONMENT "TINKERHP_SOURCE_DIR=${CMAKE_SOURCE_DIR};TINKER_PARAMS=.;OMPI_MCA_oob_tcp_if_include=lo;OMPI_MCA_btl=self,vader"
   )
@@ -1105,6 +1139,7 @@ if(BUILD_TESTING)
     NAME tinkerhp-structure-contract
     COMMAND mpirun -n 1 "$<TARGET_FILE:tinkerhp-structure-contract>"
   )
+  tinkerhp_label_test(tinkerhp-structure-contract scope:integration claim:functional method:conformance method:failure-robustness)
   set_tests_properties(tinkerhp-structure-contract PROPERTIES
     ENVIRONMENT "TINKERHP_SOURCE_DIR=${CMAKE_SOURCE_DIR};TINKER_PARAMS=.;OMPI_MCA_oob_tcp_if_include=lo;OMPI_MCA_btl=self,vader"
   )
@@ -1120,6 +1155,7 @@ if(BUILD_TESTING)
       "-Dcontract=$<TARGET_FILE:tinkerhp-vcouple-contract>"
       -P "${CMAKE_SOURCE_DIR}/tests/run_vcouple_contract.cmake"
   )
+  tinkerhp_label_test(tinkerhp-vcouple-contract scope:unit claim:functional method:conformance method:failure-robustness)
   function(tinkerhp_add_dhfr_analyze_baseline suffix precision)
     set(_tinkerhp_analyze_features)
     if(precision STREQUAL "MIXED")
@@ -1151,6 +1187,8 @@ if(BUILD_TESTING)
       TIMEOUT 180
       FIXTURES_SETUP "dhfr_analyze_${suffix}_sequential"
     )
+    tinkerhp_label_test("tinkerhp-scientific-analyze-dhfr-${suffix}-sequential"
+      scope:integration claim:functional method:conformance)
   endfunction()
   if(TINKERHP_PRECISION STREQUAL "DOUBLE")
     tinkerhp_add_dhfr_analyze_baseline(double DOUBLE)
@@ -1175,6 +1213,7 @@ if(BUILD_TESTING)
         --output-root "${CMAKE_BINARY_DIR}/scientific-test-contract"
         -- bench6 50 2 20 2 300 -k bench6_r
     )
+    tinkerhp_label_test(tinkerhp-scientific-dynamic-bench6-double scope:integration claim:functional claim:numerical-regression method:conformance)
     set_tests_properties(tinkerhp-scientific-dynamic-bench6-double PROPERTIES
       ENVIRONMENT "OMPI_MCA_oob_tcp_if_include=lo;OMPI_MCA_btl=self,vader"
       PROCESSORS 1
@@ -1204,6 +1243,7 @@ if(BUILD_TESTING)
         --output-root "${CMAKE_BINARY_DIR}/scientific-test-contract"
         -- dhfr2dyn 25 10 200 4 300 1.0 -k dhfr2dyn_B
     )
+    tinkerhp_label_test(tinkerhp-scientific-dynamic-dhfr-b-double scope:integration claim:functional claim:numerical-regression method:conformance)
     set_tests_properties(tinkerhp-scientific-dynamic-dhfr-b-double PROPERTIES
       ENVIRONMENT "OMPI_MCA_oob_tcp_if_include=lo;OMPI_MCA_btl=self,vader"
       PROCESSORS 1
@@ -1233,6 +1273,7 @@ if(BUILD_TESTING)
         --output-root "${CMAKE_BINARY_DIR}/scientific-test-contract"
         -- watersmall 50 2 200 2 300 -k watersmall_amoebap.key
     )
+    tinkerhp_label_test(tinkerhp-scientific-dynamic-watersmall-amoebap-double scope:integration claim:functional claim:numerical-regression method:conformance)
     set_tests_properties(tinkerhp-scientific-dynamic-watersmall-amoebap-double PROPERTIES
       ENVIRONMENT "OMPI_MCA_oob_tcp_if_include=lo;OMPI_MCA_btl=self,vader"
       PROCESSORS 1
@@ -1257,6 +1298,7 @@ if(BUILD_TESTING)
         --output-root "${CMAKE_BINARY_DIR}/scientific-test-contract"
         -- iceII-large-amoeba.xyz 1.0 -k iceII-large-amoeba_b
     )
+    tinkerhp_label_test(tinkerhp-scientific-minimize-iceii-double scope:integration claim:functional claim:numerical-regression method:conformance)
     set_tests_properties(tinkerhp-scientific-minimize-iceii-double PROPERTIES
       ENVIRONMENT "OMPI_MCA_oob_tcp_if_include=lo;OMPI_MCA_btl=self,vader"
       PROCESSORS 1
@@ -1281,6 +1323,7 @@ if(BUILD_TESTING)
         --output-dir "${CMAKE_BINARY_DIR}/scientific-test-contract/watersmall-minimize-double-sequential"
         -- watersmall 1.0 -k watersmall_amoebap.key
     )
+    tinkerhp_label_test(tinkerhp-scientific-minimize-watersmall-double scope:integration claim:functional method:conformance)
     set_tests_properties(tinkerhp-scientific-minimize-watersmall-double PROPERTIES
       ENVIRONMENT "OMPI_MCA_oob_tcp_if_include=lo;OMPI_MCA_btl=self,vader"
       PROCESSORS 1
@@ -1317,6 +1360,7 @@ if(BUILD_TESTING)
         --replace-output-dir
         --output-dir "${_tinkerhp_bar_output_root}/serial-mode1"
     )
+    tinkerhp_label_test(tinkerhp-scientific-bar-mode1-double scope:integration claim:functional method:conformance)
     set_tests_properties(tinkerhp-scientific-bar-mode1-double PROPERTIES
       ENVIRONMENT "OMPI_MCA_oob_tcp_if_include=lo;OMPI_MCA_btl=self,vader"
       PROCESSORS 1
@@ -1344,6 +1388,7 @@ if(BUILD_TESTING)
         --replace-output-dir
         --output-dir "${_tinkerhp_bar_output_root}/serial-mode2"
     )
+    tinkerhp_label_test(tinkerhp-scientific-bar-mode2-double scope:integration claim:functional claim:numerical-regression method:conformance)
     set_tests_properties(tinkerhp-scientific-bar-mode2-double PROPERTIES
       DEPENDS tinkerhp-scientific-bar-mode1-double
       ENVIRONMENT "OMPI_MCA_oob_tcp_if_include=lo;OMPI_MCA_btl=self,vader"
@@ -1372,6 +1417,7 @@ if(BUILD_TESTING)
         --replace-output-dir
         --output-dir "${_tinkerhp_bar_output_root}/parallel-consume"
     )
+    tinkerhp_label_test(tinkerhp-scientific-bar-parallel-consume-double scope:integration claim:functional claim:numerical-regression method:conformance method:differential)
     set_tests_properties(tinkerhp-scientific-bar-parallel-consume-double PROPERTIES
       DEPENDS tinkerhp-scientific-bar-mode1-double
       ENVIRONMENT "OMPI_MCA_oob_tcp_if_include=lo;OMPI_MCA_btl=self,vader"
@@ -1410,6 +1456,7 @@ if(BUILD_TESTING)
         --replace-output-dir
         --output-dir "${_tinkerhp_pibar_output_root}/mode1"
     )
+    tinkerhp_label_test(tinkerhp-scientific-pibar-mode1-double scope:integration claim:functional method:conformance)
     set_tests_properties(tinkerhp-scientific-pibar-mode1-double PROPERTIES
       ENVIRONMENT "OMPI_MCA_oob_tcp_if_include=lo;OMPI_MCA_btl=self,vader"
       PROCESSORS 1
@@ -1437,6 +1484,7 @@ if(BUILD_TESTING)
         --replace-output-dir
         --output-dir "${_tinkerhp_pibar_output_root}/mode2"
     )
+    tinkerhp_label_test(tinkerhp-scientific-pibar-mode2-double scope:integration claim:functional method:conformance)
     set_tests_properties(tinkerhp-scientific-pibar-mode2-double PROPERTIES
       DEPENDS tinkerhp-scientific-pibar-mode1-double
       ENVIRONMENT "OMPI_MCA_oob_tcp_if_include=lo;OMPI_MCA_btl=self,vader"
@@ -1467,6 +1515,7 @@ if(BUILD_TESTING)
         --output-dir "${_tinkerhp_pibar_output_root}/invalid-mode"
         -- 3
     )
+    tinkerhp_label_test(tinkerhp-functional-pibar-invalid-mode-double scope:integration claim:functional method:failure-robustness)
     set_tests_properties(tinkerhp-functional-pibar-invalid-mode-double PROPERTIES
       ENVIRONMENT "OMPI_MCA_oob_tcp_if_include=lo;OMPI_MCA_btl=self,vader"
       PROCESSORS 1
@@ -1497,6 +1546,7 @@ if(BUILD_TESTING)
         --output-dir "${_tinkerhp_pibar_output_root}/missing-bar"
         -- 2 missing false 1 100 1 1 100 1
     )
+    tinkerhp_label_test(tinkerhp-functional-pibar-missing-bar-double scope:integration claim:functional method:failure-robustness)
     set_tests_properties(tinkerhp-functional-pibar-missing-bar-double PROPERTIES
       DEPENDS tinkerhp-scientific-pibar-mode1-double
       ENVIRONMENT "OMPI_MCA_oob_tcp_if_include=lo;OMPI_MCA_btl=self,vader"
@@ -1528,6 +1578,7 @@ if(BUILD_TESTING)
         --output-dir "${_tinkerhp_pibar_output_root}/malformed-bar"
         -- 2 watersmall1_malformed false 1 100 1 1 100 1
     )
+    tinkerhp_label_test(tinkerhp-functional-pibar-malformed-bar-double scope:integration claim:functional method:failure-robustness)
     set_tests_properties(tinkerhp-functional-pibar-malformed-bar-double PROPERTIES
       ENVIRONMENT "OMPI_MCA_oob_tcp_if_include=lo;OMPI_MCA_btl=self,vader"
       PROCESSORS 1
@@ -1556,6 +1607,7 @@ if(BUILD_TESTING)
         --output-dir "${CMAKE_BINARY_DIR}/scientific-test-contract/watersmall-minimize-fpa-sequential"
         -- watersmall 1.0 -k watersmall_amoebap.key
     )
+    tinkerhp_label_test(tinkerhp-scientific-minimize-watersmall-fpa scope:integration claim:functional method:conformance)
     set_tests_properties(tinkerhp-scientific-minimize-watersmall-fpa PROPERTIES
       ENVIRONMENT "OMPI_MCA_oob_tcp_if_include=lo;OMPI_MCA_btl=self,vader"
       PROCESSORS 1
@@ -1586,6 +1638,7 @@ if(BUILD_TESTING)
         --output-root "${CMAKE_BINARY_DIR}/scientific-test-contract"
         -- bench6 50 2 20 2 300 -k bench6_r
     )
+    tinkerhp_label_test(tinkerhp-scientific-dynamic-bench6-fpa scope:integration claim:functional claim:numerical-regression method:conformance)
     set_tests_properties(tinkerhp-scientific-dynamic-bench6-fpa PROPERTIES
       ENVIRONMENT "OMPI_MCA_oob_tcp_if_include=lo;OMPI_MCA_btl=self,vader"
       PROCESSORS 1
@@ -1625,6 +1678,8 @@ if(BUILD_TESTING)
       RUN_SERIAL TRUE
       TIMEOUT 120
     )
+    tinkerhp_label_test("${name}"
+      scope:integration claim:functional claim:scientific-result method:conformance)
   endfunction()
   function(tinkerhp_add_pimd_layout_test name precision reference output_root)
     set(feature_arguments ${ARGN})
@@ -1654,6 +1709,9 @@ if(BUILD_TESTING)
       RUN_SERIAL TRUE
       TIMEOUT 180
     )
+    tinkerhp_label_test("${name}"
+      scope:integration claim:functional claim:numerical-regression
+      method:conformance method:differential)
   endfunction()
   function(tinkerhp_add_analyze_beads_watersmall_functional_test name precision output_root)
     set(extra_arguments)
@@ -1686,6 +1744,67 @@ if(BUILD_TESTING)
       RUN_SERIAL TRUE
       TIMEOUT 120
     )
+    tinkerhp_label_test("${name}" scope:integration claim:functional method:conformance)
+  endfunction()
+  function(tinkerhp_add_mlpot_only_analyze_integration_test name precision ranks output_root fixture)
+    set(feature_arguments)
+    set(comparison_arguments)
+    if(precision STREQUAL "MIXED" AND TINKERHP_ENABLE_FPA)
+      list(APPEND feature_arguments --feature FPA)
+    endif()
+    if(TINKERHP_ENABLE_COLVARS)
+      list(APPEND feature_arguments --feature COLVARS)
+    endif()
+
+    if(ranks EQUAL 1)
+      set(profile analyze-baseline)
+      set(mpi_layout 1x1x1)
+      set(output_dir "${output_root}/one-rank")
+      set(labels "scope:integration;claim:functional;method:conformance")
+      set(fixture_property FIXTURES_SETUP "${fixture}")
+    else()
+      set(profile analyze)
+      set(mpi_layout 1x1x2)
+      set(output_dir "${output_root}/two-ranks")
+      set(labels
+        "scope:integration;claim:functional;claim:numerical-regression;method:differential")
+      set(fixture_property FIXTURES_REQUIRED "${fixture}")
+      set(comparison_arguments
+        --sequential-report "${output_root}/one-rank/report.json"
+        --expected-decomposition auto)
+    endif()
+
+    add_test(
+      NAME "${name}"
+      COMMAND "${Python3_EXECUTABLE}" "${CMAKE_SOURCE_DIR}/tests/runtime_refactor_oracle.py" run
+        --profile "${profile}"
+        --executable "$<TARGET_FILE:analyze>"
+        --build-report "${CMAKE_BINARY_DIR}/tinkerhp-build-report.txt"
+        --precision "${precision}"
+        ${feature_arguments}
+        --backend GPU
+        --mpi-launcher mpirun
+        --mpi-ranks "${ranks}"
+        --mpi-layout "${mpi_layout}"
+        ${comparison_arguments}
+        --fixture-dir "${CMAKE_SOURCE_DIR}/examples"
+        --key watersmall_ml.key
+        --primary-xyz watersmall.xyz
+        --fixture watersmall.xyz
+        --fixture watersmall_ml.key
+        --model-file "${CMAKE_SOURCE_DIR}/ml_models/ani2x.fnx"
+        --replace-output-dir
+        --output-dir "${output_dir}"
+        -- watersmall E -k watersmall_ml.key
+    )
+    set_tests_properties("${name}" PROPERTIES
+      ENVIRONMENT "OMPI_MCA_oob_tcp_if_include=lo;OMPI_MCA_btl=self,vader"
+      PROCESSORS "${ranks}"
+      RUN_SERIAL TRUE
+      TIMEOUT 180
+      ${fixture_property}
+    )
+    tinkerhp_label_test("${name}" ${labels})
   endfunction()
   function(tinkerhp_add_pimd_piqtb_functional_test name output_root)
     add_test(
@@ -1711,6 +1830,7 @@ if(BUILD_TESTING)
       RUN_SERIAL TRUE
       TIMEOUT 120
     )
+    tinkerhp_label_test("${name}" scope:integration claim:functional method:conformance)
   endfunction()
   function(tinkerhp_add_pimd_restart_test name ranks precision case output_root)
     set(extra_arguments)
@@ -1766,6 +1886,11 @@ if(BUILD_TESTING)
       RUN_SERIAL TRUE
       TIMEOUT 120
     )
+    if(case STREQUAL "missing" OR case STREQUAL "malformed")
+      tinkerhp_label_test("${name}" scope:integration claim:functional method:failure-robustness)
+    else()
+      tinkerhp_label_test("${name}" scope:integration claim:functional method:conformance)
+    endif()
   endfunction()
   function(tinkerhp_add_pimd_dcd_contract name)
     add_test(
@@ -1782,6 +1907,7 @@ if(BUILD_TESTING)
       RUN_SERIAL TRUE
       TIMEOUT 180
     )
+    tinkerhp_label_test("${name}" scope:integration claim:functional method:conformance)
   endfunction()
   if(TINKERHP_PRECISION STREQUAL "DOUBLE")
     tinkerhp_add_pimd_dcd_contract(tinkerhp-pimd-dcd-contract)
@@ -1826,6 +1952,34 @@ if(BUILD_TESTING)
       tinkerhp-functional-pimd-restart-malformed-mixed 1 MIXED malformed
       "${CMAKE_BINARY_DIR}/functional-test-contract")
   endif()
+  if(TINKERHP_ENABLE_NN)
+    if(TINKERHP_PRECISION STREQUAL "DOUBLE")
+      set(_tinkerhp_mlpot_analyze_precision_tag double)
+    elseif(TINKERHP_ENABLE_FPA)
+      set(_tinkerhp_mlpot_analyze_precision_tag fpa)
+    else()
+      set(_tinkerhp_mlpot_analyze_precision_tag mixed)
+    endif()
+    set(_tinkerhp_mlpot_analyze_variant "nn-${_tinkerhp_mlpot_analyze_precision_tag}")
+    if(TINKERHP_ENABLE_COLVARS)
+      set(_tinkerhp_mlpot_analyze_variant
+        "nn-colvars-${_tinkerhp_mlpot_analyze_precision_tag}")
+    endif()
+    set(_tinkerhp_mlpot_analyze_test_prefix
+      "tinkerhp-functional-analyze-mlpot-only-watersmall-${_tinkerhp_mlpot_analyze_variant}")
+    set(_tinkerhp_mlpot_analyze_output_root
+      "${CMAKE_BINARY_DIR}/mlpot-only-analyze-${_tinkerhp_mlpot_analyze_variant}")
+    set(_tinkerhp_mlpot_analyze_fixture
+      "mlpot_only_analyze_${_tinkerhp_mlpot_analyze_variant}_one_rank")
+    tinkerhp_add_mlpot_only_analyze_integration_test(
+      "${_tinkerhp_mlpot_analyze_test_prefix}-one-rank"
+      "${TINKERHP_PRECISION}" 1 "${_tinkerhp_mlpot_analyze_output_root}"
+      "${_tinkerhp_mlpot_analyze_fixture}")
+    tinkerhp_add_mlpot_only_analyze_integration_test(
+      "${_tinkerhp_mlpot_analyze_test_prefix}-two-ranks"
+      "${TINKERHP_PRECISION}" 2 "${_tinkerhp_mlpot_analyze_output_root}"
+      "${_tinkerhp_mlpot_analyze_fixture}")
+  endif()
   if(TINKERHP_ENABLE_PERFORMANCE_TESTS
       AND TINKERHP_PRECISION STREQUAL "MIXED"
       AND TINKERHP_ENABLE_FPA)
@@ -1851,11 +2005,13 @@ if(BUILD_TESTING)
     )
     set_tests_properties(tinkerhp-performance-dynamic-dhfr-b-fpa PROPERTIES
       ENVIRONMENT "OMPI_MCA_oob_tcp_if_include=lo;OMPI_MCA_btl=self,vader"
-      LABELS performance
       PROCESSORS 1
       RUN_SERIAL TRUE
       TIMEOUT 900
     )
+    tinkerhp_label_test(tinkerhp-performance-dynamic-dhfr-b-fpa
+      scope:integration claim:functional claim:performance method:conformance
+      performance)
   endif()
   if(TINKERHP_ENABLE_PARALLEL_SCIENTIFIC_TESTS)
     set(_tinkerhp_parallel_scientific_output_root
@@ -1892,6 +2048,9 @@ if(BUILD_TESTING)
         TIMEOUT 180
         FIXTURES_REQUIRED "${sequential_fixture}"
       )
+      tinkerhp_label_test("tinkerhp-parallel-scientific-analyze-dhfr-${suffix}"
+        scope:integration claim:functional claim:numerical-regression
+        method:differential)
     endfunction()
     function(tinkerhp_add_parallel_minimize_watersmall_test name precision sequential_dir fixture_name)
       set(_tinkerhp_minimize_features)
@@ -1924,6 +2083,9 @@ if(BUILD_TESTING)
         TIMEOUT 300
         FIXTURES_REQUIRED "${fixture_name}"
       )
+      tinkerhp_label_test("${name}"
+        scope:integration claim:functional claim:numerical-regression
+        method:differential)
     endfunction()
     function(tinkerhp_add_parallel_scientific_test name ranks precision reference key decomposition)
       set(_tinkerhp_parallel_scientific_features)
@@ -1949,6 +2111,9 @@ if(BUILD_TESTING)
           --output-root "${_tinkerhp_parallel_scientific_output_root}"
       )
       set_tests_properties("${name}" PROPERTIES RUN_SERIAL TRUE TIMEOUT 180)
+      tinkerhp_label_test("${name}"
+        scope:integration claim:functional claim:numerical-regression
+        method:conformance)
     endfunction()
     if(TINKERHP_PRECISION STREQUAL "DOUBLE")
       tinkerhp_add_parallel_dhfr_analyze_test(
@@ -2024,6 +2189,7 @@ if(BUILD_TESTING)
             --output-root "${_tinkerhp_parallel_scientific_output_root}"
             -- bench6 50 2 20 2 300 -k bench6_r
         )
+        tinkerhp_label_test(tinkerhp-parallel-scientific-dynamic-bench6-fpa-2 scope:integration claim:functional claim:numerical-regression method:conformance)
         set_tests_properties(tinkerhp-parallel-scientific-dynamic-bench6-fpa-2
           PROPERTIES RUN_SERIAL TRUE TIMEOUT 180)
       endif()
@@ -2039,17 +2205,18 @@ if(BUILD_TESTING)
         dhfr2dyn_r.double.dyn.ref dhfr2dyn_r.key auto)
     endif()
   endif()
-  if(TINKERHP_LINK_MODE STREQUAL "SHARED"
-      AND TINKERHP_PRECISION STREQUAL "MIXED"
-      AND TINKERHP_ENABLE_FPA
-      AND TINKERHP_ENABLE_COLVARS
-      AND TINKERHP_GPU_ARCHITECTURES_REQUESTED STREQUAL "75")
-    add_test(
-      NAME tinkerhp-shared-colvars-acceptance
-      COMMAND mpirun -n 1 "$<TARGET_FILE:dynamic>" dhfr2dyn 10 2 20 2 300 -k dhfr2dyn_r
-    )
-    set_tests_properties(tinkerhp-shared-colvars-acceptance PROPERTIES
-      WORKING_DIRECTORY "${CMAKE_SOURCE_DIR}/examples"
-    )
-  endif()
+  add_test(
+    NAME tinkerhp-acceptance
+    COMMAND "${CMAKE_COMMAND}"
+      "-Ddynamic=$<TARGET_FILE:dynamic>"
+      "-Dsource_dir=${CMAKE_SOURCE_DIR}"
+      "-Droot_dir=${CMAKE_BINARY_DIR}/acceptance-test"
+      -P "${CMAKE_SOURCE_DIR}/tests/run_acceptance.cmake"
+  )
+  tinkerhp_label_test(tinkerhp-acceptance scope:integration claim:functional method:conformance)
+  set_tests_properties(tinkerhp-acceptance PROPERTIES
+    ENVIRONMENT "OMPI_MCA_oob_tcp_if_include=lo;OMPI_MCA_btl=self,vader"
+    RUN_SERIAL TRUE
+    TIMEOUT 300
+  )
 endif()

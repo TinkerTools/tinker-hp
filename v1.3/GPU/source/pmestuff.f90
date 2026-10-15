@@ -1328,10 +1328,10 @@ subroutine reassignpme(init)
 #else
    eps = 1.0d-8
 #endif
-   repartrec(:)      = -1
    if (use_mlpot_only) then
       return
    end if
+   repartrec(:)      = -1
 !
 !     get geometrical correspondance between processes
 !

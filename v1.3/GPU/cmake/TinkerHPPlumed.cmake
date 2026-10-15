@@ -25,6 +25,23 @@ function(tinkerhp_configure_plumed)
     )
   endif()
 
+  # PLUMED's configure writes these files into the source tree. A validate-only
+  # configure restores them afterwards, so the validator leaves no trace there.
+  # A real build keeps them, because the PLUMED build step needs config.status.
+  set(_tinkerhp_plumed_written_files
+    Makefile.conf sourceme.sh config.status config.log stamp-h)
+  set(_tinkerhp_plumed_snapshot "${CMAKE_BINARY_DIR}/plumed-configure-snapshot")
+  if(TINKERHP_INTERNAL_VALIDATE_ONLY)
+    file(REMOVE_RECURSE "${_tinkerhp_plumed_snapshot}")
+    file(MAKE_DIRECTORY "${_tinkerhp_plumed_snapshot}")
+    foreach(_tinkerhp_plumed_file IN LISTS _tinkerhp_plumed_written_files)
+      if(EXISTS "${PLUMED_SOURCE_HOME}/${_tinkerhp_plumed_file}")
+        file(COPY "${PLUMED_SOURCE_HOME}/${_tinkerhp_plumed_file}"
+          DESTINATION "${_tinkerhp_plumed_snapshot}")
+      endif()
+    endforeach()
+  endif()
+
   message(STATUS "Configuring external PLUMED in ${PLUMED_SOURCE_HOME}")
   execute_process(
     COMMAND "${PLUMED_SOURCE_HOME}/configure"
@@ -37,6 +54,18 @@ function(tinkerhp_configure_plumed)
     OUTPUT_VARIABLE _tinkerhp_plumed_configure_stdout
     ERROR_VARIABLE _tinkerhp_plumed_configure_stderr
   )
+  if(TINKERHP_INTERNAL_VALIDATE_ONLY)
+    foreach(_tinkerhp_plumed_file IN LISTS _tinkerhp_plumed_written_files)
+      if(EXISTS "${_tinkerhp_plumed_snapshot}/${_tinkerhp_plumed_file}")
+        # configure_file copies by content; file(COPY) can skip a file that is
+        # newer at the destination, which the configure has just rewritten.
+        configure_file("${_tinkerhp_plumed_snapshot}/${_tinkerhp_plumed_file}"
+          "${PLUMED_SOURCE_HOME}/${_tinkerhp_plumed_file}" COPYONLY)
+      elseif(EXISTS "${PLUMED_SOURCE_HOME}/${_tinkerhp_plumed_file}")
+        file(REMOVE "${PLUMED_SOURCE_HOME}/${_tinkerhp_plumed_file}")
+      endif()
+    endforeach()
+  endif()
   if(NOT _tinkerhp_plumed_configure_result EQUAL 0)
     message(FATAL_ERROR
       "PLUMED configure failed in ${PLUMED_SOURCE_HOME} (exit ${_tinkerhp_plumed_configure_result}).\n"

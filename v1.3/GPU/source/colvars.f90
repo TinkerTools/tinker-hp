@@ -457,13 +457,15 @@ subroutine prepare_colvars(derivs)
 !
 !       also add reciprocal part of the forces (in a separate array for now)
 !
-      if (repartrec(iglob).eq.rank) then
-         ilocrec = locrec(iglob)
-!$acc loop seq
-         do k = 0,dr_nbnbr-1; do j = 1,3;
+      if (.not.use_mlpot_only) then
+         if (repartrec(iglob).eq.rank) then
+            ilocrec = locrec(iglob)
+            !$acc loop seq
+            do k = 0,dr_nbnbr-1; do j = 1,3;
                idx = offr + j+(ilocrec-1)*3 + k*dr_stride
                decv_tot(j,i) = decv_tot(j,i)+ de_buffr(idx)
             end do; end do
+         end if
       end if
    end do
 !$acc wait
@@ -570,6 +572,7 @@ subroutine prepare_colvars1(derivs)
 
       !also add reciprocal part of the forces
       !     (in a separate array for now)
+      if (.not.use_mlpot_only) then
 !$acc loop seq
       do k = 0,dr_nbnbr-1
 !$acc loop seq
@@ -578,6 +581,7 @@ subroutine prepare_colvars1(derivs)
             decv_tot(j,i) = decv_tot(j,i)+ de_buffr(idx)
          end do
       end do
+      end if
    end do
 !$acc wait
 

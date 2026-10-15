@@ -98,9 +98,12 @@ CTest includes `tinkerhp-cmake-configuration-contract`, which configures the
 public double, mixed/FPA, and mixed/non-FPA option combinations in the internal
 configuration-only mode. It checks effective suffixes, shared-core PIC/install
 behavior, Colvars archive handling, preset registration, and emitted compilation
-definitions without claiming GPU numerical validation. The dedicated
-`gpu-sm75-fpa-shared-colvars` CTest preset runs the built
-`dynamic_clv.fpa` executable through one MPI rank from `examples/`.
+definitions without claiming GPU numerical validation. The
+`tinkerhp-acceptance` test, registered for every build (run with
+`ctest -R tinkerhp-acceptance`, or selected by the
+`gpu-sm75-fpa-shared-colvars` CTest preset), runs the built `dynamic`
+executable through one MPI rank in a private workspace under the build
+directory.
 
 ## Deep-HP interface
 

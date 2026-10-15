@@ -216,7 +216,11 @@ contains
          if (present(status_code)) status_code = cuda_success
          return
       end if
-      dir_queue = acc_async_noval + 1
+      ! The direct queue must be an explicit (non-negative) id: NVHPC 25.11
+      ! maps the reserved key acc_async_noval + 1 (-3) onto a runtime lock
+      ! word, so acc_set_cuda_stream on it corrupts that lock. On 22.5
+      ! (acc_async_noval = 0) this gives 1, the same value as before.
+      dir_queue = max(acc_async_noval + 1, 1)
       cuda_success = cuda_success + &
          &cudastreamcreate(rec_stream,cudaStreamNonBlocking,high_priority)
       call acc_set_cuda_stream(rec_queue,rec_stream)

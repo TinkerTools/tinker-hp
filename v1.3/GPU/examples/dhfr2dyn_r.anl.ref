@@ -1,6 +1,6 @@
-
+ 
  ***** Using the CUFFT engine *****
-
+ 
 
  Particle Mesh Ewald Parameters :
 
@@ -11,14 +11,14 @@
 
  Random Number Generator Initialized with SEED :          12345
 
- Total Potential Energy :         -67689.11429184 Kcal/mole
+ Total Potential Energy :         -67227.43598607 Kcal/mole
 
  Energy Component Breakdown :           Kcal/mole      Interactions
 
- Bond Stretching                    6349.12573425          16569
- Angle Bending                      3760.83270912          11584
+ Bond Stretching                    6623.70878543          16569
+ Angle Bending                      4748.78155255          11584
  Stretch-Bend                        -19.78973386           4031
- Urey-Bradley                        668.10577477           7023
+ Urey-Bradley                       -132.74781407           7023
  Out-of-Plane Bend                   110.84355342           1566
  Torsional Angle                     433.69593807           5783
  Pi-Orbital Torsion                   58.75073806            292
@@ -26,5 +26,7 @@
  Van der Waals                     31548.05944985        8297989
  Atomic Multipoles                -78760.28841452        1639568
  Polarization                     -31796.45022253        1639568
+
+finalization owner cleanup complete
 
  TINKER-HP is Exiting following Normal Termination

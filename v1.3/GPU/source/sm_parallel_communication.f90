@@ -218,13 +218,22 @@ module subroutine assign_direct()
    lenb_box = ycell/nydd
    lenc_box = zcell/nzdd
 
+   if (use_mlpot_only) then
 !$acc parallel loop async default(present)
-   do i = 1, n
-      glob(i) = 0
-      repart(i) = -1
-      repartrec(i) = -1
-      loc(i) = 0
-   end do
+      do i = 1, n
+         glob(i) = 0
+         repart(i) = -1
+         loc(i) = 0
+      end do
+   else
+!$acc parallel loop async default(present)
+      do i = 1, n
+         glob(i) = 0
+         repart(i) = -1
+         repartrec(i) = -1
+         loc(i) = 0
+      end do
+   end if
 
    domlen(:) = 0
 
@@ -282,13 +291,14 @@ module subroutine assign_reciprocal()
    use fft, only: kstart1, kend1, jstart1, jend1
    use inform, only: deb_Path
    use pme, only: pme_eps, nfft1, nfft2, nfft3, bsorder
-   use potent, only: use_pmecore
+   use potent, only: use_pmecore, use_mlpot_only
    use tinheader, only: ti_p
    use timestat, only: timer_eneig, quiet_timers, timer_enter, timer_exit
    implicit none
    integer :: i, j, k, ifr, iproc, process_count
    real(t_p) :: xi, yi, zi, w, fractional
 
+   if (use_mlpot_only) return
    if (use_pmecore) then
       process_count = ndir
    else

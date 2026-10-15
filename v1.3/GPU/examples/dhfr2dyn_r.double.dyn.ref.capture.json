@@ -1,14 +1,14 @@
 {
   "build_report": {
-    "bytes": 1995,
-    "path": "/pik/tinker-hp/pmegpu/build/gpu-sm75-double-make/tinkerhp-build-report.txt",
-    "sha256": "c20deb07294a5c87aac042de1fdf139de312545130bd58a10a7063348a0009b4"
+    "bytes": 2194,
+    "path": "/home/tyr/pmegpu/build/sm86-double-colvars-make/tinkerhp-build-report.txt",
+    "sha256": "955daffc24d524ecb84f8d77f79d7ebd202a64bd9429d61c2fda59b6f4963045"
   },
   "command": [
-    "/opt/nvidia/hpc_sdk/Linux_x86_64/24.7/comm_libs/mpi/bin/mpirun",
+    "/opt/nvidia/hpc_sdk/Linux_x86_64/25.11/comm_libs/mpi/bin/mpirun",
     "-n",
     "1",
-    "/pik/tinker-hp/pmegpu/build/gpu-sm75-double-make/bin/dynamic.gpu",
+    "/home/tyr/pmegpu/build/sm86-double-colvars-make/bin/dynamic_clv.gpu",
     "dhfr2dyn",
     "50",
     "2",
@@ -18,18 +18,37 @@
     "-k",
     "dhfr2dyn_r"
   ],
+  "commands": [
+    [
+      "/opt/nvidia/hpc_sdk/Linux_x86_64/25.11/comm_libs/mpi/bin/mpirun",
+      "-n",
+      "1",
+      "/home/tyr/pmegpu/build/sm86-double-colvars-make/bin/dynamic_clv.gpu",
+      "dhfr2dyn",
+      "50",
+      "2",
+      "20",
+      "2",
+      "300",
+      "-k",
+      "dhfr2dyn_r"
+    ]
+  ],
   "configuration": {
     "backend": "GPU",
     "build_features": {
-      "Colvars enabled": false,
+      "Colvars enabled": true,
       "Deep-HP NN enabled": false,
-      "FPA enabled": true,
+      "FPA enabled": false,
+      "NVFORTRAN noinline workaround enabled": false,
       "NVTX enabled": false,
       "No-mutation enabled": false,
       "Orthogonal-box-only enabled": false,
       "PLUMED enabled": false
     },
-    "features": [],
+    "features": [
+      "COLVARS"
+    ],
     "precision": "DOUBLE"
   },
   "environment": {
@@ -39,29 +58,29 @@
         "--query-gpu=name,uuid,driver_version",
         "--format=csv,noheader"
       ],
-      "output": "Quadro RTX 3000, GPU-2decf55b-beb1-27c4-9796-08589d004cb1, 580.159.03",
+      "output": "NVIDIA GeForce RTX 3060, GPU-2f8d1658-d229-d551-9167-64769bf3a0c9, 580.178.04",
       "returncode": 0
     },
-    "hostname": "vilya.emc2.jussieu.fr",
+    "hostname": "Hyrule-P3650.lct.jussieu.fr",
     "mpi": {
       "command": [
-        "/opt/nvidia/hpc_sdk/Linux_x86_64/24.7/comm_libs/mpi/bin/mpirun",
+        "/opt/nvidia/hpc_sdk/Linux_x86_64/25.11/comm_libs/mpi/bin/mpirun",
         "--version"
       ],
-      "output": "mpirun (Open MPI) 4.1.5\n\nReport bugs to http://www.open-mpi.org/community/help/",
+      "output": "mpirun (Open MPI) 4.1.7a1\n\nReport bugs to http://www.open-mpi.org/community/help/",
       "returncode": 0
     },
-    "platform": "Linux-6.8.0-124-generic-x86_64-with-glibc2.35",
+    "platform": "Linux-6.8.0-138-generic-x86_64-with-glibc2.35",
     "python": "3.10.12",
     "variables": {
-      "LD_LIBRARY_PATH": "/opt/nvidia/hpc_sdk/Linux_x86_64/24.7/comm_libs/nvshmem/lib:/opt/nvidia/hpc_sdk/Linux_x86_64/24.7/comm_libs/nccl/lib:/opt/nvidia/hpc_sdk/Linux_x86_64/24.7/comm_libs/mpi/lib:/opt/nvidia/hpc_sdk/Linux_x86_64/24.7/math_libs/lib64:/opt/nvidia/hpc_sdk/Linux_x86_64/24.7/compilers/lib:/opt/nvidia/hpc_sdk/Linux_x86_64/24.7/compilers/extras/qd/lib:/opt/nvidia/hpc_sdk/Linux_x86_64/24.7/cuda/extras/CUPTI/lib64:/opt/nvidia/hpc_sdk/Linux_x86_64/24.7/cuda/lib64:/opt/nvidia/hpc_sdk/Linux_x86_64/24.7/cuda/12.5/targets/x86_64-linux/lib",
-      "PATH": "/home/regis/.codex/packages/standalone/releases/0.144.3-x86_64-unknown-linux-musl/codex-path:/home/regis/.local/bin:/home/regis/.codex/tmp/arg0/codex-arg0TFP5tp:/home/regis/.codex/packages/standalone/releases/0.144.3-x86_64-unknown-linux-musl/codex-path:/home/regis/.local/bin:/home/regis/pyLLM/bin:/home/regis/.local/bin:/opt/nvidia/hpc_sdk/Linux_x86_64/24.7/compilers/extras/qd/bin:/opt/nvidia/hpc_sdk/Linux_x86_64/24.7/comm_libs/mpi/bin:/opt/nvidia/hpc_sdk/Linux_x86_64/24.7/compilers/bin:/opt/nvidia/hpc_sdk/Linux_x86_64/24.7/cuda/bin:/home/regis/.local/bin:/home/regis/pyLLM/bin:/home/regis/.nvm/versions/node/v20.20.2/bin:/home/regis/.local/bin:/usr/share/Modules/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/games:/usr/local/games:/snap/bin"
+      "LD_LIBRARY_PATH": "/opt/nvidia/hpc_sdk/Linux_x86_64/25.11/comm_libs/mpi/lib:/opt/nvidia/hpc_sdk/Linux_x86_64/25.11/comm_libs/nvshmem/lib:/opt/nvidia/hpc_sdk/Linux_x86_64/25.11/comm_libs/nccl/lib:/opt/nvidia/hpc_sdk/Linux_x86_64/25.11/math_libs/lib64:/opt/nvidia/hpc_sdk/Linux_x86_64/25.11/compilers/lib:/opt/nvidia/hpc_sdk/Linux_x86_64/25.11/compilers/extras/qd/lib:/opt/nvidia/hpc_sdk/Linux_x86_64/25.11/cuda/lib64",
+      "PATH": "/opt/nvidia/hpc_sdk/Linux_x86_64/25.11/compilers/bin:/opt/nvidia/hpc_sdk/Linux_x86_64/25.11/comm_libs/mpi/bin:/opt/nvidia/hpc_sdk/Linux_x86_64/25.11/cuda/bin:/home/tyr/.local/bin:/home/tyr/bin:/home/tyr/pyLLM/bin:/home/tyr/.local/bin:/home/tyr/.local/bin:/home/tyr/bin:/home/tyr/.nvm/versions/node/v24.21.0/bin:/home/tyr/anaconda3/condabin:/home/tyr/bin:/home/tyr/sbin:/home/tyr/.local/bin:/usr/local/Modules/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/games:/usr/local/games:/snap/bin"
     }
   },
   "executable": {
-    "bytes": 72466864,
-    "path": "/pik/tinker-hp/pmegpu/build/gpu-sm75-double-make/bin/dynamic.gpu",
-    "sha256": "793a5cf1fb9c0da88feeb7c867d33b5234efaa020cb363d210e9c3361179ec77"
+    "bytes": 117418424,
+    "path": "/home/tyr/pmegpu/build/sm86-double-colvars-make/bin/dynamic_clv.gpu",
+    "sha256": "02deabd987454e8e533bb9cd63bfdd9ba64238e475f7c0b5cc82a44636ceb07e"
   },
   "gates": {
     "format_compatibility": {
@@ -69,12 +88,12 @@
       "evidence": {
         "candidate": {
           "bytes": 7444729,
-          "path": "/tmp/tinkerhp-legacy-double-reference-capture-final/dhfr2dyn.input.dyn",
+          "path": "/home/tyr/.claude/jobs/5fab295e/tmp/runs/promote-double-dyn/dhfr2dyn.input.dyn",
           "sha256": "4ecdc535fadc3cddb9b14980a4aa2c48487585bad3b5bbc805c37ef77fea30b9"
         },
         "reference": {
           "bytes": 7444729,
-          "path": "/pik/tinker-hp/pmegpu/examples/dhfr2dyn.ref",
+          "path": "/home/tyr/pmegpu/.claude/worktrees/ticket13-params/examples/dhfr2dyn.dyn",
           "sha256": "4ecdc535fadc3cddb9b14980a4aa2c48487585bad3b5bbc805c37ef77fea30b9"
         }
       },
@@ -92,18 +111,18 @@
       "reason": "printed reference resolution is finer than the required threshold",
       "status": "PASS",
       "threshold": "2E-9",
-      "worst_relative_resolution": "1.100170158477663042841118847E-9"
+      "worst_relative_resolution": "1.111016795660864354046246843E-9"
     },
     "restart": {
       "evidence": {
         "candidate": {
           "bytes": 7444729,
-          "path": "/tmp/tinkerhp-legacy-double-reference-capture-final/dhfr2dyn.input.dyn",
+          "path": "/home/tyr/.claude/jobs/5fab295e/tmp/runs/promote-double-dyn/dhfr2dyn.input.dyn",
           "sha256": "4ecdc535fadc3cddb9b14980a4aa2c48487585bad3b5bbc805c37ef77fea30b9"
         },
         "reference": {
           "bytes": 7444729,
-          "path": "/pik/tinker-hp/pmegpu/examples/dhfr2dyn.ref",
+          "path": "/home/tyr/pmegpu/.claude/worktrees/ticket13-params/examples/dhfr2dyn.dyn",
           "sha256": "4ecdc535fadc3cddb9b14980a4aa2c48487585bad3b5bbc805c37ef77fea30b9"
         }
       },
@@ -127,41 +146,60 @@
     }
   },
   "input": {
+    "bar_input": null,
+    "bead_archives": [],
+    "bead_restart_rewrites": 0,
+    "bead_restarts": [],
     "fixtures": {
       "dhfr2dyn.dyn": {
         "bytes": 7444729,
-        "path": "/pik/tinker-hp/pmegpu/examples/dhfr2dyn.dyn",
-        "sha256": "4ecdc535fadc3cddb9b14980a4aa2c48487585bad3b5bbc805c37ef77fea30b9"
-      },
-      "dhfr2dyn.ref": {
-        "bytes": 7444729,
-        "path": "/pik/tinker-hp/pmegpu/examples/dhfr2dyn.ref",
+        "path": "/home/tyr/pmegpu/.claude/worktrees/ticket13-params/examples/dhfr2dyn.dyn",
         "sha256": "4ecdc535fadc3cddb9b14980a4aa2c48487585bad3b5bbc805c37ef77fea30b9"
       },
       "dhfr2dyn.xyz": {
         "bytes": 1471024,
-        "path": "/pik/tinker-hp/pmegpu/examples/dhfr2dyn.xyz",
+        "path": "/home/tyr/pmegpu/.claude/worktrees/ticket13-params/examples/dhfr2dyn.xyz",
         "sha256": "400ee0adc3f46d6ba174c6d2feb8bbbb6d528c55038205b1fd9a476f02b7e9ce"
       },
       "dhfr2dyn_r.key": {
-        "bytes": 1615,
-        "path": "/pik/tinker-hp/pmegpu/examples/dhfr2dyn_r.key",
-        "sha256": "5fa43558f5bac92240947c8f0914bd432da37f0104a75e6b9fe3cbcde1861925"
+        "bytes": 1614,
+        "path": "/home/tyr/pmegpu/.claude/worktrees/ticket13-params/examples/dhfr2dyn_r.key",
+        "sha256": "5e970097c16ce235cc1e44b8d19e153a77231feb8fa7520026607c78a8b58b11"
       }
     },
     "maintained_fixtures_unchanged": true,
     "parameters": {
-      "/pik/tinker-hp/pmegpu/params1/amoebabio09.prm": {
-        "bytes": 531850,
-        "path": "/pik/tinker-hp/pmegpu/params1/amoebabio09.prm",
-        "sha256": "a3a83890fecded952bd538d9e4e512ba1e1ad33cb5c333c49ad0fb56e351933b"
+      "../params/amoebabio09.prm": {
+        "source": {
+          "bytes": 530842,
+          "path": "/home/tyr/pmegpu/.claude/worktrees/ticket13-params/params/amoebabio09.prm",
+          "sha256": "24579834f4dee539002ecf8b17895c74af56b29aab5f9f7e9cd5dce3a6d04c74"
+        },
+        "workspace": {
+          "bytes": 530842,
+          "path": "/home/tyr/.claude/jobs/5fab295e/tmp/runs/promote-double-dyn/params/amoebabio09.prm",
+          "sha256": "24579834f4dee539002ecf8b17895c74af56b29aab5f9f7e9cd5dce3a6d04c74"
+        }
       }
+    },
+    "primary_xyz": {
+      "bytes": 1471024,
+      "path": "/home/tyr/pmegpu/.claude/worktrees/ticket13-params/examples/dhfr2dyn.xyz",
+      "sha256": "400ee0adc3f46d6ba174c6d2feb8bbbb6d528c55038205b1fd9a476f02b7e9ce"
+    },
+    "restart": {
+      "consumed": {
+        "bytes": 7444729,
+        "path": "/home/tyr/.claude/jobs/5fab295e/tmp/runs/promote-double-dyn/dhfr2dyn.input.dyn",
+        "sha256": "4ecdc535fadc3cddb9b14980a4aa2c48487585bad3b5bbc805c37ef77fea30b9"
+      },
+      "declared": "dhfr2dyn.dyn"
     },
     "seed": 12345,
     "selected_key": {
-      "bytes": 1615,
-      "path": "/pik/tinker-hp/pmegpu/examples/dhfr2dyn_r.key",
-      "sha256": "5fa43558f5bac92240947c8f0914bd432da37f0104a75e6b9fe3cbcde1861925"
+      "bytes": 1614,
+      "path": "/home/tyr/pmegpu/.claude/worktrees/ticket13-params/examples/dhfr2dyn_r.key",
+      "sha256": "5e970097c16ce235cc1e44b8d19e153a77231feb8fa7520026607c78a8b58b11"
     }
   },
   "mpi": {
@@ -173,16 +211,18 @@
     "ranks": 1
   },
   "observable": {
-    "bytes": 4348,
-    "path": "/tmp/tinkerhp-legacy-double-reference-capture-final/dynamic.stdout",
-    "sha256": "e17c8030cb4068fe56598e10d35560228c66a19b2f63c965a7cffd6978bdd8b9"
+    "bytes": 4536,
+    "path": "/home/tyr/.claude/jobs/5fab295e/tmp/runs/promote-double-dyn/dynamic.stdout",
+    "sha256": "15e9ccd53c685055c0d5e71915e07dab2aae6c9e9efd8f5a93e262edb1801b23"
   },
+  "performance_baseline": null,
+  "profile": "dynamic",
   "program": "dynamic",
-  "recorded_at": "2026-08-10T12:01:51.478733+00:00",
+  "recorded_at": "2026-10-14T17:32:57.492559+00:00",
   "schema_version": 1,
   "scientific_reference": {
-    "bytes": 4343,
-    "path": "/pik/tinker-hp/pmegpu/examples/dhfr2dyn_r.double.dyn.ref",
-    "sha256": "718a279d6fc973842dd535771547f7480a764fa22b91ea53bff196ddf1fc40ac"
+    "bytes": 4536,
+    "path": "/home/tyr/pmegpu/.claude/worktrees/ticket13-params/examples/dhfr2dyn_r.double.dyn.ref",
+    "sha256": "15e9ccd53c685055c0d5e71915e07dab2aae6c9e9efd8f5a93e262edb1801b23"
   }
 }
