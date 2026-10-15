@@ -29,6 +29,7 @@ subroutine verlet (istep,dt)
    use moldyn, only: a
    use parallel,only: commpos,commposrec,migrate_atoms
    use potent, only: use_embd_potoff,use_ml_embedding
+   use tinheader, only: re_p
    use utils    ,only:set_to_zero1m
    use tinMemory, only: prmem_requestm
    use sizes, only: tinkerdebug

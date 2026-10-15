@@ -92,7 +92,7 @@ subroutine newinduce_shortrealgpu
    call efld0_directgpu_p1(nrhs,ef)
    call timer_exit( timer_realdip,quiet_timers )
 !
-   call commfieldshort(nrhs,ef)
+   call commfieldshort(nrhs,ef,direct_work)
 !
 !     Reset predictor if MD State Tracking is enabled
 !
@@ -136,8 +136,8 @@ subroutine newinduce_shortrealgpu
       end if
    end if
 !
-   call polar_post_comm(comm_ticket,nrhs,mu,.true.)
-   call polar_finish(comm_ticket,nrhs,mu)
+   call polar_post_comm(comm_ticket,nrhs,mu,.true.,channel=direct_work)
+   call polar_finish(comm_ticket,nrhs,mu,channel=direct_work)
 !
 !     now, call the proper solver.
 !
@@ -329,7 +329,7 @@ subroutine inducepcg_shortrealgpu(matvec,nrhs,precnd,ef,mu)
    call timer_enter( timer_realdip )
    call matvec(nrhs,.true.,mu,h)
    call timer_exit ( timer_realdip,quiet_timers )
-   call commfieldshort(nrhs,h)
+   call commfieldshort(nrhs,h,direct_work)
 !
    !We do exit this sub-routine if (nproc.eq.1)
 !
@@ -384,15 +384,15 @@ subroutine inducepcg_shortrealgpu(matvec,nrhs,precnd,ef,mu)
 !
       if (.true.) then
          ! Direct space electrical field comm to neighbors
-         call polar_post_comm(comm_ticket,nrhs,pp,.true.)
-         call polar_finish(comm_ticket,nrhs,pp)
+         call polar_post_comm(comm_ticket,nrhs,pp,.true.,channel=direct_work)
+         call polar_finish(comm_ticket,nrhs,pp,channel=direct_work)
       end if
 !
       call timer_enter( timer_realdip )
       call matvec(nrhs,.true.,pp,h)
       call timer_exit ( timer_realdip,quiet_timers )
 
-      call commfieldshort(nrhs,h)
+      call commfieldshort(nrhs,h,direct_work)
 !$acc serial async(direct_work%queue) &
 !$acc       present(gg1,gg2,ggnew1,ggnew2,ene1,ene2)
       gg1    = zerom; gg2    = zerom;
@@ -401,7 +401,7 @@ subroutine inducepcg_shortrealgpu(matvec,nrhs,precnd,ef,mu)
 !$acc end serial
 
       call timer_enter( timer_other )
-      call pcg_a(6*npoleloc,pp,h,gg1,gg2)
+      call pcg_a(6*npoleloc,pp,h,gg1,gg2,channel=direct_work)
 !!$acc parallel loop collapse(3) async(direct_work%queue)
 !!$acc         present(gg1,gg2)
 !        do i = 1,npoleloc; do j = 1,nrhs; do k = 1, 3
@@ -431,7 +431,7 @@ subroutine inducepcg_shortrealgpu(matvec,nrhs,precnd,ef,mu)
 
       call pcg_b(npoleloc,npoleloc_e,gg1,ggold1,gg2,ggold2&
          &,ggnew1,ene1,ggnew2,ene2&
-         &,mu,pp,res,h,zr,diag,ef)
+         &,mu,pp,res,h,zr,diag,ef,channel=direct_work)
 
       if (nproc.ne.1) then
 !$acc serial async(direct_work%queue) present(ene1,ene2,ggnew1,ggnew2,gbuff1)
@@ -453,7 +453,7 @@ subroutine inducepcg_shortrealgpu(matvec,nrhs,precnd,ef,mu)
       !ggdev1 = ggnew(1)/ggold(1); ggdev2 = ggnew(2)/ggold(2)
       ! Compute Next direction
       call pcg_newDirection(6*npoleloc_e,ggnew1,ggold1,ggnew2,ggold2&
-         &,zr,pp)
+         &,zr,pp,channel=direct_work)
 
       if (btest(precnd1,0)) call projectorOpe(pp,pp,0)
 
@@ -519,8 +519,8 @@ subroutine inducepcg_shortrealgpu(matvec,nrhs,precnd,ef,mu)
    end if
 
    ! Solution field comm to direct neighbors
-   call polar_post_comm(comm_ticket,nrhs,mu,.true.)
-   call polar_finish(comm_ticket,nrhs,mu)
+   call polar_post_comm(comm_ticket,nrhs,mu,.true.,channel=direct_work)
+   call polar_finish(comm_ticket,nrhs,mu,channel=direct_work)
 !
 !     finalize and debug printing:
 !
@@ -549,15 +549,16 @@ subroutine inducepcg_shortrealgpu(matvec,nrhs,precnd,ef,mu)
 end
 
  ! Interface added inside MOD_interfaces.f
-subroutine pcg_a(siz,pp,h,gg1,gg2)
-   use mdevice  ,only: direct_work
+subroutine pcg_a(siz,pp,h,gg1,gg2,channel)
+   use mdevice  ,only: channel_t
    implicit none
    integer  ,intent(in   ):: siz
    real(r_p),intent(inout):: gg1,gg2
    real(t_p),intent(in   ):: pp(*),h(*)
+   type(channel_t),intent(in):: channel
    integer i,j
 
-!$acc parallel loop async(direct_work%queue) default(present) &
+!$acc parallel loop async(channel%queue) default(present) &
 !$acc         present(gg1,gg2) reduction(+:gg1,gg2)
    do i = 1, siz
       j = (i-1)/3
@@ -569,18 +570,19 @@ subroutine pcg_a(siz,pp,h,gg1,gg2)
    end do
 end subroutine
 
-subroutine pcg_aRec(siz,term,pp,dipf,h,gg1,gg2)
-   use mdevice  ,only: direct_work
+subroutine pcg_aRec(siz,term,pp,dipf,h,gg1,gg2,channel)
+   use mdevice  ,only: channel_t
    implicit none
    integer  ,intent(in   ):: siz
    real(t_p),intent(in   ):: term
    real(r_p),intent(inout):: gg1,gg2
    real(t_p),intent(in   ):: pp(*),dipf(*)
    real(t_p),intent(inout):: h(*)
+   type(channel_t),intent(in):: channel
    integer i,j
    real(t_p) mh
 
-!$acc parallel loop async(direct_work%queue) default(present) &
+!$acc parallel loop async(channel%queue) default(present) &
 !$acc         present(gg1,gg2) reduction(+:gg1,gg2)
    do i = 1, siz
       j  = (i-1)/3
@@ -596,8 +598,8 @@ end subroutine
 
  ! Interface added inside MOD_interfaces.f
 subroutine pcg_b(siz,siz1,gg,ggo,gg2,ggo2,ggnew1,ene1,ggnew2,ene2&
-   &,mu,pp,res,h,zr,diag,ef)
-   use mdevice  ,only: direct_work
+   &,mu,pp,res,h,zr,diag,ef,channel)
+   use mdevice  ,only: channel_t
    use polpot   ,only: polprt
    implicit none
    integer  ,intent(in   ):: siz,siz1
@@ -606,12 +608,13 @@ subroutine pcg_b(siz,siz1,gg,ggo,gg2,ggo2,ggnew1,ene1,ggnew2,ene2&
    real(r_p),intent(inout):: ggnew1,ggnew2,ene1,ene2
    real(t_p),intent(in   ):: ef(*),pp(*),h(*),diag(*)
    real(t_p),intent(inout):: mu(*),res(*),zr(*)
+   type(channel_t),intent(in):: channel
    integer   i,j,k,nsiz,nsiz1
    real(t_p) gno,mmu,mres,mzr
 
    nsiz  = 6*siz
    if (polprt.lt.2) then
-!$acc parallel loop async(direct_work%queue) &
+!$acc parallel loop async(channel%queue) &
 !$acc         default(present) &
 !$acc         present(gg,gg2,ggo,ggo2,ggnew1,ggnew2) &
 !$acc         reduction(+:ggnew1,ggnew2)
@@ -633,7 +636,7 @@ subroutine pcg_b(siz,siz1,gg,ggo,gg2,ggo2,ggnew1,ene1,ggnew2,ene2&
          end if
       end do
    else
-!$acc parallel loop async(direct_work%queue) default(present) &
+!$acc parallel loop async(channel%queue) default(present) &
 !$acc         present(gg,gg2,ggo,ggo2,ggnew1,ggnew2,ene1,ene2) &
 !$acc         reduction(+:ggnew1,ggnew2,ene1,ene2)
       do i = 1,nsiz
@@ -658,7 +661,7 @@ subroutine pcg_b(siz,siz1,gg,ggo,gg2,ggo2,ggnew1,ene1,ggnew2,ene2&
    end if
    if (.false.) then
       nsiz1 = 6*siz1
-!$acc parallel loop async(direct_work%queue) &
+!$acc parallel loop async(channel%queue) &
 !$acc         default(present) present(gg,gg2,ggo,ggo2)
       do i = nsiz+1,nsiz1
          j      = (i-1)/3
@@ -676,18 +679,19 @@ subroutine pcg_b(siz,siz1,gg,ggo,gg2,ggo2,ggnew1,ene1,ggnew2,ene2&
 end subroutine
 
  ! Interface added inside MOD_interfaces.f
-subroutine pcg_newDirection(siz,ggn,ggo,ggn2,ggo2,zr,pp)
-   use mdevice ,only: direct_work
+subroutine pcg_newDirection(siz,ggn,ggo,ggn2,ggo2,zr,pp,channel)
+   use mdevice ,only: channel_t
    implicit none
    integer  ,intent(in   ):: siz
    real(t_p),intent(in   ):: ggo,ggo2
    real(r_p),intent(in   ):: ggn,ggn2
    real(t_p),intent(in   ):: zr(*)
    real(t_p),intent(inout):: pp(*)
+   type(channel_t),intent(in):: channel
    real(t_p) gno,gno2
    integer   i,j
 
-!$acc parallel loop present(pp,zr,ggn,ggo,ggn2,ggo2) async(direct_work%queue)
+!$acc parallel loop present(pp,zr,ggn,ggo,ggn2,ggo2) async(channel%queue)
    do i = 1,siz
       j     = (i-1)/3
       gno   = merge(real(ggn2,t_p)/ggo2,real(ggn,t_p)/ggo,btest(j,0))
@@ -702,6 +706,7 @@ subroutine inducejac_shortrealgpu(matvec,nrhs,dodiis,ef,mu)
    use ewald
    use iounit
    use math
+   use mdevice, only: direct_work
    use mpole
    use parallel, only: polar_comm_t, polar_post_comm, polar_finish, commfield, commfieldgpu, commfieldshort
    use polar
@@ -776,7 +781,7 @@ subroutine inducejac_shortrealgpu(matvec,nrhs,dodiis,ef,mu)
       call timer_enter( timer_realdip )
       call matvec(nrhs,.false.,mu,h)
       call timer_exit( timer_realdip,quiet_timers )
-      call commfieldshort(nrhs,h)
+      call commfieldshort(nrhs,h,direct_work)
 !
 !
 !     jacobi step:
@@ -829,8 +834,8 @@ subroutine inducejac_shortrealgpu(matvec,nrhs,dodiis,ef,mu)
          call extrap(3*nrhs*npoleloc,nmat-1,xdiis,cex,munew)
       end if
 !
-      call polar_post_comm(comm_ticket,nrhs,mu,.true.,munew)
-      call polar_finish(comm_ticket,nrhs,mu)
+         call polar_post_comm(comm_ticket,nrhs,mu,.true.,munew,channel=direct_work)
+      call polar_finish(comm_ticket,nrhs,mu,channel=direct_work)
       mu(:,:,1:npoleloc) = munew(:,:,1:npoleloc)
 !
 !     compute the norm of the increment.

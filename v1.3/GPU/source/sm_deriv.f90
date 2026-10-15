@@ -1311,7 +1311,8 @@ contains
       nrecv     =  nrec_recep
       if (nsend.eq.0.and.nrecv.eq.0) return
 !
-      if (tinkerdebug.gt.0) call MPI_Barrier(MPI_COMM_WORLD,ierr)
+      if (tinkerdebug.gt.0) call MPI_Barrier(&
+         &merge(get_recip_comm(),get_domain_comm(),use_pmecore),ierr)
       if (deb_Path) write(*,*) '   >> comm_forces_rec'
       call timer_enter( timer_dirreccomm )
 !$acc wait
@@ -1360,7 +1361,8 @@ contains
 !
       nullify(buffer)
 
-      if (tinkerdebug.gt.0) call MPI_Barrier(MPI_COMM_WORLD,ierr)
+      if (tinkerdebug.gt.0) call MPI_Barrier(&
+         &merge(get_recip_comm(),get_domain_comm(),use_pmecore),ierr)
       if (deb_Path) write(*,*) '   << comm_forces_rec'
       call timer_exit( timer_dirreccomm,quiet_timers )
    end subroutine comm_forces_rec
@@ -1684,7 +1686,7 @@ module subroutine commforcesbonded(derivs)
    use inform    ,only: deb_Path
    use mdevice  ,only: direct_work
 #ifdef _OPENACC
-   use mdevice  ,only: after,default_work
+   use mdevice  ,only: after,reciprocal_work
    use status   ,only: failed,status_t
 #endif
    use potent   ,only: use_pmecore
@@ -1712,7 +1714,7 @@ module subroutine commforcesbonded(derivs)
    flat(1:3*nbloc) => derivs
    call accumulate(flat,3,halo_neighbour,channel=direct_work)
 #ifdef _OPENACC
-   call after(default_work,direct_work,dep_status)
+   call after(reciprocal_work,direct_work,dep_status)
    if (failed(dep_status)) __TINKER_FATAL__
 #endif
 
@@ -1730,7 +1732,7 @@ module subroutine commforcesbloc(derivs)
    use timestat
    use mdevice  ,only: direct_work
 #ifdef _OPENACC
-   use mdevice  ,only: after,default_work
+   use mdevice  ,only: after,reciprocal_work
    use status   ,only: failed,status_t
 #endif
    use potent  ,only: use_pmecore
@@ -1757,7 +1759,7 @@ module subroutine commforcesbloc(derivs)
    flat(1:3*nbloc) => derivs
    call accumulate(flat,3,halo_large,channel=direct_work)
 #ifdef _OPENACC
-   call after(default_work,direct_work,dep_status)
+   call after(reciprocal_work,direct_work,dep_status)
    if (failed(dep_status)) __TINKER_FATAL__
 #endif
 
@@ -1774,7 +1776,7 @@ module subroutine commforcesshortbloc(derivs)
    use timestat
    use mdevice  ,only: direct_work
 #ifdef _OPENACC
-   use mdevice  ,only: after,default_work
+   use mdevice  ,only: after,reciprocal_work
    use status   ,only: failed,status_t
 #endif
    use potent  ,only: use_pmecore
@@ -1801,7 +1803,7 @@ module subroutine commforcesshortbloc(derivs)
    flat(1:3*nbloc) => derivs
    call accumulate(flat,3,halo_short,channel=direct_work)
 #ifdef _OPENACC
-   call after(default_work,direct_work,dep_status)
+   call after(reciprocal_work,direct_work,dep_status)
    if (failed(dep_status)) __TINKER_FATAL__
 #endif
 

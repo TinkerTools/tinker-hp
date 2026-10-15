@@ -18,6 +18,7 @@ subroutine newinduce_shortreal
    use atmlst   , only: poleglob
    use domdec   , only: rank
    use iounit   !, only: iout
+   use mdevice  ,only: direct_work
    use mpole    , only: npolebloc, npoleloc
    use parallel , only: commfieldshort, polar_comm_t, polar_finish, polar_post_comm
    use polar    , only: polarity, uind, uinp
@@ -65,7 +66,7 @@ subroutine newinduce_shortreal
 !
    call efld0_direct(nrhs,ef)
 !
-   call commfieldshort(nrhs,ef)
+   call commfieldshort(nrhs,ef,direct_work)
 !
 !cc$    wtime1 = omp_get_wtime()
 !
@@ -107,8 +108,8 @@ subroutine newinduce_shortreal
       end do
    end if
 !
-   call polar_post_comm(comm_ticket,nrhs,mu,.true.)
-   call polar_finish(comm_ticket,nrhs,mu)
+   call polar_post_comm(comm_ticket,nrhs,mu,.true.,channel=direct_work)
+   call polar_finish(comm_ticket,nrhs,mu,channel=direct_work)
 !
 !     now, call the proper solver.
 !
@@ -171,6 +172,7 @@ subroutine inducepcg_shortreal(matvec,nrhs,precnd,ef,mu)
    use atmlst   , only: poleglob
    use domdec   , only: rank
    use iounit 
+   use mdevice  ,only: direct_work
    use mpole    , only: ipole, npolebloc, npoleloc
    use parallel , only: commfieldshort, polar_comm_t, polar_finish, polar_post_comm
    use polar    , only: npolar, polarity, tinypol
@@ -254,7 +256,7 @@ subroutine inducepcg_shortreal(matvec,nrhs,precnd,ef,mu)
    call matvec(nrhs,.true.,mu,h)
    time2 = mpi_wtime()
    timerealdip = timerealdip + time2-time1
-   call commfieldshort(nrhs,h)
+   call commfieldshort(nrhs,h,direct_work)
 !
    res(:,:,1:npoleloc) = ef(:,:,1:npoleloc)-h(:,:,1:npoleloc)
    do k = 1, nrhs
@@ -263,8 +265,8 @@ subroutine inducepcg_shortreal(matvec,nrhs,precnd,ef,mu)
       end do
    end do
    pp(:,:,1:npoleloc) = zr(:,:,1:npoleloc)
-   call polar_post_comm(comm_ticket,nrhs,pp,.true.)
-   call polar_finish(comm_ticket,nrhs,pp)
+   call polar_post_comm(comm_ticket,nrhs,pp,.true.,channel=direct_work)
+   call polar_finish(comm_ticket,nrhs,pp,channel=direct_work)
    do k = 1, nrhs
       ggold(k) = sum(res(:,k,:)*zr(:,k,:))
    end do
@@ -283,7 +285,7 @@ subroutine inducepcg_shortreal(matvec,nrhs,precnd,ef,mu)
       end do
 !
       call matvec(nrhs,.true.,pp,h)
-      call commfieldshort(nrhs,h)
+      call commfieldshort(nrhs,h,direct_work)
 !
 !     MPI : begin reception
 !
@@ -333,8 +335,8 @@ subroutine inducepcg_shortreal(matvec,nrhs,precnd,ef,mu)
             &pp(:,k,1:npoleloc)
       end do
 !
-      call polar_post_comm(comm_ticket,nrhs,pp,.true.)
-      call polar_finish(comm_ticket,nrhs,pp)
+      call polar_post_comm(comm_ticket,nrhs,pp,.true.,channel=direct_work)
+      call polar_finish(comm_ticket,nrhs,pp,channel=direct_work)
 !
       ggold = ggnew
       if (resnrm.lt.poleps) then
@@ -347,8 +349,8 @@ subroutine inducepcg_shortreal(matvec,nrhs,precnd,ef,mu)
 !
 !     MPI : begin reception
 !
-   call polar_post_comm(comm_ticket,nrhs,mu,.true.)
-   call polar_finish(comm_ticket,nrhs,mu)
+   call polar_post_comm(comm_ticket,nrhs,mu,.true.,channel=direct_work)
+   call polar_finish(comm_ticket,nrhs,mu,channel=direct_work)
 !
 !     finalize and debug printing:
 !
@@ -381,6 +383,7 @@ subroutine inducejac_shortreal(matvec,nrhs,dodiis,ef,mu)
    use atmlst   , only: poleglob
    use domdec   , only: rank
    use iounit
+   use mdevice  ,only: direct_work
    use mpole    , only: ipole, npolebloc, npoleloc
    use parallel , only: commfieldshort, polar_comm_t, polar_finish, polar_post_comm
    use polar    , only: npolar, polarity
@@ -456,7 +459,7 @@ subroutine inducejac_shortreal(matvec,nrhs,dodiis,ef,mu)
       call matvec(nrhs,.false.,mu,h)
       time2 = mpi_wtime()
       if (it.eq.1) timerealdip = timerealdip + time2-time1
-      call commfieldshort(nrhs,h)
+      call commfieldshort(nrhs,h,direct_work)
 !
 !
 !     jacobi step:
@@ -512,8 +515,8 @@ subroutine inducejac_shortreal(matvec,nrhs,dodiis,ef,mu)
       end if
       time2 = mpi_wtime()
 !
-      call polar_post_comm(comm_ticket,nrhs,mu,.true.,munew)
-      call polar_finish(comm_ticket,nrhs,mu)
+      call polar_post_comm(comm_ticket,nrhs,mu,.true.,munew,channel=direct_work)
+      call polar_finish(comm_ticket,nrhs,mu,channel=direct_work)
       mu(:,:,1:npoleloc) = munew(:,:,1:npoleloc)
 
 !

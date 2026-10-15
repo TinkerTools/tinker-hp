@@ -12,9 +12,10 @@
 !
 #include "tinker_precision.h"
 module beads
-   use dcdmod
-   use mdtraj, only: trajectory_t
-   use status, only: status_t
+   use tinTypes, only: POLYMER_COMM_TYPE
+   use dcdmod  , only: dcdinfo_t
+   use mdtraj  , only: trajectory_t
+   use status  , only: status_t
    implicit none
    logical :: path_integral_md=.FALSE.
    integer :: nbeads,nbeadsloc
@@ -71,34 +72,6 @@ module beads
 
    real(8), allocatable :: contractor_mat(:,:)
 
-   TYPE POLYMER_COMM_TYPE
-      integer :: nbeads
-      integer :: nbeadsproc
-      integer,allocatable :: nbeadsloc(:)
-      integer,allocatable :: ibead_beg(:)
-      integer,allocatable :: ibead_end(:)
-      integer,allocatable :: iproc(:)
-      integer :: index
-
-      logical :: allocated=.FALSE.
-
-      real(r_p), allocatable :: pos(:,:,:),vel(:,:,:)
-      real(r_p), allocatable :: eigpos(:,:,:),eigvel(:,:,:)
-      real(r_p), allocatable :: forces(:,:,:)
-      real(r_p), allocatable :: eigforces(:,:,:)
-      real(r_p), allocatable :: forces_slow(:,:,:)
-
-      real(r_p), allocatable :: epot(:)
-      real(r_p), allocatable :: vir(:,:,:)
-
-      real(r_p), allocatable :: dip(:,:)
-      real(r_p), allocatable :: dipind(:,:)
-
-      real(r_p) :: gyr
-
-      type(dcdinfo_t),allocatable :: dcdinfo(:)
-      type(trajectory_t),allocatable :: dcd_trajectory(:)
-   END TYPE
 
    TYPE(POLYMER_COMM_TYPE) :: polymer_main,polymer_ctr
 

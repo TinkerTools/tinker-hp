@@ -54,7 +54,7 @@ subroutine eliaison1cu
    use eliaisoncu,only: eliaison1_kcu,lia_Gs,lia_Bd
    use eliaisoncu_dat,only: grx,gry,grz,grtx,grty,grtz&
       &,eliaisoncu_set_pointers=>attach_p
-   use mdevice   ,only: check_launch_kernel
+   use mdevice   ,only: check_launch_kernel,reciprocal_work
    use group
    use improp
    use imptor
@@ -65,7 +65,7 @@ subroutine eliaison1cu
    use nvshmem
    use opbend
    use pitors
-   use potent   ,only: use_amd_wat1,use_amd_dih
+   use potent   ,only: use_amd_wat1,use_amd_dih,use_pmecore
    use strbnd
    use timestat ,only: timer_enter,timer_exit,timer_b1&
       &,quiet_timers,print_timers
@@ -76,7 +76,6 @@ subroutine eliaison1cu
    use urey
    use urypot
    use usage
-   use mdevice, only: reciprocal_work
    use reduction, only: ered_buf1,ered_buff=>ered_buf1,vred_buff,&
       &reduce_energy_virial
    use virial
@@ -226,7 +225,8 @@ subroutine eliaison1cu
       &,ered_buf1,vred_buff&
       &,use_virial&
       &)
-   call check_launch_kernel("<eliaison1_kcu>")
+   call check_launch_kernel("<eliaison1_kcu>",&
+      &wait_for_completion=use_pmecore)
 !$acc end host_data
 
    if (use_amd_dih) then

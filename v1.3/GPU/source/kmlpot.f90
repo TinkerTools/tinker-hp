@@ -287,7 +287,7 @@ subroutine kmlpot_reset(istep)
       do i = nloc+1,nbloc
          iglob = glob(i)
          if (.not. laml(iglob)) cycle
-         call distprocpart1(iglob,rank,d,.true.,x,y,z)
+         call distprocpart1(iglob,rank,d,.true.,n,x,y,z)
          if (d.le.(distcut)) then
 !$acc atomic capture
             namloc   = namloc + 1

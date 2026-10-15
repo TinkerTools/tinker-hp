@@ -1283,7 +1283,7 @@ end
 !     between time steps
 !
 subroutine reassignpme(init)
-   use parallel, only: get_domain_comm
+   use parallel, only: get_domain_comm, assign_direct, assign_reciprocal
    use atomsMirror
    use boxes
    use chunks
@@ -1301,7 +1301,6 @@ subroutine reassignpme(init)
    use tinheader ,only:ti_p,re_p
    use tinMemory
    use mdevice   ,only: reciprocal_work
-   use parallel  ,only: orderbuffer_gpu, orderbufferrec, orderbufrec_gpu
    use utils     ,only: set_to_zero1
    implicit none
    real(t_p) disttemp
@@ -1310,21 +1309,14 @@ subroutine reassignpme(init)
    integer i,k
    integer iproc,iproc1,temp
    integer proc1,proc2
-   integer iprec,idomlen,ibeg
    integer nprocloc,rankloc,nprocloc1
    integer gridin_size,gridout_size
-   integer, allocatable :: req(:)
-   integer, allocatable :: counttemp(:)
-   integer, allocatable :: domlentemp(:)
-   integer, allocatable :: repartrectemp(:)
    integer, allocatable :: nrecdirrecep(:),precdirrecep(:,:)
    integer, allocatable :: nrecdirreceptemp(:)
    integer, allocatable :: nrecrecep(:),precrecep(:,:)
    integer ifr,kbeg,kend,kmin,kmax,sizek,sizej
    integer jbeg,jend,jmin,jmax
    real(t_p) wbeg,wend
-   integer tag, status(MPI_STATUS_SIZE)
-   integer nlocrecold
    real(t_p) fr,xi,yi,zi,eps,w
    real(t_p) dist,xr,yr
    type(c_ptr) grid_ptr
@@ -1336,16 +1328,10 @@ subroutine reassignpme(init)
 #else
    eps = 1.0d-8
 #endif
-   allocate (req(2*nproc))
-   allocate (counttemp(nproc))
-   call prmem_request(repartrectemp,n)
    repartrec(:)      = -1
    if (use_mlpot_only) then
-      call prmem_request(repartrectemp,0,config=mfhostacc)
       return
    end if
-   allocate (domlentemp(nproc))
-   counttemp = 0
 !
 !     get geometrical correspondance between processes
 !
@@ -1809,49 +1795,22 @@ subroutine reassignpme(init)
             end if
          end if
       end if
+      call timer_exit( timer_eneig,quiet_timers )
 !
       domlenrec = 0
-      do i = 1, n
-         xi = x(i)
-         yi = y(i)
-         zi = z(i)
-         w = xi*recip(1,3) + yi*recip(2,3) + zi*recip(3,3)
-         fr = real(nfft3,t_p) * (w-anint(w)+0.5_ti_p)
-         ifr = int(fr-pme_eps)
-         !if (ifr-fr.eq.0.0.and.ifr>0) ifr=ifr-1
-         k = ifr- bsorder + grdoff
-         if (k .lt. 1)  k = k + nfft3
-         w = xi*recip(1,2) + yi*recip(2,2) + zi*recip(3,2)
-         fr = real(nfft2,t_p) * (w-anint(w)+0.5_ti_p)
-         ifr = int(fr-pme_eps)
-         !if (ifr-fr.eq.0.0.and.ifr>0) ifr=ifr-1
-         j = ifr- bsorder + grdoff
-         if (j .lt. 1)  j = j + nfft2
-         do iproc = 0, nprocloc-1
-            if (((k.ge.kstart1(iproc+1)).and.(k.le.kend1(iproc+1))).and.&
-               &((j.ge.jstart1(iproc+1)).and.(j.le.jend1(iproc+1))))then
-               repartrec(i) = iproc
-            end if
-         end do
-      end do
-!$acc update device(repartrec)
-
-      domlentemp = domlen
-      if(nproc.gt.1) call orderbuffer_gpu(.false.)
-      call orderbufferrec
+      call assign_direct
+      call assign_reciprocal
 !
       deallocate (precdirrecep)
       deallocate (nrecdirrecep)
       deallocate (nrecdirreceptemp)
       deallocate (precrecep)
       deallocate (nrecrecep)
-      call timer_exit( timer_eneig,quiet_timers )
    end if
 !
 !
    if (nproc.eq.1) then
 !$acc wait
-      call prmem_request(repartrectemp,0,config=mfhostacc)
       return
    end if
 
@@ -1865,97 +1824,12 @@ subroutine reassignpme(init)
       nprocloc = nproc
       rankloc  = rank
    end if
-!
-   nlocrecold = nlocrec
-
-!$acc parallel loop async default(present)
-   do i = 1, nloc
-      iglob = glob(i)
-      xi    = x(iglob)
-      yi    = y(iglob)
-      zi    = z(iglob)
-      w     = xi*recip(1,3) + yi*recip(2,3) + zi*recip(3,3)
-      fr    = real(nfft3,t_p) * (w-anint(w)+0.5_ti_p)
-      ifr   = int(fr-pme_eps)
-      !if (ifr-fr.eq.0.0.and.ifr>0) ifr=ifr-1
-      k     = ifr- bsorder + grdoff
-      if (k .lt. 1)  k = k + nfft3
-      w     = xi*recip(1,2) + yi*recip(2,2) + zi*recip(3,2)
-      fr    = real(nfft2,t_p) * (w-anint(w)+0.5_ti_p)
-      ifr   = int(fr-pme_eps)
-      !if (ifr-fr.eq.0.0) ifr=ifr-1
-      j     = ifr- bsorder + grdoff
-      if (j .lt. 1)  j = j + nfft2
-!$acc loop seq
-      do iproc = 0, nprocloc-1
-         if (((k.ge.kstart1(iproc+1)).and.(k.le.kend1(iproc+1))).and.&
-            &((j.ge.jstart1(iproc+1)).and.(j.le.jend1(iproc+1)))) then
-            repartrectemp(i) = iproc
-         end if
-      end do
-   end do
-
-!
-!     send and receive repartrectemp
-!
-!$acc host_data use_device(repartrectemp)
-   do i = 1, nrecdir_recep1
-      if (precdir_recep1(i).ne.rank) then
-         tag     = nproc*rank + precdir_recep(i) + 1
-         iprec   = precdir_recep1(i)
-         idomlen = domlen(iprec+1)
-         call MPI_IRECV(repartrectemp(bufbeg(iprec+1)),idomlen,MPI_INT&
-            &,iprec,tag,get_domain_comm(),req(i),ierr)
-      end if
-   end do
-!
-!$acc wait
-   do i = 1, nrecdir_send1
-      if (precdir_send1(i).ne.rank) then
-         tag = nproc*precdir_send1(i) + rank + 1
-         call MPI_ISEND(repartrectemp,nloc,MPI_INT&
-            &,precdir_send1(i),tag,get_domain_comm(),req(nproc+i),ierr)
-      end if
-   end do
-!$acc end host_data
-!
-   do i = 1, nrecdir_recep
-      if (precdir_recep(i).ne.rank)&
-         &call MPI_WAIT(req(i),status,ierr)
-   end do
-   do i = 1, nrecdir_send
-      if (precdir_send(i).ne.rank)&
-         &call MPI_WAIT(req(nproc+i),status,ierr)
-   end do
-
-!$acc parallel loop present(glob,repartrec,repartrectemp) async
-   do i = 1, nloc
-      iglob = glob(i)
-      repartrec(iglob) =  repartrectemp(i)
-   end do
-
-   do iproc = 1, nrecdir_recep1
-      if (precdir_recep1(iproc).ne.rank) then
-         iprec   = precdir_recep1(iproc)
-         idomlen = domlen(iprec+1)
-         ibeg    = bufbeg(iprec+1)-1
-!$acc parallel loop async
-         do i = 1, idomlen
-            iglob            = glob(ibeg+i)
-            repartrec(iglob) = repartrectemp(ibeg+i)
-         end do
-      end if
-   end do
-
-   call orderbufrec_gpu
-!
-
-   deallocate (domlentemp)
-   deallocate (counttemp)
-   deallocate (req)
-!$acc wait
-   call prmem_request(repartrectemp,0,config=mfhostacc)
    call timer_exit( timer_eneig,quiet_timers )
+!
+   call assign_reciprocal
+!
+
+!$acc wait
 end
 !
 !     Set MPI type for fftGrid

@@ -136,6 +136,13 @@ contains
             if (i < narg) listarg(i+1) = .false.
          end if
       end do
+      ! Common initialization already loaded the first positional argument
+      ! as the primary structure, so legacy nextarg callers must not see it.
+      do i = 1, narg
+         if (.not.listarg(i)) cycle
+         listarg(i) = .false.
+         exit
+      end do
    end subroutine publish_legacy_cli
 
    module subroutine parse_common_cli(raw_cli, xyz_path, values, value_count, status_value)

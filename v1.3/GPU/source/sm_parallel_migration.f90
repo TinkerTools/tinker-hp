@@ -14,6 +14,9 @@ submodule (parallel) parallel_migration
    integer, save :: max_atoms_send=0
    integer, save :: max_atoms_recv=0
    type(t_elt), allocatable, target, save :: data_send(:,:), data_recv(:,:) ! Data (x,y,...) to exchange
+   integer, save :: max_send_atom_pi=0
+   integer, save :: max_recv_atom_pi=0
+   type(t_elt), allocatable, target, save :: data_send_pi(:,:), data_recv_pi(:,:)
 
 contains
 #include "image.inc.f90"
@@ -30,7 +33,503 @@ module subroutine release_migration_workspace()
    end if
    max_atoms_send = 0
    max_atoms_recv = 0
+   if (allocated(data_send_pi)) then
+!$acc exit data delete(data_send_pi)
+      deallocate(data_send_pi)
+   end if
+   if (allocated(data_recv_pi)) then
+!$acc exit data delete(data_recv_pi)
+      deallocate(data_recv_pi)
+   end if
+   max_send_atom_pi = 0
+   max_recv_atom_pi = 0
 end subroutine release_migration_workspace
+
+   module subroutine migrate_polymer_atoms(polymer,polymer_ctr)
+      use atoms       ,only : pbcWrap
+      use atomsMirror ,only : x,y,z,xold,yold,zold,n
+      use beads, only: nbeads, update_nlocpi
+      use bound ,only : use_bounds
+      use cell
+      use domdec
+      use parallel, only: get_domain_comm, get_direct_comm
+      use freeze,only : use_rattle
+      use inform,only : deb_Path,tindPath
+      use iso_c_binding
+      use moldyn,only : a,v
+      !use commstuffpi_inl
+      use potent,only : use_pmecore
+      use timestat ,only: timer_enter,timer_exit,timer_eneig&
+         &,quiet_timers
+      use tinTypes ,only: real3,real3_red
+      use tinheader,only: ti_eps
+      use tinMemory,only: prmem_request,debMem,mem_inc,extra_alloc
+      use parallel ,only: domain_workspace_i
+      use mpi
+      use sizes    ,only: tinkerdebug
+      use qtb
+      use mdevice, only: reciprocal_work
+#ifdef _OPENACC
+      use thrust, only: thrust_sort
+#endif
+      implicit none
+      type(POLYMER_COMM_TYPE), intent(inout) :: polymer
+      type(POLYMER_COMM_TYPE), intent(inout),optional :: polymer_ctr
+      integer,pointer :: iglob_send(:,:) ! Global index to send to each proc
+      integer,pointer :: iglob_recv(:,:) ! Global index to recieve from procs
+      integer,pointer :: buffer_i1(:),buffer_i2(:)
+      real(t_p) xr, yr, zr ! adjusted position
+      type(t_elt),pointer :: d
+      type(real3),pointer :: b
+      type(real3_red),pointer :: d_ctr
+      type(real3),pointer :: old_send(:,:),old_recv(:,:)
+      type(c_ptr) void_p
+
+      integer  n_data_send(0:nneig_send),   n_data_recv(nneig_recep)
+      integer req_iglob_send(nneig_send),req_iglob_recv(nneig_recep)
+      integer  req_data_send(nneig_send), req_data_recv(nneig_recep)
+      integer  mpi_status1(MPI_STATUS_SIZE)
+      type(real3_red), allocatable,target :: data_send_ctr(:,:)&
+         &, data_recv_ctr(:,:)
+
+      integer ibeadbeg,ibeadend, nbeadsproc, nbeadssend
+      integer ibeadbeg_ctr,ibeadend_ctr, nbeadsproc_ctr
+      integer nprocloc, rankloc ! local (pme) mpi info
+      integer i,k,j, ierr, iglob, iloc, iproc, ineighbor
+      integer nloc_save, n_data_send_capture,max_data_recv
+      integer nloc_capture
+      integer s_bufi,pbcw
+      integer :: max_data_recv_save=0
+      character(len=40) ::fmt
+      real(r_p) :: sqrtnu
+      real(t_p) ixbeg,ixend,iybeg,iyend,izbeg,izend,xtemp
+      logical :: send_ctr,ifind
+#if  (defined(SINGLE)||defined(MIXED))
+      real(t_p), parameter:: eps1= 10*ti_eps, eps2= 1d2*ti_eps
+#else
+      real(t_p), parameter:: eps1= 1d2*ti_eps, eps2= 1d4*ti_eps
+#endif
+!$acc routine(image_acc) seq
+
+      send_ctr = present(polymer_ctr)
+
+      if (use_pmecore) then
+         nprocloc = ndir
+         rankloc  = rank_bis
+         if(rank >= ndir) then
+            call timer_enter( timer_eneig )
+         end if
+      else
+         nprocloc = nproc
+         rankloc  = rank
+      end if
+      if (nproc.eq.1) return
+      if (associated(active_domain)) call check_domain_layout()
+      if (use_pmecore.and.ndir.eq.1) then
+         call timer_enter( timer_eneig )
+         goto 20
+      end if
+
+      if (deb_Path) write(*,*) '  -- reassignpi ',send_ctr
+      call timer_enter( timer_eneig )
+
+      s_bufi = 2*nloc*(nneig_send+1)
+      call domain_workspace_i(1,s_bufi,buffer_i1)
+      !Associate iglob_send pointer to buffer
+      iglob_send(1:2*nloc,0:nneig_send) => buffer_i1(1:s_bufi)
+
+!$acc wait
+!$acc data copyin(pneig_recep, pneig_send) async &
+!$acc     create(n_data_send) &
+!$acc   present(xbegproc,xendproc,ybegproc,yendproc,zbegproc,zendproc) &
+!$acc     present(repart,loc,glob,iglob_send)
+
+      ! Gather process domain of rank
+      ixbeg = xbegproc(rank+1)
+      ixend = xendproc(rank+1)
+      iybeg = ybegproc(rank+1)
+      iyend = yendproc(rank+1)
+      izbeg = zbegproc(rank+1)
+      izend = zendproc(rank+1)
+
+      ibeadbeg=polymer%ibead_beg(rank_polymer+1)
+      ibeadend=polymer%ibead_end(rank_polymer+1)
+      nbeadsproc = ibeadend-ibeadbeg+1
+
+      if(send_ctr) then
+         ibeadbeg_ctr=polymer_ctr%ibead_beg(rank_polymer+1)
+         ibeadend_ctr=polymer_ctr%ibead_end(rank_polymer+1)
+         nbeadsproc_ctr = ibeadend_ctr-ibeadbeg_ctr+1
+      else
+         nbeadsproc_ctr = 0
+      endif
+
+!$acc parallel loop async
+      do i = 0,nneig_send
+         n_data_send(i) = 0
+      end do
+
+      ! Get process domain of each atoms
+!$acc parallel loop async
+      do i = 1, nloc
+         iglob = glob(i)
+         xr = polymer%eigpos(1,iglob,1)
+         yr = polymer%eigpos(2,iglob,1)
+         zr = polymer%eigpos(3,iglob,1)
+         pbcw = pbcWrap(iglob)
+         call image_inl(xr,yr,zr)
+         ! Check box limits (SP Issue)
+         xtemp = xr
+         ifind=.FALSE.
+         if ((xcell2-abs(xr)).lt.eps_cell) xr = xr-sign(4*eps_cell,xr)
+         if ((ycell2-abs(yr)).lt.eps_cell) yr = yr-sign(4*eps_cell,yr)
+         if ((zcell2-abs(zr)).lt.eps_cell) zr = zr-sign(4*eps_cell,zr)
+         if  ( (xr>=ixbeg).and.(xr<ixend)&
+            &.and. (yr>=iybeg).and.(yr<iyend)&
+            &.and. (zr>=izbeg).and.(zr<izend) ) then  ! (Rank domain)
+!$acc atomic capture
+            n_data_send(0) = n_data_send(0) + 1
+            n_data_send_capture = n_data_send(0)
+!$acc end atomic
+            iglob_send(2*(n_data_send_capture-1)+1,0) = iglob
+            iglob_send(2*(n_data_send_capture-1)+2,0) = pbcw
+            ifind=.TRUE.
+         else  ! (not in rank domain)
+!$acc loop seq
+            do ineighbor = 1, nneig_send   ! Look among neighbour
+               iproc = pneig_send(ineighbor)+1
+               if( (iproc /= rank+1)&
+                  &.and. (xr>=xbegproc(iproc)) .and. (xr<xendproc(iproc))&
+                  &.and. (yr>=ybegproc(iproc)) .and. (yr<yendproc(iproc))&
+                  &.and. (zr>=zbegproc(iproc)) .and. (zr<zendproc(iproc)) ) then
+!$acc atomic capture
+                  n_data_send(ineighbor) = n_data_send(ineighbor) + 1
+                  n_data_send_capture = n_data_send(ineighbor)
+!$acc end atomic
+                  iglob_send(2*(n_data_send_capture-1)+1,ineighbor)=iglob
+                  iglob_send(2*(n_data_send_capture-1)+2,ineighbor)=pbcw
+                  ifind=.TRUE.
+                  exit ! if found
+               endif
+            enddo
+         endif ! (Find atom domain)
+         if (.not.ifind) then
+            print*, 'Issue reassign',rank,iglob,xr,yr,zr&
+               &,polymer%eigpos(1,iglob,1)&
+               &,polymer%eigpos(2,iglob,1)&
+               &,polymer%eigpos(3,iglob,1)&
+               &,eps_cell,xcell2>xr,ycell2>yr,zcell2>zr&
+               &,xcell2,ycell2,zcell2,xcell,ycell,zcell
+         end if
+      enddo
+!$acc update host(n_data_send) async
+!Wait for n_data_send
+!$acc wait
+
+      ! Allocate and fill data to send (Optimzed reallocation)
+      s_bufi = maxval(n_data_send(1:nneig_send))
+      if (s_bufi.gt.max_send_atom_pi) then
+         max_send_atom_pi =&
+            &merge( int(s_bufi*(1+mem_inc)),s_bufi,extra_alloc )
+         if (debMem) print*,'reassign::realloc s',s_bufi,rank
+         if (allocated(data_send_pi)) then
+!$acc exit data delete(data_send_pi) async
+!$acc wait
+            deallocate(data_send_pi)
+         end if
+         allocate(data_send_pi((nbeadsproc+1)*max_send_atom_pi,nneig_send))
+!$acc enter data create(data_send_pi) async
+      end if
+
+
+!$acc parallel loop present(iglob_send) async &
+!$acc         vector_length(512)
+      do ineighbor = 1, nneig_send  ! Gather Data for each neighbor domain
+!$acc loop vector
+         do i = 1, n_data_send(ineighbor)
+            iglob = iglob_send(2*(i-1)+1,ineighbor)
+            d => data_send_pi((i-1)*(nbeadsproc+1)+1, ineighbor )
+            d%x  = polymer%eigpos(1,iglob,1)
+            d%y  = polymer%eigpos(2,iglob,1)
+            d%z  = polymer%eigpos(3,iglob,1)
+            d%vx = polymer%eigvel(1,iglob,1)
+            d%vy = polymer%eigvel(2,iglob,1)
+            d%vz = polymer%eigvel(3,iglob,1)
+            d%ax = 0.d0
+            d%ay = 0.d0
+            d%az = 0.d0
+!$acc loop seq
+            do k=1,nbeadsproc
+               d => data_send_pi((i-1)*(nbeadsproc+1)+k+1, ineighbor)
+               d%x  = polymer%pos(1,iglob,k+ibeadbeg-1)
+               d%y  = polymer%pos(2,iglob,k+ibeadbeg-1)
+               d%z  = polymer%pos(3,iglob,k+ibeadbeg-1)
+               d%vx = polymer%vel(1,iglob,k+ibeadbeg-1)
+               d%vy = polymer%vel(2,iglob,k+ibeadbeg-1)
+               d%vz = polymer%vel(3,iglob,k+ibeadbeg-1)
+               d%ax = polymer%forces(1,iglob,k+ibeadbeg-1)
+               d%ay = polymer%forces(2,iglob,k+ibeadbeg-1)
+               d%az = polymer%forces(3,iglob,k+ibeadbeg-1)
+            enddo
+         end do
+      end do
+
+      ! Initiate send data
+      req_iglob_send(:) = MPI_REQUEST_NULL
+      req_data_send (:) = MPI_REQUEST_NULL
+!Wait for iglob_send and data_send_pi
+!$acc wait
+!$acc host_data use_device(iglob_send)
+      do ineighbor = 1, nneig_send
+         call MPI_Isend(iglob_send(1,ineighbor)&
+            &,2*n_data_send(ineighbor)&
+            &,MPI_INT,   pneig_send(ineighbor), 0, get_domain_comm(),&
+            &req_iglob_send(ineighbor), ierr)
+      end do
+!$acc end host_data
+
+      ! Probe for sizes
+      n_data_recv(:) = 0
+      do ineighbor = 1, nneig_recep
+         call MPI_Probe(pneig_recep(ineighbor), 0, get_domain_comm(),&
+            &mpi_status1, ierr)
+         call MPI_Get_count( mpi_status1, MPI_INT,&
+            &n_data_recv(ineighbor), ierr )
+      end do
+
+      ! Allocate and recv data depending on message size
+      n_data_recv(:)= n_data_recv(:)/2
+      max_data_recv = maxval(n_data_recv)
+      s_bufi        = 2*max_data_recv*nneig_recep
+      call domain_workspace_i(2,s_bufi,buffer_i2)
+      iglob_recv(1:2*max_data_recv,1:nneig_recep)&
+         &=>buffer_i2(1:s_bufi)
+      if ( max_data_recv.gt.max_recv_atom_pi ) then
+         max_recv_atom_pi = merge(int(max_data_recv*(1+mem_inc))&
+            &,max_data_recv,extra_alloc)
+         if (debMem) print*,'reassign::realloc r',max_data_recv,rank
+         if (allocated(data_recv_pi)) then
+!$acc exit data delete(data_recv_pi)
+            deallocate(data_recv_pi)
+         end if
+         allocate(data_recv_pi((nbeadsproc+1)*max_recv_atom_pi,nneig_recep))
+!$acc enter data create(data_recv_pi) async
+      end if
+
+      req_iglob_recv(:) = MPI_REQUEST_NULL
+      req_data_recv(:)  = MPI_REQUEST_NULL
+!Wait for iglob_recv and data_recv_pi
+!$acc wait
+!$acc host_data use_device(iglob_recv,data_recv_pi,data_send_pi)
+      do ineighbor = 1, nneig_recep
+         call MPI_Irecv(iglob_recv(1,ineighbor)&
+            &,2*n_data_recv(ineighbor)&
+            &,MPI_INT, pneig_recep(ineighbor), 0, get_domain_comm(),&
+            &req_iglob_recv(ineighbor), ierr)
+         call MPI_Irecv(data_recv_pi(1,ineighbor)&
+            &,9*n_data_recv(ineighbor)*(nbeadsproc+1)&
+            &,MPI_RPREC, pneig_recep(ineighbor), 1, get_domain_comm(),&
+            &req_data_recv(ineighbor), ierr)
+      end do
+
+      ! Wait for iglob exchange before sending datas
+      ! Overlaping those comms like before disrupts mpi with
+      ! multi-node running
+      call MPI_Waitall(nneig_recep,req_iglob_recv,MPI_STATUSES_IGNORE,&
+         &ierr)
+      call MPI_Waitall(nneig_send ,req_iglob_send,MPI_STATUSES_IGNORE,&
+         &ierr)
+
+      do ineighbor = 1, nneig_send
+         call MPI_Isend(data_send_pi(1,ineighbor)&
+            &,9*n_data_send(ineighbor)*(nbeadsproc+1)&
+            &,MPI_RPREC, pneig_send(ineighbor), 1, get_domain_comm(),&
+            &req_data_send(ineighbor), ierr)
+      end do
+!$acc end host_data
+
+      nloc_save = nloc
+      ! Rebuild glob(:) with old local atoms
+      nloc = n_data_send(0)
+
+!$acc parallel loop present(iglob_send) async
+      do i = 1, n
+         if (i.lt.nloc+1)&
+            &glob(i) = iglob_send(2*(i-1)+1, 0)
+         loc(i)    = 0
+         repart(i) = -1
+         locrec(i)    = 0
+         repartrec(i) = -1
+      end do
+
+      ! Wait all communications
+      call MPI_Waitall(nneig_recep,req_data_recv ,MPI_STATUSES_IGNORE,&
+         &ierr)
+      call MPI_Waitall(nneig_send ,req_data_send ,MPI_STATUSES_IGNORE,&
+         &ierr)
+
+      sqrtnu = sqrt(real(nbeads,r_p))
+
+      ! Add new atoms to glob(:) and add data
+!$acc parallel loop vector_length(512) &
+!$acc         present(iglob_recv,nloc) copyin(n_data_recv) copy(nloc)
+      do ineighbor = 1, nneig_recep
+!$acc loop vector
+         do i = 1, n_data_recv(ineighbor)
+            iglob = iglob_recv(2*(i-1)+1,ineighbor)
+            !pbcwrap(iglob) = iglob_recv(2*(i-1)+2,ineighbor)
+!$acc atomic capture
+            nloc = nloc+1
+            nloc_capture = nloc
+!$acc end atomic
+            glob(nloc_capture) = iglob
+            d => data_recv_pi((i-1)*(nbeadsproc+1)+1,ineighbor)
+            polymer%eigpos(1,iglob,1) = d%x
+            polymer%eigpos(2,iglob,1) = d%y
+            polymer%eigpos(3,iglob,1) = d%z
+            polymer%eigvel(1,iglob,1) = d%vx
+            polymer%eigvel(2,iglob,1) = d%vy
+            polymer%eigvel(3,iglob,1) = d%vz
+!$acc loop seq
+            do k=1,nbeadsproc
+               d => data_recv_pi((i-1)*(nbeadsproc+1)+k+1,ineighbor)
+               polymer%pos(1,iglob,k+ibeadbeg-1)   = d%x
+               polymer%pos(2,iglob,k+ibeadbeg-1)   = d%y
+               polymer%pos(3,iglob,k+ibeadbeg-1)   = d%z
+               polymer%vel(1,iglob,k+ibeadbeg-1)  = d%vx
+               polymer%vel(2,iglob,k+ibeadbeg-1)  = d%vy
+               polymer%vel(3,iglob,k+ibeadbeg-1)  = d%vz
+               polymer%forces(1,iglob,k+ibeadbeg-1)   = d%ax
+               polymer%forces(2,iglob,k+ibeadbeg-1)   = d%ay
+               polymer%forces(3,iglob,k+ibeadbeg-1)   = d%az
+            enddo
+         end do
+      end do
+      ! sort glob to ensure the same ordering across COMM_POLYMER
+#ifdef _OPENACC
+!$acc host_data use_device(glob)
+      call thrust_sort(glob,nloc,reciprocal_work%stream)
+!$acc end host_data
+#endif
+      if (btest(tinkerdebug,tindPath).and.&
+         &max_data_recv.gt.max_data_recv_save) then
+         max_data_recv_save = max_data_recv
+16       format('iRank',I4,'; ',I6,' atoms(max) reassigned; nloc=',I10)
+         print 16,rank,max_data_recv_save,nloc
+      end if
+17    format('reassign nloc ',I9,' max_data_recv',I9)
+18    format('(a,I3,a,',I0,'I6,a,',I0,'I6,a,I7,")")')
+19    format(I3,12F11.6)
+      if (deb_Path) write(*,17) nloc,max_data_recv
+      if (tinkerdebug.gt.0.and.nproc.gt.1) then
+         call AtomDebRepart(ierr)
+         if (ierr.ne.0) then
+            write(fmt,18) nneig_send+1,nneig_recep
+            write(*,19) rank,xbegproc,xendproc,ybegproc&
+               &,yendproc,zbegproc,zendproc
+            write(* ,fmt), 'r',rank, ' send(',n_data_send,&
+               &') recv(',n_data_recv, ') nloc_s(',nloc_save
+         end if
+      end if
+
+!$acc parallel loop async
+      do i = 1,nloc
+         iglob         = glob(i)
+         loc(iglob)    = i
+         repart(iglob) = rank
+      end do
+
+      domlen(rank+1) = nloc
+
+
+      if(send_ctr) then
+         ! SEND AND RECEIVE DATA FOR CONTRACTED POLYMER
+         allocate(data_send_ctr(nbeadsproc_ctr*max_send_atom_pi&
+            &,nneig_send))
+         allocate(data_recv_ctr(nbeadsproc_ctr*max_recv_atom_pi&
+            &,nneig_recep))
+!$acc data create(data_send_ctr,data_recv_ctr) async
+
+         req_data_recv(:)  = MPI_REQUEST_NULL
+         req_data_send(:)  = MPI_REQUEST_NULL
+!$acc wait
+!$acc host_data use_device(data_recv_ctr)
+         do ineighbor = 1, nneig_recep
+            call MPI_Irecv(data_recv_ctr(1,ineighbor)&
+               &,3*n_data_recv(ineighbor)*nbeadsproc_ctr&
+               &,MPI_RPREC, pneig_recep(ineighbor), 1, get_domain_comm(),&
+               &req_data_recv(ineighbor), ierr)
+         end do
+!$acc end host_data
+
+
+!$acc parallel loop present(iglob_send,polymer_ctr%pos) async &
+!$acc         vector_length(512)
+         do ineighbor = 1, nneig_send  ! Gather Data for each neighbor domain
+!$acc loop vector
+            do i = 1, n_data_send(ineighbor)
+               iglob = iglob_send(2*(i-1)+1,ineighbor)
+!$acc loop seq
+               do k=1,nbeadsproc_ctr
+                  d_ctr => data_send_ctr((i-1)*nbeadsproc_ctr+k&
+                     &, ineighbor)
+                  d_ctr%x  = polymer_ctr%pos(1,iglob,k+ibeadbeg_ctr-1)
+                  d_ctr%y  = polymer_ctr%pos(2,iglob,k+ibeadbeg_ctr-1)
+                  d_ctr%z  = polymer_ctr%pos(3,iglob,k+ibeadbeg_ctr-1)
+               enddo
+            end do
+         end do
+
+
+!$acc wait
+!$acc host_data use_device(data_send_ctr)
+         do ineighbor = 1, nneig_send
+            call MPI_Isend(data_send_ctr(1,ineighbor)&
+               &,3*n_data_send(ineighbor)*nbeadsproc_ctr&
+               &,MPI_RPREC, pneig_send(ineighbor), 1, get_domain_comm(),&
+               &req_data_send(ineighbor), ierr)
+         end do
+!$acc end host_data
+
+         call MPI_Waitall(nneig_recep,req_data_recv&
+            &,MPI_STATUSES_IGNORE,ierr)
+         call MPI_Waitall(nneig_send ,req_data_send&
+            &,MPI_STATUSES_IGNORE, ierr)
+
+!$acc parallel loop vector_length(512) &
+!$acc         present(iglob_recv) copyin(n_data_recv)
+         do ineighbor = 1, nneig_recep
+!$acc loop vector
+            do i = 1, n_data_recv(ineighbor)
+               iglob = iglob_recv(2*(i-1)+1,ineighbor)
+!$acc loop seq
+               do k=1,nbeadsproc_ctr
+                  d_ctr => data_recv_ctr((i-1)*nbeadsproc_ctr+k&
+                     &,ineighbor)
+                  polymer_ctr%pos(1,iglob,k+ibeadbeg_ctr-1)   = d_ctr%x
+                  polymer_ctr%pos(2,iglob,k+ibeadbeg_ctr-1)   = d_ctr%y
+                  polymer_ctr%pos(3,iglob,k+ibeadbeg_ctr-1)   = d_ctr%z
+               enddo
+            end do
+         end do
+
+!$acc end data
+      endif
+
+      if(piqtb) call reassignqtb(nloc_save,max_data_recv&
+         &,nneig_recep, n_data_recv, buffer_i2, pneig_recep&
+         &,nneig_send , n_data_send, buffer_i1, pneig_send&
+         &,max_recv_atom_pi, max_send_atom_pi)
+
+!$acc end data
+
+20    call orderbuffer_gpu(.false.)
+      call update_nlocpi(nloc)
+      if (associated(active_domain)) call refresh_domain_layout(active_domain)
+
+      call timer_exit( timer_eneig,quiet_timers )
+
+   end subroutine migrate_polymer_atoms
 
 module subroutine migrate_atoms_legacy()
 

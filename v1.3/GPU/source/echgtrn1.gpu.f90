@@ -64,7 +64,7 @@ subroutine echgtrn1c_cu
    use potent
    use shunt
    use usage
-   use mdevice, only: check_launch_kernel, reciprocal_work, default_work, grid_dim
+   use mdevice, only: check_launch_kernel, reciprocal_work, grid_dim
    use reduction, only: RED_BUFF_SIZE,ered_buf1,lam_buff,vred_buff,nred_buff,&
       &reduce_energy_virial,reduce_buffer
    use virial
@@ -114,7 +114,7 @@ subroutine echgtrn1c_cu
 !$acc    ,x_s,y_s,z_s &
 !$acc    ,chgct,dmpct,mutInt,grplist,wgrp,dect,ered_buf1,lam_buff,vred_buff,nred_buff &
 !$acc    ,mcorrect_ik,mcorrect_scale,ipole,loc,x,y,z)
-      call echgtrn1s_kcu<<<gS,BLOCK_DIM,0,default_work%stream>>>&
+      call echgtrn1s_kcu<<<gS,BLOCK_DIM,0,reciprocal_work%stream>>>&
           ( ipole_s,pglob_s,loc_s,iseblst,seblst(st),x_s,y_s,z_s&
           , chgct,dmpct,mutInt,grplist,wgrp&
           , dect,ered_buf1,lam_buff,vred_buff,nred_buff&
@@ -132,7 +132,7 @@ subroutine echgtrn1c_cu
 !$acc    ,x_s,y_s,z_s &
 !$acc    ,chgct,dmpct,mutInt,grplist,wgrp,dect,ered_buf1,lam_buff,vred_buff,nred_buff &
 !$acc    ,mcorrect_ik,mcorrect_scale,ipole,loc,x,y,z)
-      call echgtrn1l_kcu<<<gS,BLOCK_DIM,0,default_work%stream>>>&
+      call echgtrn1l_kcu<<<gS,BLOCK_DIM,0,reciprocal_work%stream>>>&
           ( ipole_s,pglob_s,loc_s,ieblst,eblst(st),x_s,y_s,z_s&
           , chgct,dmpct,mutInt,grplist,wgrp&
           , dect,ered_buf1,lam_buff,vred_buff,nred_buff&
@@ -150,7 +150,7 @@ subroutine echgtrn1c_cu
 !$acc    ,x_s,y_s,z_s &
 !$acc    ,chgct,dmpct,mutInt,grplist,wgrp,dect,ered_buf1,lam_buff,vred_buff,nred_buff &
 !$acc    ,mcorrect_ik,mcorrect_scale,ipole,loc,x,y,z)
-      call echgtrn1_kcu<<<gS,BLOCK_DIM,0,default_work%stream>>>&
+      call echgtrn1_kcu<<<gS,BLOCK_DIM,0,reciprocal_work%stream>>>&
           ( ipole_s,pglob_s,loc_s,ieblst,eblst(st),x_s,y_s,z_s&
           , chgct,dmpct,mutInt,grplist,wgrp&
           , dect,ered_buf1,lam_buff,vred_buff,nred_buff&
@@ -167,9 +167,9 @@ subroutine echgtrn1c_cu
 
    if (calc_e.or.use_virial)&
       &call reduce_energy_virial(ect,g_vxx,g_vxy,g_vxz,g_vyy,g_vyz,g_vzz&
-      &,ered_buf1,default_work%queue)
+      &,ered_buf1,reciprocal_work%queue)
    if (use_lambdadyn)&
-      &call reduce_buffer(lam_buff,RED_BUFF_SIZE,delambdae,default_work%queue)
+      &call reduce_buffer(lam_buff,RED_BUFF_SIZE,delambdae,reciprocal_work%queue)
 #else
    __TINKER_FATAL__
 #endif

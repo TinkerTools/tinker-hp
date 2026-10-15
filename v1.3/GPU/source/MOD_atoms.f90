@@ -41,7 +41,6 @@ module atoms
    real(t_p) ,allocatable ,target :: x(:),y(:),z(:)
    real(t_p) ,allocatable ,target :: xold(:),yold(:),zold(:)
    real(t_p) ,allocatable :: xold_nl(:),yold_nl(:),zold_nl(:)
-!$acc declare create(n)
 end
 
 module atomsMirror

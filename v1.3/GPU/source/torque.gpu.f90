@@ -131,15 +131,15 @@ subroutine torquedgpu (trqvec,frcx,frcy,frcz,de,extract)
             ca = j
 !$acc end atomic
             if(ca.le.10) print*,'WARNING!!! torquedgpu Outside loc'
-            call distprocpart1(ib,rank,uz,.true.,x,y,z)
+            call distprocpart1(ib,rank,uz,.true.,n,x,y,z)
             print*,'a ',iipole,ia,ialoc,ib,ibloc,nbloc,uz,rank
          end if
          if (icloc.eq.0.or.icloc.gt.nbloc) then
-            call distprocpart1(ib,rank,ux,.true.,x,y,z)
+            call distprocpart1(ib,rank,ux,.true.,n,x,y,z)
             print*,'c ',iipole,ic,icloc,ib,ibloc,nbloc,ux,rank
          end if
          if (idloc.eq.0.or.idloc.gt.nbloc) then
-            call distprocpart1(id,rank,uy,.true.,x,y,z)
+            call distprocpart1(id,rank,uy,.true.,n,x,y,z)
             print*,'d ',iipole,id,idloc,ib,ibloc,nbloc,uy,rank
          end if
       end do
@@ -2220,15 +2220,15 @@ subroutine torquegpu_group (trqvec,frcx,frcy,frcz,de)
             ca = j
 !$acc end atomic
             if(ca.le.10) print*,'WARNING!!! torquegpu_group Outside loc'
-            call distprocpart1(ib,rank,uz,.true.,x,y,z)
+            call distprocpart1(ib,rank,uz,.true.,n,x,y,z)
             print*,'a ',iipole,ia,ialoc,ib,ibloc,nbloc,uz,rank
          end if
          if (icloc.eq.0.or.icloc.gt.natgroup) then
-            call distprocpart1(ib,rank,ux,.true.,x,y,z)
+            call distprocpart1(ib,rank,ux,.true.,n,x,y,z)
             print*,'c ',iipole,ic,icloc,ib,ibloc,nbloc,ux,rank
          end if
          if (idloc.eq.0.or.idloc.gt.natgroup) then
-            call distprocpart1(id,rank,uy,.true.,x,y,z)
+            call distprocpart1(id,rank,uy,.true.,n,x,y,z)
             print*,'d ',iipole,id,idloc,ib,ibloc,nbloc,uy,rank
          end if
       end do

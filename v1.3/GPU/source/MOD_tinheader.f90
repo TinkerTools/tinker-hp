@@ -117,6 +117,58 @@ module tinTypes
       real(t_p) c,dx,dy,dz,qxx,qxy,qxz,qyy,qyz,qzz
    end type
 
+   type dcdinfo_t
+      integer(kind=4) :: idcd,nframes,istart,iend,nevery
+      integer(kind=8) :: nframes_pos,iend_pos,curr_pos
+      integer(kind=8) :: filesize, framesize
+      integer(kind=4) :: natoms
+      real(kind=4) :: timestep
+      character(len=80), allocatable :: titlesdcd(:)
+      character(:), allocatable :: filename
+   end type dcdinfo_t
+
+   type trajectory_t
+      ! Copy policy: noncopyable; use the lifecycle procedures only.
+      integer :: backend = 0
+      integer :: frame_count = 0
+      logical :: is_active = .false.
+      logical :: append_mode = .false.
+      logical :: owns_dcd_file = .false.
+      character(len=240) :: filename = ''
+      type(dcdinfo_t) :: dcdinfo
+   end type trajectory_t
+
+
+   ! Copy policy: noncopyable; owns bead workspaces and trajectory lifecycles.
+   TYPE POLYMER_COMM_TYPE
+      integer :: nbeads
+      integer :: nbeadsproc
+      integer,allocatable :: nbeadsloc(:)
+      integer,allocatable :: ibead_beg(:)
+      integer,allocatable :: ibead_end(:)
+      integer,allocatable :: iproc(:)
+      integer :: index
+
+      logical :: allocated=.FALSE.
+
+      real(r_p), allocatable :: pos(:,:,:),vel(:,:,:)
+      real(r_p), allocatable :: eigpos(:,:,:),eigvel(:,:,:)
+      real(r_p), allocatable :: forces(:,:,:)
+      real(r_p), allocatable :: eigforces(:,:,:)
+      real(r_p), allocatable :: forces_slow(:,:,:)
+
+      real(r_p), allocatable :: epot(:)
+      real(r_p), allocatable :: vir(:,:,:)
+
+      real(r_p), allocatable :: dip(:,:)
+      real(r_p), allocatable :: dipind(:,:)
+
+      real(r_p) :: gyr
+
+      type(dcdinfo_t),allocatable :: dcdinfo(:)
+      type(trajectory_t),allocatable :: dcd_trajectory(:)
+   END TYPE
+
    type IntPointerContainer
       integer,pointer:: pel(:)
    end type
@@ -155,31 +207,5 @@ module tinTypes
       real(t_p),device,pointer:: pel(:,:,:)
    end type
 #endif
-
-   interface assignment (=)
-      module procedure assign_real_to_real3
-      module procedure assign_real_to_real3_red
-   end interface
-
-contains
-
-   subroutine assign_real_to_real3( left, right )
-!$acc routine
-      type(real3) ,intent(out):: left
-      real(t_p)   ,intent(in) :: right
-
-      left%x = right
-      left%y = right
-      left%z = right
-   end subroutine
-   subroutine assign_real_to_real3_red( left, right )
-!$acc routine
-      type(real3_red),intent(out):: left
-      real(r_p)      ,intent(in) :: right
-
-      left%x = right
-      left%y = right
-      left%z = right
-   end subroutine
 
 end module

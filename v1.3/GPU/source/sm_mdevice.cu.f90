@@ -17,12 +17,16 @@ submodule (mdevice) mdevice_diagnostics
 
 contains
 
-   module subroutine check_launch_kernel(message)
+   module subroutine check_launch_kernel(message, wait_for_completion)
       implicit none
       character(*), optional, intent(in) :: message
+      logical, optional, intent(in) :: wait_for_completion
       integer :: error_code
+      logical :: synchronize
 
-      if (tinkerdebug > 0) then
+      synchronize = tinkerdebug > 0
+      if (present(wait_for_completion)) synchronize = synchronize .or. wait_for_completion
+      if (synchronize) then
          error_code = cudaDeviceSynchronize()
       else
          error_code = cudaGetLastError()

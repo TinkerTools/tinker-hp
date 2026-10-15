@@ -255,7 +255,7 @@ subroutine kdisp(init,istep)
          iglob     = ineignl(i)
          dispcount = nbdisp(iglob)
          if (csix(iglob) .ne. 0.0_ti_p) then
-            !call distprocpart1(iglob,rank,d,.true.,x,y,z)
+            !call distprocpart1(iglob,rank,d,.true.,n,x,y,z)
             !if (repart(iglob).eq.rank) d = 0.0_ti_p
             !if (d*d.le.(dbuf2/4)) then
 !$acc atomic capture

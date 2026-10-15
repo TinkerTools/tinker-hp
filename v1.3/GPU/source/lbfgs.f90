@@ -43,21 +43,20 @@
 !
 #include "tinker_precision.h"
 subroutine lbfgs (n,x0,minimum,grdmin,fgvalue,optsave)
-   use domdec
-   use parallel, only: get_domain_comm
-   use inform
+   use domdec  , only: glob, nloc, nproc, rank
+   use parallel, only: get_domain_comm, replicate
+   use inform  , only: deb_Path, iprint, iwrite
    use iounit
-   use keys
-   use linmin
-   use math
-   use minima
-   use interfaces,only: search
-   use parallel, only: sendvecmin
-   use output
-   use scales
-   use usage
-   use tinheader ,only:ti_p,re_p
-   use mpi
+   use keys  , only: keyline, nkey
+   use linmin, only: angmax, cappa, intmax, slpmax, stpmax, stpmin
+   use math  , only: radian
+   use minima, only: fctmin, maxiter, nextiter
+   use interfaces, only: search
+   use output, only: coordtype
+   use scales, only: scale, set_scale
+   use usage , only: use
+   use tinheader, only: re_p
+   use mpi   , only: MPI_ALLREDUCE, MPI_IN_PLACE, MPI_RPREC, MPI_SUM
    implicit none
    integer maxsav
    parameter (maxsav=20)
@@ -309,8 +308,8 @@ subroutine lbfgs (n,x0,minimum,grdmin,fgvalue,optsave)
       do j = 1, muse
          k = k - 1
          if (k .eq. 0)  k = msav
-         call sendvecmin(s(:,k))
-         call sendvecmin(y(:,k))
+         call replicate(glob(1:nloc), s(:,k), 3)
+         call replicate(glob(1:nloc), y(:,k), 3)
 !$acc serial async
          alpha(k) = 0.0_re_p
 !$acc end serial
@@ -393,8 +392,8 @@ subroutine lbfgs (n,x0,minimum,grdmin,fgvalue,optsave)
             g_old(3*(iglob-1)+j) = g (3*(iglob-1)+j)
          end do
       end do
-      call sendvecmin(x_old)
-      call sendvecmin(g_old)
+      call replicate(glob(1:nloc), x_old, 3)
+      call replicate(glob(1:nloc), g_old, 3)
 !
 !     perform line search along the new conjugate direction
 !

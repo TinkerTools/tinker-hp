@@ -12,19 +12,8 @@
 
 module status
    use iso_c_binding, only: c_int
+   use status_types, only: status_t, status_ok, status_missing_argument, status_invalid_argument, StatusDeviceError
    implicit none
-
-   enum, bind(C)
-      enumerator :: status_ok = 0
-      enumerator :: status_missing_argument = 1
-      enumerator :: status_invalid_argument = 2
-      enumerator :: StatusDeviceError = 3
-   end enum
-
-   type :: status_t
-      integer(c_int)     :: code    = status_ok
-      character(len=240) :: message = ''
-   end type status_t
 
    interface
       module subroutine set_status(status_value, code, message)

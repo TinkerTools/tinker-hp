@@ -193,7 +193,7 @@ subroutine etortor1
 !
 !     check for inverted chirality at the central atom
 !
-            call chkttor (ib,ic,id,sign,value1,value2,x,y,z,&
+            call chkttor (ib,ic,id,n,sign,value1,value2,x,y,z,&
                &type,atomic)
 !
 !     use bicubic interpolation to compute spline values

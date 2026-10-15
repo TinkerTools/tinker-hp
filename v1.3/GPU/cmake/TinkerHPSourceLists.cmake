@@ -1,6 +1,7 @@
 set(MOD_SRCS
   source/MOD_tinheader.f90
   source/MOD_sizes.f90
+  source/MOD_status_types.f90
   source/MOD_status.f90
   source/sm_status.f90
   source/MOD_restart.f90
@@ -131,7 +132,7 @@ set(MOD_SRCS
   source/MOD_precis.f90
   source/MOD_ptable.f90
   source/MOD_scaling.f90
-  source/MOD_precompute_polegpu.f90
+  source/MOD_precompute_pole.gpu.f90
   source/sm_pme.gpu.f90
   source/MOD_qtb.f90
   source/MOD_reduction.f90
@@ -147,10 +148,10 @@ set(MOD_SRCS
   source/MOD_spectra.f90
   source/MOD_strbnd.f90
   source/MOD_strtor.f90
-  source/MOD_subDeriv.f90
-  source/MOD_subMemory.f90
-  source/MOD_subInform.f90
-  source/MOD_subAtoms.f90
+  source/sm_deriv.f90
+  source/sm_memory.f90
+  source/sm_inform.f90
+  source/sm_atoms.f90
   source/MOD_timestat.f90
   source/MOD_titles.f90
   source/MOD_torpot.f90
@@ -199,7 +200,7 @@ set(F_SRCS
   source/boundspi.f90
   source/calendar.f90
   source/chkpole.f90
-  source/chkpolegpu.f90
+  source/chkpole.gpu.f90
   source/chkring.f90
   source/chkxyz.f90
   source/cholesky.f90
@@ -216,78 +217,78 @@ set(F_SRCS
   source/diis.f90
   source/domdecstuff.f90
   source/dcinduce_pme.f90
-  source/dcinduce_pmegpu.f90
+  source/dcinduce_pme.gpu.f90
   source/dcinduce_pme2.f90
-  source/dcinduce_pme2gpu.f90
+  source/dcinduce_pme2.gpu.f90
   source/dcinduce_shortreal.f90
-  source/dcinduce_shortrealgpu.f90
+  source/dcinduce_shortreal.gpu.f90
   source/eamd1.f90
   source/eangang.f90
   source/eangang1.f90
   source/eangang3.f90
   source/eangle.f90
   source/eangle1.f90
-  source/eangle1gpu.f90
+  source/eangle1.gpu.f90
   source/eangle3.f90
-  source/eangle3gpu.f90
+  source/eangle3.gpu.f90
   source/eangtor.f90
   source/eangtor1.f90
   source/eangtor3.f90
   source/ebond.f90
   source/ebond1.f90
-  source/ebond1gpu.f90
+  source/ebond1.gpu.f90
   source/ebond3.f90
-  source/ebond3gpu.f90
-  source/echarge1gpu.f90
-  source/echarge3gpu.f90
+  source/ebond3.gpu.f90
+  source/echarge1.gpu.f90
+  source/echarge3.gpu.f90
   source/echgtrn.f90
   source/echgtrn1.f90
-  source/echgtrn1gpu.f90
+  source/echgtrn1.gpu.f90
   source/echgtrn3.f90
-  source/echgtrn3gpu.f90
+  source/echgtrn3.gpu.f90
   source/edisp.f90
   source/edisp1.f90
   source/edisp3.f90
   source/efld0_direct.f90
-  source/efld0_directgpu.f90
+  source/efld0_direct.gpu.f90
   source/egeom.f90
   source/egeom1.f90
-  source/egeom1gpu.f90
+  source/egeom1.gpu.f90
   source/egeom3.f90
-  source/egeom3gpu.f90
-  source/ehal1gpu.f90
-  source/ehal3gpu.f90
+  source/egeom3.gpu.f90
+  source/ehal1.gpu.f90
+  source/ehal3.gpu.f90
   source/eimprop.f90
   source/eimprop1.f90
-  source/eimprop1gpu.f90
+  source/eimprop1.gpu.f90
   source/eimprop3.f90
   source/eimptor.f90
   source/eimptor1.f90
-  source/eimptor1gpu.f90
+  source/eimptor1.gpu.f90
   source/eimptor3.f90
-  source/elj1gpu.f90
-  source/elj3gpu.f90
-  source/eliaison1gpu.f90
+  source/elj1.gpu.f90
+  source/elj3.gpu.f90
+  source/eliaison1.gpu.f90
   source/empole1_group.f90
   source/empole3_group.f90
-  source/empole1gpu.f90
-  source/empole3gpu.f90
+  source/empole1.gpu.f90
+  source/empole3.gpu.f90
   source/energy.f90
   source/eopbend.f90
   source/eopbend1.f90
-  source/eopbend1gpu.f90
+  source/eopbend1.gpu.f90
   source/eopbend3.f90
-  source/eopbend3gpu.f90
+  source/eopbend3.gpu.f90
   source/eopdist.f90
   source/eopdist1.f90
   source/eopdist3.f90
   source/epitors.f90
   source/epitors1.f90
-  source/epitors1gpu.f90
+  source/epitors1.gpu.f90
   source/epitors3.f90
-  source/epolar1gpu.f90
+  source/epolar1.gpu.f90
   source/epolar1_group.f90
-  source/epolar3gpu.f90
+  source/epolar3.gpu.f90
   source/epolar3_group.f90
   source/erepel.f90
   source/erepel1.f90
@@ -295,25 +296,25 @@ set(F_SRCS
   source/esmd1.f90
   source/estrbnd.f90
   source/estrbnd1.f90
-  source/estrbnd1gpu.f90
+  source/estrbnd1.gpu.f90
   source/estrbnd3.f90
   source/estrtor.f90
   source/estrtor1.f90
-  source/estrtor1gpu.f90
+  source/estrtor1.gpu.f90
   source/estrtor3.f90
   source/etors.f90
   source/etors1.f90
-  source/etors1gpu.f90
+  source/etors1.gpu.f90
   source/etors3.f90
   source/etortor.f90
   source/etortor1.f90
-  source/etortor1gpu.f90
+  source/etortor1.gpu.f90
   source/etortor3.f90
   source/eurey.f90
   source/eurey1.f90
-  source/eurey1gpu.f90
+  source/eurey1.gpu.f90
   source/eurey3.f90
-  source/eurey3gpu.f90
+  source/eurey3.gpu.f90
   source/evcorr.f90
   source/extra.f90
   source/extra1.f90
@@ -383,15 +384,15 @@ set(F_SRCS
   source/molecule.f90
   source/mutate.f90
   source/nblist.f90
-  source/nblistgpu.f90
+  source/nblist.gpu.f90
   source/nblist_build.gpu.f90
   source/newinduce_pme.f90
   source/newinduce_pme2.f90
   source/newinduce_group.f90
   source/newinduce_shortreal.f90
-  source/newinduce_pmegpu.f90
-  source/newinduce_pme2gpu.f90
-  source/newinduce_shortrealgpu.f90
+  source/newinduce_pme.gpu.f90
+  source/newinduce_pme2.gpu.f90
+  source/newinduce_shortreal.gpu.f90
   source/nextarg.f90
   source/nexttext.f90
   source/nspline.f90
@@ -402,7 +403,7 @@ set(F_SRCS
   source/optsave.f90
   source/plumed.f90
   source/pmestuff.f90
-  source/pmestuffgpu.f90
+  source/pmestuff.gpu.f90
   source/precise.f90
   source/pressure.f90
   source/prime.f90
@@ -415,7 +416,7 @@ set(F_SRCS
   source/respa1.f90
   source/rings.f90
   source/rotpole.f90
-  source/rotpolegpu.f90
+  source/rotpole.gpu.f90
   source/search.f90
   source/sort.f90
   source/rattle.f90
@@ -425,10 +426,10 @@ set(F_SRCS
   source/switch_group.f90
   source/temper.f90
   source/tmatxb_pme.f90
-  source/tmatxb_pmegpu.f90
+  source/tmatxb_pme.gpu.f90
   source/torphase.f90
   source/torque.f90
-  source/torquegpu.f90
+  source/torque.gpu.f90
   source/torsions.f90
   source/trimtext.f90
   source/unitcell.f90

@@ -265,9 +265,9 @@ subroutine elj3c_ac
       i     = loc(iglob)
       !iv    = ired(iglob)
       it    = jvdw(iglob)
-      xi    = x(i)
-      yi    = y(i)
-      zi    = z(i)
+      xi    = x(iglob)
+      yi    = y(iglob)
+      zi    = z(iglob)
       muti  = mutInt(iglob)
 !        usei  = (use(iglob) .or. use(iv))
       if (skipvdw12) then
@@ -295,9 +295,9 @@ subroutine elj3c_ac
             end do
             if (ik12) cycle
          end if
-         xr    = xi - x(kbis)
-         yr    = yi - y(kbis)
-         zr    = zi - z(kbis)
+         xr    = xi - x(kglob)
+         yr    = yi - y(kglob)
+         zr    = zi - z(kglob)
          if (use_bounds) call image_inl (xr,yr,zr)
          rik2  = xr*xr + yr*yr + zr*zr
 !
@@ -350,6 +350,7 @@ subroutine elj3c_cu
    use energi    ,only: ev=>ev_r,calc_e
    use group     ,only: use_group,grplist,wgrp,ngrp
    use inform    ,only: deb_Path,minmaxone
+   use interfaces,only: spatialOrder_pos
    use kvdws     ,only: radv,epsv
    use kvdwpr    ,only: vdwpr_l
    use mutant    ,only: mutInt,lambda,vlambda,bvlambda&
@@ -387,7 +388,7 @@ subroutine elj3c_cu
 
    call load_nbl2mod(vdw_nbl)
 
-   call spatialOrder_pos
+   call spatialOrder_pos(channel=direct_work)
 
    xbeg = xbegproc(rank+1)
    xend = xendproc(rank+1)

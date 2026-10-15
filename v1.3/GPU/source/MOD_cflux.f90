@@ -35,24 +35,26 @@ module cflux
    integer winbflx,winaflx,winabflx
 
    interface
-      module subroutine adflux1(dcf,de)
+      module subroutine adflux1(dcf,de,channel)
          real(r_p) dcf(*),de(*)
+         type(channel_t), intent(in) :: channel
       end subroutine
       module subroutine adflux2(dcf,de,channel)
          mdyn_rtyp dcf(*),de(*)
-         type(channel_t), intent(in), optional :: channel
+         type(channel_t), intent(in) :: channel
       end subroutine
    end interface
 
    interface
-      module subroutine dcflux1 (pot,dcf)
+      module subroutine dcflux1 (pot,dcf,channel)
          real(t_p) pot(*)
          real(r_p) dcf(*)
+         type(channel_t), intent(in) :: channel
       end subroutine
       module subroutine dcflux2 (pot,dcf,channel)
          real(t_p),intent(in   ):: pot(*)
          mdyn_rtyp,intent(inout):: dcf(*)
-         type(channel_t), intent(in), optional :: channel
+         type(channel_t), intent(in) :: channel
       end subroutine
    end interface
 

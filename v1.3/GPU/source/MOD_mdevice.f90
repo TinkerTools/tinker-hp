@@ -25,7 +25,7 @@ module mdevice
    logical, protected :: capabilities_selected = .false.
    integer, protected :: gpu_sm_count = 1
    integer, protected :: cores_per_sm = 1
-   type(channel_t), protected, target :: direct_work, reciprocal_work, default_work, sync_work
+   type(channel_t), protected, target :: direct_work, reciprocal_work, sync_work
    type(status_t), protected :: platform_error
 
    public :: bind_device, initialize_device
@@ -33,7 +33,7 @@ module mdevice
    public :: begin_direct_overlap, end_direct_overlap
    public :: disable_overlap
    public :: grid_dim, warning_text
-   public :: init_legacy, publish_warning, set_gpu_config
+   public :: publish_warning, set_gpu_config
    public :: device_number, device_name, precomp_allowed
    public :: check_launch_kernel, record_platform_error, query_platform_status
 
@@ -77,8 +77,9 @@ module mdevice
          character(*), intent(in) :: message
       end subroutine record_platform_error
 
-      module subroutine check_launch_kernel(message)
+      module subroutine check_launch_kernel(message, wait_for_completion)
          character(*), optional, intent(in) :: message
+         logical, optional, intent(in) :: wait_for_completion
       end subroutine check_launch_kernel
 
       module subroutine query_platform_status(status_value)
@@ -94,10 +95,6 @@ module mdevice
       module function warning_text() result(text)
          character(len=128) :: text
       end function warning_text
-
-      module subroutine init_legacy(platform_ready)
-         logical, intent(in), optional :: platform_ready
-      end subroutine init_legacy
 
       module subroutine publish_warning
       end subroutine publish_warning

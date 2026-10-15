@@ -297,7 +297,7 @@ subroutine kcharge(init,istep)
       ionloc = chglist(iglob)
 
       if (ionloc.eq.0) cycle
-      !call distprocpart1(iglob,rank,d,.true.,x,y,z)
+      !call distprocpart1(iglob,rank,d,.true.,n,x,y,z)
       !if (repart(iglob).eq.rank) d = 0.0_ti_p
       !if (d*d.le.(dcut2/4)) then
 !$acc atomic capture

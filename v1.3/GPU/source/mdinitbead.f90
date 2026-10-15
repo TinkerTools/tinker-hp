@@ -41,7 +41,7 @@ subroutine mdinitbead(dt,polymer)
    use uprior
    use usage
    use random_mod
-   use commstuffpi, only: comm_for_normal_modes
+   use parallel, only: exchange_polymer_normal_modes
    use restart, only: read_restart
    use status, only: failed, status_t
 
@@ -236,7 +236,7 @@ subroutine mdinitbead(dt,polymer)
       call update_nlocpi(nloc)
    endif
 
-   call comm_for_normal_modes(polymer,polymer%pos&
+   call exchange_polymer_normal_modes(polymer,polymer%pos&
       &,polymer%vel,polymer%forces,polymer%forces_slow )
    call update_normal_modes_pi(polymer)
 

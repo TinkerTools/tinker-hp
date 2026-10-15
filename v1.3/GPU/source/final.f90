@@ -45,7 +45,7 @@ subroutine final(final_status)
    use mdstate
    use mlpot, only: release_mlpot_buffers
    use mpi
-   use mdevice, only: default_work, direct_work, finalize_device, phase, phase_active, &
+   use mdevice, only: direct_work, finalize_device, phase, phase_active, &
       &reciprocal_work, sync_work
    use mdtraj , only: close_trajectory, dynamic_trajectory
    use mpole
@@ -70,7 +70,7 @@ subroutine final(final_status)
 #ifdef PLUMED
    use plumed, only: lplumed, ncount, plumed_finalize
 #endif
-   use parallel, only: active_polar_tickets
+   use parallel, only: active_polar_tickets, release_migration_workspace
 #ifdef _OPENACC
    use cudafor
    use thrust, only: thrust_clear_cache_memory
@@ -179,6 +179,7 @@ subroutine final(final_status)
    call delete_energi_on_device()
    call delete_vir_device()
 !$acc wait
+   call release_migration_workspace()
 !
 !     Free MPI shared memory segments before platform teardown
 !
@@ -216,9 +217,8 @@ subroutine final(final_status)
       end if
    end if
    if (phase == phase_active .or. direct_work%queue >= 0 .or. &
-      &reciprocal_work%queue >= 0 .or. default_work%queue >= 0 .or. &
-      &sync_work%queue >= 0 .or. direct_work%stream /= 0 .or. &
-      &reciprocal_work%stream /= 0 .or. default_work%stream /= 0 .or. &
+      &reciprocal_work%queue >= 0 .or. sync_work%queue >= 0 .or. &
+      &direct_work%stream /= 0 .or. reciprocal_work%stream /= 0 .or. &
       &sync_work%stream /= 0) then
       write (iout,'(/,a)') 'Finalization left an active GPU execution channel'
       final_failed = .true.
@@ -375,14 +375,17 @@ subroutine final(final_status)
    if (allocated(pbig_send))       deallocate (pbig_send)
    if (allocated(pbigshort_recep)) deallocate (pbigshort_recep)
    if (allocated(pbigshort_send))  deallocate (pbigshort_send)
-   if (allocated(loc))             deallocate (loc)
-   if (allocated(glob))            deallocate (glob)
-   if (allocated(locrec))          deallocate (locrec)
-   if (allocated(globrec))         deallocate (globrec)
+   ! PMECore index arrays retain their device mapping until process exit.
+   if (.not.use_pmecore) then
+      if (allocated(loc))       deallocate (loc)
+      if (allocated(glob))      deallocate (glob)
+      if (allocated(locrec))    deallocate (locrec)
+      if (allocated(globrec))   deallocate (globrec)
+      if (allocated(repartrec)) deallocate (repartrec)
+      if (allocated(repart))    deallocate (repart)
+   end if
    if (allocated(prec_recep))      deallocate (prec_recep)
    if (allocated(prec_send))       deallocate (prec_send)
-   if (allocated(repartrec))       deallocate (repartrec)
-   if (allocated(repart))          deallocate (repart)
    if (allocated(bufbeg))          deallocate (bufbeg)
    if (allocated(bufbegpole))      deallocate (bufbegpole)
    if (allocated(bufbegrec))       deallocate (bufbegrec)
@@ -523,7 +526,7 @@ subroutine final(final_status)
       &final_failed = .true.
    if (final_failed) then
       write (iout,'(/,a)') 'finalization owner cleanup incomplete'
-   else
+   else if (ranktot.eq.0) then
       write (iout,'(/,a)') 'finalization owner cleanup complete'
    end if
    if (present(final_status) .and. final_failed) then
@@ -538,7 +541,7 @@ subroutine final(final_status)
 !     print a final status message before exiting TINKER-HP
 !
    if (.not.final_failed .and. .not.final_message_suppressed .and. &
-      &rank.eq.0) write (iout,10)
+      &ranktot.eq.0) write (iout,10)
 10 format (/,' TINKER-HP is Exiting following Normal Termination')
 !
 !     may need a pause to avoid closing the execution window

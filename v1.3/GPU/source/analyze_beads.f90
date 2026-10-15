@@ -55,7 +55,8 @@ subroutine analyze_beads_bis(raw_cli,status_value)
    use config, only: config_t, raw_cli_t
    use initialization, only: analyze_beads_application, initialize
    use mdevice, only: channel_t, finalize_device
-   use parallel, only: parallel_t, release, assign_direct, assign_reciprocal
+   use parallel, only: parallel_t, release, assign_direct, assign_reciprocal, &
+      &exchange_polymer_gradient_state
    use status, only: failed, status_t
    use structure, only: read_frame, structure_t
    use iounit
@@ -102,9 +103,6 @@ subroutine analyze_beads_bis(raw_cli,status_value)
       &platform, reciprocal_work, status_value)
    if (failed(status_value)) return
    opened_beads = 0
-   ! Preserve the historical parser position after common initialization has
-   ! loaded the primary structure directly from the captured command line.
-   call nextarg(string,exist)
 !
 !     call nblist(0)
 
@@ -299,7 +297,7 @@ subroutine analyze_beads_bis(raw_cli,status_value)
 
          if(contract .and. nbeads_ctr>1) then
             call contract_polymer(polymer_main,polymer_ctr)
-            call comm_for_gradient(polymer_ctr,.FALSE.,.FALSE.)
+            call exchange_polymer_gradient_state(polymer_ctr,.FALSE.,.FALSE.)
 
             call compute_energy_beads(epot,polymer_ctr&
                &,.not.centroid_longrange, .TRUE., .FALSE.&  ![LONG, INT  , SHORT]

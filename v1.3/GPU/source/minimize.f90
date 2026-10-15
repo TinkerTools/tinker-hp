@@ -63,7 +63,7 @@ subroutine minimize_bis(raw_cli,status_value)
    use tinheader ,only: ti_p,re_p
    use mdevice, only: channel_t, finalize_device
    use initialization, only: initialize, minimize_application
-   use parallel, only: parallel_t, release, sendallpos, assign_direct
+   use parallel, only: parallel_t, release, gather_positions, assign_direct
    use structure, only: structure_t
    use status, only: status_t, failed
    use mpi
@@ -216,7 +216,7 @@ subroutine minimize_bis(raw_cli,status_value)
 !
 !      if (analytic) then
 !         call commstep
-   call sendallpos
+   call gather_positions
    call reCast_position
    call assign_direct
    call reassignpme(.false.)
@@ -240,7 +240,7 @@ subroutine minimize_bis(raw_cli,status_value)
    if(deb_Energy)call info_energy(rank)
 
    gnorm = 0.0_re_p
-   call normp(de_tot(1:,1),dr_stride3,gnorm)
+   call normp(de_tot(1:,1),3*nloc,gnorm)
 !!$acc parallel loop collapse(2) async present(de_tot)
 !      do i = 1, nloc; do j = 1, 3
 !         iglob = glob(i)
@@ -347,7 +347,7 @@ function minimiz1 (xx,g)
    use usage
    use utils  ,only:set_to_zero1m
    use mdevice,only:reciprocal_work
-   use parallel,only: sendallpos, assign_direct
+   use parallel,only: gather_positions, assign_direct
    use mpi
    implicit none
    integer i,iglob,ierr
@@ -382,7 +382,7 @@ function minimiz1 (xx,g)
    end do
 !
 !      call commstep
-   call sendallpos
+   call gather_positions
    call reCast_position
    call assign_direct
    call reassignpme(.false.)

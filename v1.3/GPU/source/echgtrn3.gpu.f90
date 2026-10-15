@@ -66,7 +66,7 @@ subroutine echgtrn3c_cu
    use shunt
    use tinheader
    use usage
-   use mdevice, only: check_launch_kernel, reciprocal_work, default_work, grid_dim
+   use mdevice, only: check_launch_kernel, reciprocal_work, grid_dim
    use reduction, only: ered_buf1,lam_buff,vred_buff,nred_buff,&
       &reduce_energy_action
    use virial
@@ -119,7 +119,7 @@ subroutine echgtrn3c_cu
 !!$acc    ,x_s,y_s,z_s
 !!$acc    ,chgct,dmpct,grplist,wgrp,dect,ered_buf1,vred_buff,nred_buff
 !!$acc    ,mcorrect_ik,mcorrect_scale,ipole,loc,x,y,z)
-!      call echgtrn3l_kcu<<<gS,BLOCK_DIM,0,default_work%stream>>>
+!      call echgtrn3l_kcu<<<gS,BLOCK_DIM,0,reciprocal_work%stream>>>
 !           ( ipole_s,pglob_s,loc_s,ieblst,eblst,x_s,y_s,z_s,chgct&
 !           , dmpct,mutInt,grplist,wgrp&
 !           , dect,ered_buf1,lam_buff,vred_buff,nred_buff&
@@ -137,7 +137,7 @@ subroutine echgtrn3c_cu
 !$acc    ,x_s,y_s,z_s &
 !$acc    ,chgct,dmpct,grplist,wgrp,mutInt,dect,ered_buf1,lam_buff,vred_buff,nred_buff &
 !$acc    ,mcorrect_ik,mcorrect_scale,ipole,loc,x,y,z)
-      call echgtrn3_kcu<<<gS,BLOCK_DIM,0,default_work%stream>>>&
+      call echgtrn3_kcu<<<gS,BLOCK_DIM,0,reciprocal_work%stream>>>&
           ( ipole_s,pglob_s,loc_s,ieblst,eblst(st),x_s,y_s,z_s&
           , chgct,dmpct,mutInt,grplist,wgrp&
           , dect,ered_buf1,lam_buff,vred_buff,nred_buff&
@@ -152,7 +152,7 @@ subroutine echgtrn3c_cu
 !$acc end host_data
    end if
 
-   call reduce_energy_action(ect,nect,ered_buf1,default_work%queue)
+   call reduce_energy_action(ect,nect,ered_buf1,reciprocal_work%queue)
 #else
    __TINKER_FATAL__
 #endif

@@ -267,8 +267,13 @@ module subroutine assign_direct()
    end if
 
    call orderbuffer_gpu(.true.)
+   if (associated(active_domain)) call refresh_domain_layout(active_domain)
    call timer_exit(timer_eneig,quiet_timers)
 end subroutine assign_direct
+
+module subroutine initialize_direct_communication()
+   call orderbuffer(.true.)
+end subroutine initialize_direct_communication
 
 module subroutine assign_reciprocal()
    use atoms, only: x_primary => x, y_primary => y, z_primary => z
@@ -286,10 +291,8 @@ module subroutine assign_reciprocal()
 
    if (use_pmecore) then
       process_count = ndir
-      if (nrec.eq.1) return
    else
       process_count = nproc
-      if (nproc.eq.1) return
    end if
    if (deb_Path) print*, 'assign_reciprocal'
    call timer_enter(timer_eneig)
@@ -317,17 +320,24 @@ module subroutine assign_reciprocal()
          end if
       end do
    end do
-   call orderbufrec_gpu
+   if (nproc.eq.1) then
+!$acc wait
+!$acc update self(repartrec(1:n))
+      call orderbufferrec
+   else
+      call orderbufrec_gpu
+   end if
    call timer_exit(timer_eneig,quiet_timers)
 end subroutine assign_reciprocal
 
-module subroutine polar_post_comm_legacy(ticket, nrhs, values, use_short_range, send_values, group_comm)
+module subroutine polar_post_comm_legacy(ticket, nrhs, values, use_short_range, send_values, group_comm, channel)
    type(polar_comm_t), intent(inout) :: ticket
    integer, intent(in) :: nrhs
    real(t_p), intent(inout) :: values(3,nrhs,*)
    logical, intent(in) :: use_short_range
    real(t_p), intent(inout) :: send_values(3,nrhs,*)
    logical, intent(in) :: group_comm
+   type(channel_t), intent(in) :: channel
    integer, allocatable :: receive_requests(:), send_requests(:)
 
    if (ticket%active .or. ticket%dip_active) error stop 'polar exchange ticket is already active'
@@ -347,8 +357,8 @@ module subroutine polar_post_comm_legacy(ticket, nrhs, values, use_short_range, 
    if (ticket%use_group) then
       call post_group_comm(nrhs, values, receive_requests, send_requests)
    else if (ticket%use_short_range) then
-      call commdirdirshort(nrhs, 1, send_values, receive_requests, send_requests)
-      call commdirdirshort(nrhs, 0, values, receive_requests, send_requests)
+      call commdirdirshort(nrhs, 1, send_values, receive_requests, send_requests, channel)
+      call commdirdirshort(nrhs, 0, values, receive_requests, send_requests, channel)
    else
       call commdirdirgpu(nrhs, 0, values, receive_requests, send_requests)
       call commdirdirgpu(nrhs, 1, send_values, receive_requests, send_requests)
@@ -358,11 +368,12 @@ module subroutine polar_post_comm_legacy(ticket, nrhs, values, use_short_range, 
    active_polar_ticket_count = active_polar_ticket_count + 1
 end subroutine polar_post_comm_legacy
 
-module subroutine polar_finish_legacy(ticket, nrhs, values, status_value)
+module subroutine polar_finish_legacy(ticket, nrhs, values, status_value, channel)
    type(polar_comm_t), intent(inout) :: ticket
    integer, intent(in) :: nrhs
    real(t_p), intent(inout) :: values(3,nrhs,*)
    type(status_t), intent(out), optional :: status_value
+   type(channel_t), intent(in) :: channel
 
    if (.not.ticket%active) error stop 'polar exchange ticket is not active'
    if (nproc.eq.1) then
@@ -373,7 +384,7 @@ module subroutine polar_finish_legacy(ticket, nrhs, values, status_value)
    if (ticket%use_group) then
       call finish_group_comm(ticket%recv_req, ticket%send_req)
    else if (ticket%use_short_range) then
-      call commdirdirshort(nrhs, 2, values, ticket%recv_req, ticket%send_req)
+      call commdirdirshort(nrhs, 2, values, ticket%recv_req, ticket%send_req, channel)
    else
       call commdirdirgpu(nrhs, 2, values, ticket%recv_req, ticket%send_req)
    end if
@@ -443,10 +454,11 @@ module subroutine polar_finish_dip_comm_legacy(ticket, nrhs, diprec, dip, &
    call report_polar_finish(status_value)
 end subroutine polar_finish_dip_comm_legacy
 
-module subroutine polar_post_receives_direct_legacy(ticket, nrhs, values)
+module subroutine polar_post_receives_direct_legacy(ticket, nrhs, values, channel)
    type(polar_comm_t), intent(inout) :: ticket
    integer, intent(in) :: nrhs
    real(t_p), intent(inout) :: values(3,nrhs,*)
+   type(channel_t), intent(in) :: channel
 
    if (ticket%active .or. ticket%dip_active .or. ticket%recdir_active) &
       &error stop 'polar exchange ticket is already active'
@@ -455,26 +467,28 @@ module subroutine polar_post_receives_direct_legacy(ticket, nrhs, values)
    ticket%send_req = MPI_REQUEST_NULL
    ticket%active = .true.
    active_polar_ticket_count = active_polar_ticket_count + 1
-   if (nproc > 1) call commdirdir(nrhs, 0, values, ticket%recv_req, ticket%send_req)
+   if (nproc > 1) call commdirdir(nrhs, 0, values, ticket%recv_req, ticket%send_req, channel)
 end subroutine polar_post_receives_direct_legacy
 
-module subroutine polar_post_sends_direct_legacy(ticket, nrhs, values)
+module subroutine polar_post_sends_direct_legacy(ticket, nrhs, values, channel)
    type(polar_comm_t), intent(inout) :: ticket
    integer, intent(in) :: nrhs
    real(t_p), intent(inout) :: values(3,nrhs,*)
+   type(channel_t), intent(in) :: channel
 
    if (.not.ticket%active) error stop 'polar exchange ticket is not active'
-   if (nproc > 1) call commdirdir(nrhs, 1, values, ticket%recv_req, ticket%send_req)
+   if (nproc > 1) call commdirdir(nrhs, 1, values, ticket%recv_req, ticket%send_req, channel)
 end subroutine polar_post_sends_direct_legacy
 
-module subroutine polar_finish_direct_legacy(ticket, nrhs, values, status_value)
+module subroutine polar_finish_direct_legacy(ticket, nrhs, values, status_value, channel)
    type(polar_comm_t), intent(inout) :: ticket
    integer, intent(in) :: nrhs
    real(t_p), intent(inout) :: values(3,nrhs,*)
    type(status_t), intent(out), optional :: status_value
+   type(channel_t), intent(in) :: channel
 
    if (.not.ticket%active) error stop 'polar exchange ticket is not active'
-   if (nproc > 1) call commdirdir(nrhs, 2, values, ticket%recv_req, ticket%send_req)
+   if (nproc > 1) call commdirdir(nrhs, 2, values, ticket%recv_req, ticket%send_req, channel)
    call reset_polar_ticket(ticket)
    call report_polar_finish(status_value)
 end subroutine polar_finish_direct_legacy
@@ -539,6 +553,8 @@ module subroutine reset_polar_ticket(ticket)
    if (allocated(ticket%send_req)) deallocate(ticket%send_req)
    if (allocated(ticket%dip_recv_req)) deallocate(ticket%dip_recv_req)
    if (allocated(ticket%dip_send_req)) deallocate(ticket%dip_send_req)
+   if (allocated(ticket%recdir_recv_req)) deallocate(ticket%recdir_recv_req)
+   if (allocated(ticket%recdir_send_req)) deallocate(ticket%recdir_send_req)
    if (ticket%active .or. ticket%dip_active .or. ticket%recdir_active) then
       if (active_polar_ticket_count > 0) then
          active_polar_ticket_count = active_polar_ticket_count - 1
@@ -548,90 +564,277 @@ module subroutine reset_polar_ticket(ticket)
    ticket%active = .false.
    ticket%dip_active = .false.
    ticket%recdir_active = .false.
+   ticket%recdir_send_phase = .false.
+   ticket%recdir_receive_phase = .false.
    ticket%use_short_range = .false.
    ticket%use_group = .false.
    ticket%use_gpu = .false.
 end subroutine reset_polar_ticket
 
-module subroutine polar_post_recdir_receive_legacy(ticket, nrhs, buffer, channel)
+module subroutine polar_post_recdir(ticket, nrhs, values, receive_buffer, send_buffer, channel, use_gpu, send_phase)
    type(polar_comm_t), intent(inout) :: ticket
    integer, intent(in) :: nrhs
-   real(t_p), intent(inout) :: buffer(3,nrhs,*)
+   real(t_p), intent(in) :: values(3,nrhs,*)
+   real(t_p), intent(inout) :: receive_buffer(3,nrhs,*), send_buffer(3,nrhs,*)
    type(channel_t), intent(in) :: channel
-   integer :: i, ierr, peer, tag
+   logical, intent(in), optional :: use_gpu
+   logical, intent(in), optional :: send_phase
+   logical :: split_layout, gpu_path, send_path, receive_path
+   integer :: i, j, k, l, ierr, peer, tag, lenbuf, ibufbeg
 
+   gpu_path = .false.
+   if (present(use_gpu)) gpu_path = use_gpu
+   split_layout = use_pmecore .and. ndir > 0 .and. ndir < nproc
+   send_path = .true.
+   receive_path = .true.
+   if (present(send_phase)) then
+      send_path = send_phase
+      receive_path = .not.send_phase
+   else if (split_layout) then
+      send_path = rank >= ndir
+      receive_path = rank < ndir
+   end if
    if (ticket%active .or. ticket%dip_active .or. ticket%recdir_active) &
       &error stop 'polar exchange ticket is already active'
    allocate(ticket%recdir_recv_req(max(1,nproc)), ticket%recdir_send_req(max(1,nproc)))
    ticket%recdir_recv_req = MPI_REQUEST_NULL
    ticket%recdir_send_req = MPI_REQUEST_NULL
    ticket%recdir_active = .true.
+   ticket%recdir_send_phase = send_path
+   ticket%recdir_receive_phase = receive_path
    active_polar_ticket_count = active_polar_ticket_count + 1
    if (nproc.eq.1) return
 
    call check_domain_layout()
+   if (receive_path) then
+      if (gpu_path) then
 !$acc wait(channel%queue)
-!$acc host_data use_device(buffer)
-   do i = 1, nrecdir_send1
-      peer = precdir_send1(i)
-      if (peer.ne.rank) then
-         tag = nproc*rank + peer + 1
-         call MPI_IRECV(buffer(1,1,bufbeg1(peer+1)), &
-            &3*nrhs*buflen1(peer+1),MPI_TPREC,peer,tag,get_domain_comm(), &
-            &ticket%recdir_recv_req(i),ierr)
-      end if
-   end do
+!$acc host_data use_device(receive_buffer)
+         do i = 1, nrecdir_send1
+            peer = precdir_send1(i)
+            if (peer.ne.rank) then
+               tag = nproc*rank + peer + 1
+               call MPI_IRECV(receive_buffer(1,1,bufbeg1(peer+1)), 3*nrhs*buflen1(peer+1), MPI_TPREC, peer, tag, &
+                  &get_domain_comm(), ticket%recdir_recv_req(i), ierr)
+            end if
+         end do
 !$acc end host_data
-end subroutine polar_post_recdir_receive_legacy
-
-module subroutine polar_post_recdir_send_legacy(ticket, nrhs, values, buffer, channel)
-   type(polar_comm_t), intent(inout) :: ticket
-   integer, intent(in) :: nrhs
-   real(t_p), intent(in) :: values(3,nrhs,*)
-   real(t_p), intent(inout) :: buffer(3,nrhs,*)
-   type(channel_t), intent(in) :: channel
-   integer :: i, j, k, l, ierr, peer, tag, lenbuf, ibufbeg
-
-   if (.not.ticket%recdir_active) error stop 'polar exchange ticket is not active'
-   if (nproc.eq.1) return
-
-   call check_domain_layout()
-   do i = 1, nrecdir_recep1
-      peer = precdir_recep1(i)
-      if (peer.ne.rank) then
-         lenbuf = buflen2(peer+1)-1
-         ibufbeg = bufbeg2(peer+1)
-!$acc parallel loop gang collapse(3) async(channel%queue) default(present)
-         do j = 0, lenbuf
-            do k = 1, nrhs
-               do l = 1, 3
-                  buffer(l,k,ibufbeg+j) = values(l,k,polerecloc(buf2(ibufbeg+j)))
-               end do
-            end do
+      else
+         do i = 1, nrecdir_send1
+            peer = precdir_send1(i)
+            if (peer.ne.rank) then
+               tag = nproc*rank + peer + 1
+               call MPI_IRECV(receive_buffer(1,1,bufbeg1(peer+1)), 3*nrhs*buflen1(peer+1), MPI_TPREC, peer, tag, &
+                  &get_domain_comm(), ticket%recdir_recv_req(i), ierr)
+            end if
          end do
       end if
-   end do
+   end if
+   if (send_path) then
+      if (gpu_path) then
+         do i = 1, nrecdir_recep1
+            peer = precdir_recep1(i)
+            if (peer.ne.rank) then
+               lenbuf = buflen2(peer+1)-1
+               ibufbeg = bufbeg2(peer+1)
+!$acc parallel loop gang collapse(3) async(channel%queue) default(present)
+               do j = 0, lenbuf
+                  do k = 1, nrhs
+                     do l = 1, 3
+                        send_buffer(l,k,ibufbeg+j) = values(l,k,polerecloc(buf2(ibufbeg+j)))
+                     end do
+                  end do
+               end do
+            end if
+         end do
 !$acc wait(channel%queue)
-!$acc host_data use_device(buffer)
-   do i = 1, nrecdir_recep1
-      peer = precdir_recep1(i)
-      if (peer.ne.rank) then
-         tag = nproc*peer + rank + 1
-         call MPI_ISEND(buffer(1,1,bufbeg2(peer+1)), &
-            &3*nrhs*buflen2(peer+1),MPI_TPREC,peer,tag,get_domain_comm(), &
-            &ticket%recdir_send_req(i),ierr)
-      end if
-   end do
+!$acc host_data use_device(send_buffer)
+         do i = 1, nrecdir_recep1
+            peer = precdir_recep1(i)
+            if (peer.ne.rank) then
+               tag = nproc*peer + rank + 1
+               call MPI_ISEND(send_buffer(1,1,bufbeg2(peer+1)), 3*nrhs*buflen2(peer+1), MPI_TPREC, peer, tag, &
+                  &get_domain_comm(), ticket%recdir_send_req(i), ierr)
+            end if
+         end do
 !$acc end host_data
-end subroutine polar_post_recdir_send_legacy
+      else
+         do i = 1, nrecdir_recep1
+            peer = precdir_recep1(i)
+            if (peer.ne.rank) then
+               do j = 0, buflen2(peer+1)-1
+                  call amove(3*nrhs, values(1,1,polerecloc(buf2(bufbeg2(peer+1)+j))), &
+                     &send_buffer(1,1,bufbeg2(peer+1)+j))
+               end do
+               tag = nproc*peer + rank + 1
+               call MPI_ISEND(send_buffer(1,1,bufbeg2(peer+1)), 3*nrhs*buflen2(peer+1), MPI_TPREC, peer, tag, &
+                  &get_domain_comm(), ticket%recdir_send_req(i), ierr)
+            end if
+         end do
+      end if
+   end if
+end subroutine polar_post_recdir
 
-module subroutine polar_finish_recdir_legacy(ticket, nrhs, values, buffer, channel)
+module subroutine polar_finish_recdir(ticket, nrhs, values, buffer, channel, use_gpu)
    type(polar_comm_t), intent(inout) :: ticket
    integer, intent(in) :: nrhs
    real(t_p), intent(inout) :: values(3,nrhs,*)
    real(t_p), intent(in) :: buffer(3,nrhs,*)
    type(channel_t), intent(in) :: channel
+   logical, intent(in), optional :: use_gpu
+   logical :: gpu_path
    integer :: i, j, k, l, ierr, peer, lenbuf, ibufbeg
+   integer :: status(MPI_STATUS_SIZE)
+
+   gpu_path = .false.
+   if (present(use_gpu)) gpu_path = use_gpu
+   if (.not.ticket%recdir_active) error stop 'polar exchange ticket is not active'
+   if (nproc.eq.1) then
+      call reset_polar_ticket(ticket)
+      return
+   end if
+   call check_domain_layout()
+   if (ticket%recdir_send_phase) then
+      do i = 1, nrecdir_recep1
+         peer = precdir_recep1(i)
+         if (peer.ne.rank) call MPI_WAIT(ticket%recdir_send_req(i), status, ierr)
+      end do
+   end if
+   if (ticket%recdir_receive_phase) then
+      do i = 1, nrecdir_send1
+         peer = precdir_send1(i)
+         if (peer.ne.rank) then
+            call MPI_WAIT(ticket%recdir_recv_req(i), status, ierr)
+            lenbuf = buflen1(peer+1)-1
+            ibufbeg = bufbeg1(peer+1)
+            if (gpu_path) then
+!$acc parallel loop gang collapse(3) async(channel%queue) default(present)
+               do j = 0, lenbuf
+                  do k = 1, nrhs
+                     do l = 1, 3
+                        values(l,k,poleloc(buf1(ibufbeg+j))) = buffer(l,k,ibufbeg+j)
+                     end do
+                  end do
+               end do
+            else
+               do j = 0, lenbuf
+                  call amove(3*nrhs, buffer(1,1,ibufbeg+j), values(1,1,poleloc(buf1(ibufbeg+j))))
+               end do
+            end if
+         end if
+      end do
+   end if
+   if (gpu_path) then
+!$acc wait(channel%queue)
+   end if
+   call reset_polar_ticket(ticket)
+end subroutine polar_finish_recdir
+
+module subroutine polar_post_recdir_fields(ticket, values, receive_buffer, send_buffer, channel, use_gpu, send_phase)
+   type(polar_comm_t), intent(inout) :: ticket
+   real(t_p), intent(in) :: values(10,*)
+   real(t_p), intent(inout) :: receive_buffer(10,*), send_buffer(10,*)
+   type(channel_t), intent(in) :: channel
+   logical, intent(in) :: use_gpu
+   logical, intent(in), optional :: send_phase
+   logical :: split_layout, send_path, receive_path
+   integer :: i, j, k, ierr, peer, tag, lenbuf, ibufbeg
+
+   split_layout = use_pmecore .and. ndir > 0 .and. ndir < nproc
+   send_path = .true.
+   receive_path = .true.
+   if (present(send_phase)) then
+      send_path = send_phase
+      receive_path = .not.send_phase
+   else if (split_layout) then
+      send_path = rank >= ndir
+      receive_path = rank < ndir
+   end if
+   if (ticket%active .or. ticket%dip_active .or. ticket%recdir_active) &
+      &error stop 'polar exchange ticket is already active'
+   allocate(ticket%recdir_recv_req(max(1,nproc)), ticket%recdir_send_req(max(1,nproc)))
+   ticket%recdir_recv_req = MPI_REQUEST_NULL
+   ticket%recdir_send_req = MPI_REQUEST_NULL
+   ticket%recdir_active = .true.
+   ticket%recdir_send_phase = send_path
+   ticket%recdir_receive_phase = receive_path
+   active_polar_ticket_count = active_polar_ticket_count + 1
+   if (nproc.eq.1) return
+   call check_domain_layout()
+   if (receive_path) then
+      if (use_gpu) then
+!$acc wait(channel%queue)
+!$acc host_data use_device(receive_buffer)
+         do i = 1, nrecdir_send1
+            peer = precdir_send1(i)
+            if (peer.ne.rank) then
+               tag = nproc*rank + peer + 1
+               call MPI_IRECV(receive_buffer(1,bufbeg1(peer+1)), 10*buflen1(peer+1), MPI_TPREC, peer, tag, &
+                  &get_domain_comm(), ticket%recdir_recv_req(i), ierr)
+            end if
+         end do
+!$acc end host_data
+      else
+         do i = 1, nrecdir_send1
+            peer = precdir_send1(i)
+            if (peer.ne.rank) then
+               tag = nproc*rank + peer + 1
+               call MPI_IRECV(receive_buffer(1,bufbeg1(peer+1)), 10*buflen1(peer+1), MPI_TPREC, peer, tag, &
+                  &get_domain_comm(), ticket%recdir_recv_req(i), ierr)
+            end if
+         end do
+      end if
+   end if
+   if (send_path) then
+      if (use_gpu) then
+         do i = 1, nrecdir_recep1
+            peer = precdir_recep1(i)
+            if (peer.ne.rank) then
+               lenbuf = buflen2(peer+1)-1
+               ibufbeg = bufbeg2(peer+1)
+!$acc parallel loop gang collapse(2) async(channel%queue) default(present)
+               do j = 0, lenbuf
+                  do k = 1, 10
+                     send_buffer(k,ibufbeg+j) = values(k,polerecloc(buf2(ibufbeg+j)))
+                  end do
+               end do
+            end if
+         end do
+!$acc wait(channel%queue)
+!$acc host_data use_device(send_buffer)
+         do i = 1, nrecdir_recep1
+            peer = precdir_recep1(i)
+            if (peer.ne.rank) then
+               tag = nproc*peer + rank + 1
+               call MPI_ISEND(send_buffer(1,bufbeg2(peer+1)), 10*buflen2(peer+1), MPI_TPREC, peer, tag, &
+                  &get_domain_comm(), ticket%recdir_send_req(i), ierr)
+            end if
+         end do
+!$acc end host_data
+      else
+         do i = 1, nrecdir_recep1
+            peer = precdir_recep1(i)
+            if (peer.ne.rank) then
+               do j = 0, buflen2(peer+1)-1
+                  call amove(10, values(1,polerecloc(buf2(bufbeg2(peer+1)+j))), &
+                     &send_buffer(1,bufbeg2(peer+1)+j))
+               end do
+               tag = nproc*peer + rank + 1
+               call MPI_ISEND(send_buffer(1,bufbeg2(peer+1)), 10*buflen2(peer+1), MPI_TPREC, peer, tag, &
+                  &get_domain_comm(), ticket%recdir_send_req(i), ierr)
+            end if
+         end do
+      end if
+   end if
+end subroutine polar_post_recdir_fields
+
+module subroutine polar_finish_recdir_fields(ticket, values, buffer, channel, use_gpu)
+   type(polar_comm_t), intent(inout) :: ticket
+   real(t_p), intent(inout) :: values(10,*)
+   real(t_p), intent(in) :: buffer(10,*)
+   type(channel_t), intent(in) :: channel
+   logical, intent(in) :: use_gpu
+   integer :: i, j, k, ierr, peer, lenbuf, ibufbeg
    integer :: status(MPI_STATUS_SIZE)
 
    if (.not.ticket%recdir_active) error stop 'polar exchange ticket is not active'
@@ -639,31 +842,40 @@ module subroutine polar_finish_recdir_legacy(ticket, nrhs, values, buffer, chann
       call reset_polar_ticket(ticket)
       return
    end if
-
    call check_domain_layout()
-   do i = 1, nrecdir_recep1
-      peer = precdir_recep1(i)
-      if (peer.ne.rank) call MPI_WAIT(ticket%recdir_send_req(i),status,ierr)
-   end do
-   do i = 1, nrecdir_send1
-      peer = precdir_send1(i)
-      if (peer.ne.rank) then
-         call MPI_WAIT(ticket%recdir_recv_req(i),status,ierr)
-         lenbuf = buflen1(peer+1)-1
-         ibufbeg = bufbeg1(peer+1)
-!$acc parallel loop gang collapse(3) async(channel%queue) default(present)
-         do j = 0, lenbuf
-            do k = 1, nrhs
-               do l = 1, 3
-                  values(l,k,poleloc(buf1(ibufbeg+j))) = buffer(l,k,ibufbeg+j)
+   if (ticket%recdir_send_phase) then
+      do i = 1, nrecdir_recep1
+         peer = precdir_recep1(i)
+         if (peer.ne.rank) call MPI_WAIT(ticket%recdir_send_req(i), status, ierr)
+      end do
+   end if
+   if (ticket%recdir_receive_phase) then
+      do i = 1, nrecdir_send1
+         peer = precdir_send1(i)
+         if (peer.ne.rank) then
+            call MPI_WAIT(ticket%recdir_recv_req(i), status, ierr)
+            lenbuf = buflen1(peer+1)-1
+            ibufbeg = bufbeg1(peer+1)
+            if (use_gpu) then
+!$acc parallel loop gang collapse(2) async(channel%queue) default(present)
+               do j = 0, lenbuf
+                  do k = 1, 10
+                     values(k,poleloc(buf1(ibufbeg+j))) = buffer(k,ibufbeg+j)
+                  end do
                end do
-            end do
-         end do
-      end if
-   end do
+            else
+               do j = 0, lenbuf
+                  call amove(10, buffer(1,ibufbeg+j), values(1,poleloc(buf1(ibufbeg+j))))
+               end do
+            end if
+         end if
+      end do
+   end if
+   if (use_gpu) then
 !$acc wait(channel%queue)
+   end if
    call reset_polar_ticket(ticket)
-end subroutine polar_finish_recdir_legacy
+end subroutine polar_finish_recdir_fields
 
 subroutine post_group_comm(nrhs, values, recv_req, send_req)
    integer, intent(in) :: nrhs
@@ -1118,8 +1330,9 @@ module subroutine replicate_legacy_rp(global_ids, owned_values, global_values, c
    real(r_p), intent(out) :: global_values(:)
    integer, intent(in) :: components
    integer :: ierr, i, local_count, max_global_id, value_count, total_count
-   integer, allocatable :: counts(:), offsets(:), received_ids(:)
-   real(r_p), allocatable :: received_values(:)
+   integer, allocatable :: counts(:), offsets(:)
+   integer, pointer :: receive_ids(:)
+   real(r_p), pointer :: received_values(:)
 
    call check_domain_layout()
    local_count = merge(active_domain%nloc, 0, .not.(use_pmecore .and. active_domain%rank > ndir-1))
@@ -1134,25 +1347,84 @@ module subroutine replicate_legacy_rp(global_ids, owned_values, global_values, c
       offsets(i) = offsets(i-1) + counts(i-1)
    end do
    total_count = sum(counts)
-   allocate(received_ids(total_count), received_values(components*total_count))
-   call MPI_Allgatherv(global_ids, local_count, MPI_INTEGER, received_ids, counts, offsets, &
+   call domain_workspace_i(1, total_count, receive_ids)
+   call domain_workspace_rp(3, components*total_count, received_values)
+
+!$acc data present_or_copyin(global_ids,owned_values) present_or_copyout(global_values)
+!$acc wait
+!$acc host_data use_device(global_ids,receive_ids)
+   call MPI_Allgatherv(global_ids, local_count, MPI_INTEGER, receive_ids, counts, offsets, &
       &MPI_INTEGER, active_domain%communicator, ierr)
+!$acc end host_data
    counts = components*counts
    offsets = components*offsets
+!$acc host_data use_device(owned_values,received_values)
    call MPI_Allgatherv(owned_values, components*local_count, MPI_RPREC, received_values, counts, offsets, &
       &MPI_RPREC, active_domain%communicator, ierr)
+!$acc end host_data
+
    max_global_id = 0
-   if (total_count > 0) max_global_id = maxval(received_ids)
+   if (total_count > 0) then
+!$acc update self(receive_ids(1:total_count))
+      max_global_id = maxval(receive_ids(1:total_count))
+   end if
    if (size(global_values) < components*max_global_id) error stop 'replication result is too small'
-   global_values = real(0.0,r_p)
+
+!$acc parallel loop default(present)
+   do i = 1, size(global_values)
+      global_values(i) = real(0.0,r_p)
+   end do
+!$acc end parallel loop
+
    do i = 1, total_count
-      value_count = components*(received_ids(i)-1)
-      if (received_ids(i) <= 0 .or. value_count+components > size(global_values)) then
+      if (receive_ids(i) <= 0 .or. receive_ids(i) > size(global_values)/components) then
          error stop 'replication received an invalid global identifier'
       end if
-      global_values(value_count+1:value_count+components) = received_values(components*(i-1)+1:components*i)
    end do
+!$acc parallel loop default(present)
+   do i = 1, total_count
+      value_count = components*(receive_ids(i)-1)
+      global_values(value_count+1:value_count+components) = &
+         &received_values(components*(i-1)+1:components*i)
+   end do
+!$acc end parallel loop
+!$acc end data
 end subroutine replicate_legacy_rp
+
+module subroutine replicate_full_rp(global_ids, global_values, components)
+   integer, intent(in) :: global_ids(:)
+   real(r_p), intent(inout) :: global_values(:)
+   integer, intent(in) :: components
+   integer :: i, component, atom_id, local_count
+   real(r_p), pointer :: owned_values(:)
+
+   call check_domain_layout()
+   if (active_domain%nproc == 1) return
+   local_count = merge(active_domain%nloc, 0, .not.(use_pmecore .and. active_domain%rank > ndir-1))
+   if (components <= 0 .or. size(global_ids) < local_count) error stop 'invalid replication payload'
+   call domain_workspace_rp(1, components*local_count, owned_values)
+
+!$acc data present_or_copyin(global_ids) present_or_copy(global_values)
+!$acc parallel loop collapse(2) async default(present) private(atom_id)
+   do i = 1, local_count
+      do component = 1, components
+         atom_id = global_ids(i)
+         if (atom_id > 0) then
+            if (atom_id <= size(global_values)/components) then
+               owned_values(components*(i-1)+component) = global_values(components*(atom_id-1)+component)
+            else
+               owned_values(components*(i-1)+component) = real(0.0,r_p)
+            end if
+         else
+            owned_values(components*(i-1)+component) = real(0.0,r_p)
+         end if
+      end do
+   end do
+!$acc end parallel loop
+!$acc wait
+   call replicate_rp(global_ids, owned_values, global_values, components)
+!$acc end data
+end subroutine replicate_full_rp
 
 #if TINKER_MIXED_PREC
 module subroutine reduce_sum_legacy_tp_vector(values, visibility, root)
@@ -1772,358 +2044,9 @@ integer function receive_peer(option, index)
    end if
 end function receive_peer
 
-!     Direct polarization compatibility kernels now owned by the parallel
-!     ticket implementation rather than the legacy communication source.
-module subroutine commrecdirfields(rule,efrec,ef,buffermpi1,buffermpi2,&
-   &reqrecdirrec,reqrecdirsend)
-   use domdec
-   use iounit
-   use mpole
-   use mpi
-   use timestat,only:timer_enter,timer_exit,timer_polsolvcomm&
-      &,quiet_timers
-   implicit none
-   integer, intent(in) :: rule
-   integer ierr,status(MPI_STATUS_SIZE),tag,i,j,proc
-   integer, intent(inout) :: reqrecdirrec(:),reqrecdirsend(:)
-   real(t_p), intent(inout) :: efrec(10,*),ef(10,*)
-   real(t_p), intent(inout) :: buffermpi1(10,*),buffermpi2(10,*)
-1000 format(' illegal rule in commrecdirfields.')
-!
-   call timer_enter( timer_polsolvcomm )
-   if (rule.eq.0) then
-!
-!     Begin the reception of the reciprocal fields
-!
-      do i = 1, nrecdir_send1
-         proc = precdir_send1(i)
-         if (proc.ne.rank) then
-            tag = nproc*rank + proc + 1
-            call MPI_IRECV(buffermpi1(1,bufbeg1(proc+1)),&
-               &10*buflen1(proc+1),&
-               &MPI_TPREC,proc,tag,get_domain_comm(),reqrecdirrec(i),ierr)
-         end if
-      end do
-   else if (rule.eq.1) then
-      do i = 1, nrecdir_recep1
-         proc = precdir_recep1(i)
-         if (proc.ne.rank) then
-            do j = 0, buflen2(proc+1)-1
-               call amove(10,efrec(1,polerecloc(&
-                  &buf2(bufbeg2(proc+1)+j))),buffermpi2(1,bufbeg2(proc+1)+j))
-            end do
-         end if
-      end do
-      do i = 1, nrecdir_recep1
-         proc = precdir_recep1(i)
-         if (proc.ne.rank) then
-            tag = nproc*proc + rank + 1
-            call MPI_ISEND(buffermpi2(1,bufbeg2(proc+1)),&
-               &10*buflen2(proc+1),MPI_TPREC,proc,tag,get_domain_comm(),&
-               &reqrecdirsend(i),ierr)
-         end if
-      end do
-   else if (rule.eq.2) then
-      do i = 1, nrecdir_recep1
-         proc = precdir_recep1(i)
-         if (proc.ne.rank) then
-            call MPI_WAIT(reqrecdirsend(i),status,ierr)
-         end if
-      end do
-      do i = 1, nrecdir_send1
-         proc = precdir_send1(i)
-         if (proc.ne.rank) then
-            call MPI_WAIT(reqrecdirrec(i),status,ierr)
-            do j = 0, buflen1(proc+1)-1
-               call amove(10,buffermpi1(1,bufbeg1(proc+1)+j),&
-                  &ef(1,poleloc(buf1(bufbeg1(proc+1)+j))))
-            end do
-         end if
-      end do
-   else
-      if (rank.eq.0) write(iout,1000)
-      call fatal
-   end if
-   call timer_exit( timer_polsolvcomm,quiet_timers )
-end subroutine commrecdirfields
-
-module subroutine commrecdirfieldsgpu(rule,efrec,ef,buffermpi1,buffermpi2&
-   &,reqrecdirrec,reqrecdirsend)
-   use domdec
-   use iounit
-   use mpole
-   use mpi
-   use timestat,only:timer_enter,timer_exit,timer_polsolvcomm&
-      &,quiet_timers
-   implicit none
-   integer, intent(in) :: rule
-   integer ierr,status(MPI_STATUS_SIZE),tag,i,j,k,proc
-   integer ibufbeg
-   integer lenbuf
-   integer, intent(inout) :: reqrecdirrec(:),reqrecdirsend(:)
-   real(t_p), intent(inout) :: efrec(10,*),ef(10,*)
-   real(t_p), intent(inout) :: buffermpi1(10,*),buffermpi2(10,*)
-1000 format(' illegal rule in commrecdirfieldsgpu.')
-41 format(7x,'>> ',A20,   3x,'recv')
-42 format(7x,   3x,A20,' >>','send')
-43 format(7x,'<< ',A20,   3x,'wait')
-
-   if (nrecdir_send1.eq.nrecdir_recep1.and.nrecdir_recep1.le.1)&
-      &return
-!
-   call timer_enter( timer_polsolvcomm )
-   if (rule.eq.0) then
-!
-!     Begin the reception of the reciprocal fields
-!
-      do i = 1, nrecdir_send1
-         proc = precdir_send1(i)
-         if (proc.ne.rank) then
-            tag = nproc*rank + proc + 1
-!$acc host_data use_device(buffermpi1)
-            call MPI_IRECV(buffermpi1(1,bufbeg1(proc+1)),&
-               &10*buflen1(proc+1),MPI_TPREC,proc,tag,&
-               &get_domain_comm(),reqrecdirrec(i),ierr)
-!$acc end host_data
-         end if
-      end do
-   else if (rule.eq.1) then
-      do i = 1, nrecdir_recep1
-         proc = precdir_recep1(i)
-         if (proc.ne.rank) then
-            lenbuf = buflen2(proc+1)-1
-            ibufbeg= bufbeg2(proc+1)
-!$acc parallel loop gang collapse(2) async &
-!$acc         default(present)
-            do j = 0, lenbuf
-               do k = 1, 10
-                  buffermpi2(k,ibufbeg+j)&
-                     &= efrec(k,polerecloc(buf2(ibufbeg+j)))
-               end do
-            end do
-         end if
-      end do
-!$acc wait
-      do i = 1, nrecdir_recep1
-         proc = precdir_recep1(i)
-         if (proc.ne.rank) then
-            tag = nproc*proc + rank + 1
-!$acc host_data use_device(buffermpi2)
-            call MPI_ISEND(buffermpi2(1,bufbeg2(proc+1)),&
-               &10*buflen2(proc+1),MPI_TPREC,proc,tag,&
-               &get_domain_comm(),reqrecdirsend(i),ierr)
-!$acc end host_data
-         end if
-      end do
-   else if (rule.eq.2) then
-      do i = 1, nrecdir_recep1
-         proc = precdir_recep1(i)
-         if (proc.ne.rank) then
-            call MPI_WAIT(reqrecdirsend(i),status,ierr)
-         end if
-      end do
-      do i = 1, nrecdir_send1
-         proc = precdir_send1(i)
-         if (proc.ne.rank) then
-            lenbuf = buflen1(proc+1)-1
-            ibufbeg= bufbeg1(proc+1)
-            call MPI_WAIT(reqrecdirrec(i),status,ierr)
-!$acc parallel loop gang collapse(2) async &
-!$acc         default(present)
-            do j = 0, lenbuf
-               do k = 1, 10
-                  ef(k,poleloc(buf1(ibufbeg+j))) = buffermpi1(k,ibufbeg+j)
-               end do
-            end do
-         end if
-      end do
-!$acc wait
-   else
-      if (rank.eq.0) write(iout,1000)
-      call fatal
-   end if
-   call timer_exit( timer_polsolvcomm,quiet_timers )
-end subroutine commrecdirfieldsgpu
-
-module subroutine commrecdirsolv(nrhs,rule,dipfieldbis,dipfield,&
-   &buffermpi1,buffermpi2,reqrecdirrec,reqrecdirsend)
-   use domdec
-   use iounit
-   use mpole
-   use mpi
-   use timestat,only:timer_enter,timer_exit,timer_polsolvcomm&
-      &,quiet_timers
-   implicit none
-   integer, intent(in) :: nrhs,rule
-   integer ierr,status(MPI_STATUS_SIZE),tag,i,j,proc
-   integer, intent(inout) :: reqrecdirrec(:),reqrecdirsend(:)
-   real(t_p), intent(inout) :: dipfieldbis(3,nrhs,*),dipfield(3,nrhs,*)
-   real(t_p), intent(inout) :: buffermpi1(3,nrhs,*),buffermpi2(3,nrhs,*)
-1000 format(' illegal rule in commrecdisolv.')
-!
-   call timer_enter( timer_polsolvcomm )
-   if (rule.eq.0) then
-      do i = 1, nrecdir_send1
-         proc = precdir_send1(i)
-         if (proc.ne.rank) then
-            tag = nproc*rank + proc + 1
-            call MPI_IRECV(buffermpi1(1,1,bufbeg1(proc+1)),&
-               &3*nrhs*buflen1(proc+1),&
-               &MPI_TPREC,proc,tag,get_domain_comm(),reqrecdirrec(i),ierr)
-         end if
-      end do
-   else if (rule.eq.1) then
-      do i = 1, nrecdir_recep1
-         proc = precdir_recep1(i)
-         if (proc.ne.rank) then
-            do j = 0, buflen2(proc+1)-1
-               call amove(3*nrhs,dipfieldbis(1,1,polerecloc(&
-                  &buf2(bufbeg2(proc+1)+j))),&
-                  &buffermpi2(1,1,bufbeg2(proc+1)+j))
-            end do
-         end if
-      end do
-!
-      do i = 1, nrecdir_recep1
-         proc = precdir_recep1(i)
-         if (proc.ne.rank) then
-            tag = nproc*proc + rank + 1
-            call MPI_ISEND(buffermpi2(1,1,bufbeg2(proc+1)),&
-               &3*nrhs*buflen2(proc+1),&
-               &MPI_TPREC,proc,tag,get_domain_comm(),reqrecdirsend(i),ierr)
-         end if
-      end do
-   else if (rule.eq.2) then
-      do i = 1, nrecdir_recep1
-         proc = precdir_recep1(i)
-         if (proc.ne.rank) then
-            call MPI_WAIT(reqrecdirsend(i),status,ierr)
-         end if
-      end do
-      do i = 1, nrecdir_send1
-         proc = precdir_send1(i)
-         if (proc.ne.rank) then
-            call MPI_WAIT(reqrecdirrec(i),status,ierr)
-            do j = 0, buflen1(proc+1)-1
-               call amove(3*nrhs,buffermpi1(1,1,bufbeg1(proc+1)+j),&
-                  &dipfield(1,1,poleloc(buf1(bufbeg1(proc+1)+j))))
-            end do
-         end if
-      end do
-   else
-      if (rank.eq.0) write(iout,1000)
-      call fatal
-   end if
-   call timer_exit( timer_polsolvcomm,quiet_timers )
-end subroutine commrecdirsolv
-
-module subroutine commrecdirsolvgpu(nrhs,rule,dipfieldbis,dipfield,&
-   &buffermpi1,buffermpi2,reqrecdirrec,reqrecdirsend)
-   use domdec
-   use iounit
-   use inform  ,only:deb_Path
-   use mpole
-   use mpi
-   use timestat,only:timer_enter,timer_exit,timer_polsolvcomm&
-      &,quiet_timers
-   use sizes   ,only:tinkerdebug
-   implicit none
-   integer, intent(in) :: nrhs,rule
-   integer ierr,status(MPI_STATUS_SIZE),tag,i,j,k,l,proc
-   integer lenbuf,ibufbeg
-   integer, intent(inout) :: reqrecdirrec(:),reqrecdirsend(:)
-   real(t_p), intent(inout) :: dipfieldbis(3,nrhs,*),dipfield(3,nrhs,*)
-   real(t_p), intent(inout) :: buffermpi1(3,nrhs,*),buffermpi2(3,nrhs,*)
-1000 format(' illegal rule in commrecdirsolvgpu.')
-41 format(7x,'>> ',A20,   3x,'recv')
-42 format(7x,   3x,A20,' >>','send')
-43 format(7x,'<< ',A20,   3x,'wait')
-   !nrhs==2 is a parameter
-
-   if (nrecdir_send1.eq.nrecdir_recep1.and.nrecdir_recep1.le.1)&
-      &return
-!
-   call timer_enter( timer_polsolvcomm )
-   if (rule.eq.0) then
-      do i = 1, nrecdir_send1
-         proc = precdir_send1(i)
-         if (proc.ne.rank) then
-            tag = nproc*rank + proc + 1
-!$acc host_data use_device(buffermpi1)
-            call MPI_IRECV(buffermpi1(1,1,bufbeg1(proc+1)),&
-               &3*nrhs*buflen1(proc+1),MPI_TPREC,proc,tag,&
-               &get_domain_comm(),reqrecdirrec(i),ierr)
-!$acc end host_data
-         end if
-      end do
-   else if (rule.eq.1) then
-      do i = 1, nrecdir_recep1
-         proc = precdir_recep1(i)
-         if (proc.ne.rank) then
-            lenbuf = buflen2(proc+1)-1
-            ibufbeg = bufbeg2(proc+1)
-!$acc parallel loop gang collapse(3) async &
-!$acc         default(present)
-            do j = 0, lenbuf
-               do k = 1, 2
-                  do l = 1, 3
-                     buffermpi2(l,k,ibufbeg+j)=&
-                        &dipfieldbis(l,k,polerecloc(buf2(ibufbeg+j)))
-                  end do
-               end do
-            end do
-         end if
-      end do
-!
-!$acc wait
-      do i = 1, nrecdir_recep1
-         proc = precdir_recep1(i)
-         if (proc.ne.rank) then
-            tag = nproc*proc + rank + 1
-!$acc host_data use_device(buffermpi2)
-            call MPI_ISEND(buffermpi2(1,1,bufbeg2(proc+1)),&
-               &3*nrhs*buflen2(proc+1),MPI_TPREC,proc,tag,&
-               &get_domain_comm(),reqrecdirsend(i),ierr)
-!$acc end host_data
-         end if
-      end do
-      if (tinkerdebug.gt.0) call MPI_BARRIER(get_host_comm(),ierr)
-      if (deb_Path) write(*,42) 'commrecdirsolvgpu   '
-   else if (rule.eq.2) then
-      do i = 1, nrecdir_recep1
-         proc = precdir_recep1(i)
-         if (proc.ne.rank) then
-            call MPI_WAIT(reqrecdirsend(i),status,ierr)
-         end if
-      end do
-      do i = 1, nrecdir_send1
-         proc = precdir_send1(i)
-         if (proc.ne.rank) then
-            call MPI_WAIT(reqrecdirrec(i),status,ierr)
-            lenbuf = buflen1(proc+1)-1
-            ibufbeg = bufbeg1(proc+1)
-!$acc parallel loop gang collapse(3) async &
-!$acc         default(present)
-            do j = 0, lenbuf
-               do k = 1, 2
-                  do l = 1, 3
-                     dipfield(l,k,poleloc(buf1(ibufbeg+j)))&
-                        &= buffermpi1(l,k,ibufbeg+j)
-                  end do
-               end do
-            end do
-         end if
-      end do
-!$acc wait
-      if (tinkerdebug.gt.0) call MPI_BARRIER(get_host_comm(),ierr)
-      if (deb_Path) write(*,43) 'commrecdirsolvgpu   '
-   else
-      if (rank.eq.0) write(iout,1000)
-      call fatal
-   end if
-   call timer_exit( timer_polsolvcomm,quiet_timers )
-end subroutine commrecdirsolvgpu
-
+! commdirdirgpu uses the reciprocal-work channel: its device dipoles are
+! produced by the reciprocal induction path and the fixed stream contract is
+! intentionally distinct from commfieldgpu's direct-field hand-off.
 subroutine commdirdirgpu(nrhs,rule,mu,reqrec1,reqsend1)
    use domdec
    use iounit
@@ -2172,7 +2095,8 @@ subroutine commdirdirgpu(nrhs,rule,mu,reqrec1,reqsend1)
             &,get_domain_comm(),reqsend1(i),ierr)
 !$acc end host_data
       end do
-      if (tinkerdebug.gt.0) call MPI_BARRIER(get_host_comm(),ierr)
+      if (tinkerdebug.gt.0) call MPI_BARRIER(&
+         &merge(get_direct_comm(),get_domain_comm(),use_pmecore),ierr)
       if (deb_Path) write(*,42) 'commdirdirgpu       '
    else if (rule.eq.2) then
       do i = 1, n_send1
@@ -2181,7 +2105,8 @@ subroutine commdirdirgpu(nrhs,rule,mu,reqrec1,reqsend1)
       do i = 1, n_recep1
          call MPI_WAIT(reqrec1(i),status,ierr)
       end do
-      if (tinkerdebug.gt.0) call MPI_BARRIER(get_host_comm(),ierr)
+      if (tinkerdebug.gt.0) call MPI_BARRIER(&
+         &merge(get_direct_comm(),get_domain_comm(),use_pmecore),ierr)
       if (deb_Path) write(*,43) 'commdirdirgpu       '
    else
       if (rank.eq.0) write(iout,1000)
@@ -2190,12 +2115,13 @@ subroutine commdirdirgpu(nrhs,rule,mu,reqrec1,reqsend1)
    call timer_exit( timer_polsolvcomm,quiet_timers )
 end
 
-subroutine commdirdir(nrhs,rule,mu,reqrec,reqsend)
+subroutine commdirdir(nrhs,rule,mu,reqrec,reqsend,channel)
    use domdec
    use iounit
    use inform  ,only: deb_Path
    use mpole
    use mpi
+   use mdevice, only: channel_t
    use sizes   ,only: tinkerdebug
    use timestat,only:timer_enter,timer_exit,timer_polsolvcomm&
       &,quiet_timers
@@ -2203,6 +2129,7 @@ subroutine commdirdir(nrhs,rule,mu,reqrec,reqsend)
    integer nrhs,rule,ierr,status(MPI_STATUS_SIZE),tag,i
    integer :: reqrec(nproc),reqsend(nproc)
    real(t_p) mu(3,nrhs,npolebloc)
+   type(channel_t), intent(in) :: channel
 1000 format(' illegal rule in commdirdir.')
 
    call timer_enter( timer_polsolvcomm )
@@ -2214,6 +2141,7 @@ subroutine commdirdir(nrhs,rule,mu,reqrec,reqsend)
             &tag,get_domain_comm(),reqrec(i),ierr)
       end do
    else if (rule.eq.1) then
+!$acc wait(channel%queue)
       do i = 1, n_send1
          tag = nproc*p_send1(i) + rank + 1
          call MPI_ISEND(mu,3*nrhs*npoleloc,&
@@ -2234,11 +2162,11 @@ subroutine commdirdir(nrhs,rule,mu,reqrec,reqsend)
    call timer_exit( timer_polsolvcomm,quiet_timers )
 end
 
-subroutine commdirdirshort(nrhs,rule,mu,reqrec1,reqsend1)
+subroutine commdirdirshort(nrhs,rule,mu,reqrec1,reqsend1,channel)
    use domdec
    use iounit
    use inform  ,only: deb_Path
-   use mdevice  ,only: default_work
+   use mdevice  ,only: channel_t
    use mpole
    use mpi
    use sizes
@@ -2249,6 +2177,7 @@ subroutine commdirdirshort(nrhs,rule,mu,reqrec1,reqsend1)
    integer ibufbeg
    integer, intent(inout) :: reqrec1(nproc),reqsend1(nproc)
    real(t_p)  mu(3,nrhs,npolebloc)
+   type(channel_t), intent(in) :: channel
 1000 format(' illegal rule in commdirdir.')
 41 format(7x,'>> ',A20,   3x,'recv')
 42 format(7x,   3x,A20,' >>','send')
@@ -2269,7 +2198,7 @@ subroutine commdirdirshort(nrhs,rule,mu,reqrec1,reqsend1)
       end do
 !$acc end host_data
    else if (rule.eq.1) then
-!$acc wait(default_work%queue)
+!$acc wait(channel%queue)
 !$acc host_data use_device(mu)
       do i = 1, n_sendshort1
          tag = nproc*p_sendshort1(i) + rank + 1
@@ -2278,7 +2207,8 @@ subroutine commdirdirshort(nrhs,rule,mu,reqrec1,reqsend1)
             &reqsend1(i),ierr)
       end do
 !$acc end host_data
-      if (tinkerdebug.gt.0) call MPI_BARRIER(get_host_comm(),ierr)
+      if (tinkerdebug.gt.0 .and. .not.use_pmecore) &
+         &call MPI_BARRIER(get_host_comm(),ierr)
       if (deb_Path) write(*,42) 'commdirdirshort     '
    else if (rule.eq.2) then
       do i = 1, n_recepshort1
@@ -2287,7 +2217,8 @@ subroutine commdirdirshort(nrhs,rule,mu,reqrec1,reqsend1)
       do i = 1, n_sendshort1
          call mpi_wait(reqsend1(i),status,ierr)
       end do
-      if (tinkerdebug.gt.0) call MPI_BARRIER(get_host_comm(),ierr)
+      if (tinkerdebug.gt.0 .and. .not.use_pmecore) &
+         &call MPI_BARRIER(get_host_comm(),ierr)
       if (deb_Path) write(*,43) 'commdirdirshort     '
    else
       if (rank.eq.0) write(iout,1000)
@@ -2355,6 +2286,8 @@ module subroutine commfield(nrhs,ef)
    call timer_exit( timer_polfieldcomm,quiet_timers )
 end subroutine commfield
 
+! commfieldgpu uses the direct-work channel: direct-field producers must be
+! complete before their device buffer crosses the MPI hand-off.
 module subroutine commfieldgpu(nrhs,ef)
    use domdec
    use mdevice,only: direct_work
@@ -2383,7 +2316,8 @@ module subroutine commfieldgpu(nrhs,ef)
    if ( comm_opt%skip_direct ) return
    if (n_send1.gt.0.or.n_recep1.gt.0) then
       call timer_enter( timer_polfieldcomm )
-      if (tinkerdebug.gt.0) call MPI_BARRIER(get_host_comm(),ierr)
+      if (tinkerdebug.gt.0) call MPI_BARRIER(&
+         &merge(get_direct_comm(),get_domain_comm(),use_pmecore),ierr)
       if (deb_Path) write(*,41) 'commfieldgpu        '
 !        if (btest(tinkerdebug,0).and.nproc.eq.4) then
 !22         format('_domlenpole ',I5,I7,3x,5I7,' _')
@@ -2435,15 +2369,16 @@ module subroutine commfieldgpu(nrhs,ef)
 
 !$acc wait(direct_work%queue)
       call prmem_request(buffer,0,0,0,0,async=.false.)
-      if (tinkerdebug.gt.0) call MPI_BARRIER(get_host_comm(),ierr)
+      if (tinkerdebug.gt.0) call MPI_BARRIER(&
+         &merge(get_direct_comm(),get_domain_comm(),use_pmecore),ierr)
       if (deb_Path) write(*,43) 'commfieldgpu        '
       call timer_exit( timer_polfieldcomm,quiet_timers )
    end if
 end subroutine commfieldgpu
 
-module subroutine commfieldshort(nrhs,ef)
+module subroutine commfieldshort(nrhs,ef,channel)
    use domdec
-   use mdevice,only: default_work
+   use mdevice,only: channel_t
    use mpi
    use mpole
    use potent
@@ -2458,6 +2393,7 @@ module subroutine commfieldshort(nrhs,ef)
    integer ierr,ibufbeg
    integer, allocatable :: reqrec(:), reqsend(:)
    real(t_p), intent(inout) :: ef(3,nrhs,*)
+   type(channel_t), intent(in) :: channel
    real(t_p), allocatable :: buffer(:,:,:,:)
 !
    if (comm_opt%skip_direct) return
@@ -2488,7 +2424,7 @@ module subroutine commfieldshort(nrhs,ef)
    end do
 !$acc end host_data
 !
-!$acc wait(default_work%queue)
+!$acc wait(channel%queue)
 !$acc host_data use_device(ef)
    do i = 1, n_recepshort1
       tag     = nproc*p_recepshort1(i) + rank + 1
@@ -2509,7 +2445,7 @@ module subroutine commfieldshort(nrhs,ef)
    end do
 !
 !$acc parallel loop gang vector collapse(3) &
-!$acc         default(present) async(default_work%queue)
+!$acc         default(present) async(channel%queue)
    do j = 1, npoleloc
       do k = 1, nrhs
          do l = 1,3
@@ -2522,7 +2458,7 @@ module subroutine commfieldshort(nrhs,ef)
 !
    deallocate (reqrec)
    deallocate (reqsend)
-!$acc wait(default_work%queue)
+!$acc wait(channel%queue)
    call prmem_request(buffer,0,0,0,0,async=.false.)
 
    if (tinkerdebug.gt.0) call MPI_BARRIER(get_host_comm(),ierr)
@@ -3043,7 +2979,8 @@ subroutine commrecdirdipgpu(nrhs,rule,diprec,dip,buffermpimu1,&
 !$acc end host_data
          end if
       end do
-      if (tinkerdebug.gt.0) call MPI_BARRIER(get_host_comm(),ierr)
+      if (tinkerdebug.gt.0 .and. .not.use_pmecore) &
+         &call MPI_BARRIER(get_host_comm(),ierr)
       if (deb_Path) write(*,42) 'commrecdirdipgpu    '
    else if (rule.eq.2) then
       do i = 1, nrecdir_send1
@@ -3069,7 +3006,8 @@ subroutine commrecdirdipgpu(nrhs,rule,diprec,dip,buffermpimu1,&
          end if
       end do
 !$acc wait
-      if (tinkerdebug.gt.0) call MPI_BARRIER(get_host_comm(),ierr)
+      if (tinkerdebug.gt.0 .and. .not.use_pmecore) &
+         &call MPI_BARRIER(get_host_comm(),ierr)
       if (deb_Path) write(*,43) 'commrecdirdipgpu    '
    else
       if (rank.eq.0) write(iout,1000)
@@ -3272,7 +3210,7 @@ module subroutine commpos
    use inform   ,only: deb_Path
    use mdevice  ,only: direct_work
 #ifdef _OPENACC
-   use mdevice  ,only: after,default_work
+   use mdevice  ,only: after,reciprocal_work
    use status   ,only: failed,status_t
 #endif
    use potent   ,only: use_pmecore
@@ -3313,9 +3251,9 @@ module subroutine commpos
       end do
    end do
 #ifdef _OPENACC
-   call after(default_work,direct_work,dep_status)
+   call after(reciprocal_work,direct_work,dep_status)
    if (failed(dep_status)) __TINKER_FATAL__
-   call reCast_position(default_work%queue)
+   call reCast_position(reciprocal_work%queue)
 #else
    call reCast_position
 #endif
@@ -3324,63 +3262,7 @@ module subroutine commpos
    call timer_exit( timer_commstep,quiet_timers )
 end subroutine commpos
 !
-!     subroutine commposshort : communicate positions to short range neighboring processes
-!
-module subroutine commposshort
-   use atomsMirror
-   use domdec
-   use inform   ,only: deb_Path
-   use mdevice  ,only: direct_work
-#ifdef _OPENACC
-   use mdevice  ,only: after,default_work
-   use status   ,only: failed,status_t
-#endif
-   use potent   ,only: use_pmecore
-   use timestat ,only: timer_enter,timer_exit,timer_commstep&
-      &,quiet_timers
-   implicit none
-   integer i,iproc,iloc,idomlen,iglob
-   real(r_p), pointer :: pool1(:)
-#ifdef _OPENACC
-   type(status_t) :: dep_status
-#endif
-!
-   if (nproc.eq.1.or.((use_pmecore).and.(rank.gt.ndir-1))) return
 
-   call timer_enter( timer_commstep )
-   if (deb_Path) write(*,*) '   >> commposshort'
-!
-   call domain_workspace_rp(1,3*nbloc,pool1)
-!$acc parallel loop async(direct_work%queue) default(present)
-   do i = 1, nloc
-      iglob = glob(i)
-      pool1(3*i-2) = x(iglob)
-      pool1(3*i-1) = y(iglob)
-      pool1(3*i) = z(iglob)
-   end do
-   call extend(pool1,3,halo_short,channel=direct_work)
-   do iproc = 1, nbigshort_recep
-      iloc = bufbeg(pbigshort_recep(iproc)+1)
-      idomlen = domlen(pbigshort_recep(iproc)+1)
-!$acc parallel loop async(direct_work%queue)
-      do i = 1, idomlen
-         iglob = glob(iloc+i-1)
-         x(iglob) = pool1(3*(iloc+i-1)-2)
-         y(iglob) = pool1(3*(iloc+i-1)-1)
-         z(iglob) = pool1(3*(iloc+i-1))
-      end do
-   end do
-#ifdef _OPENACC
-   call after(default_work,direct_work,dep_status)
-   if (failed(dep_status)) __TINKER_FATAL__
-   call reCast_position(default_work%queue)
-#else
-   call reCast_position
-#endif
-
-   if (deb_Path) write(*,*) '   << commposshort'
-   call timer_exit( timer_commstep,quiet_timers )
-end subroutine commposshort
 
 !     subroutine commposrespa : deal with communications of positions between two time steps
 !     with respa integrator
@@ -3391,7 +3273,7 @@ module subroutine commposrespa(fast)
    use inform   ,only: deb_Path
    use mdevice  ,only: direct_work
 #ifdef _OPENACC
-   use mdevice  ,only: after,default_work
+   use mdevice  ,only: after,reciprocal_work
    use status   ,only: failed,status_t
 #endif
    use potent   ,only: use_pmecore
@@ -3448,9 +3330,9 @@ module subroutine commposrespa(fast)
       end do
    end if
 #ifdef _OPENACC
-   call after(default_work,direct_work,dep_status)
+   call after(reciprocal_work,direct_work,dep_status)
    if (failed(dep_status)) __TINKER_FATAL__
-   call reCast_position(default_work%queue)
+   call reCast_position(reciprocal_work%queue)
 #else
    call reCast_position
 #endif
@@ -3461,301 +3343,7 @@ module subroutine commposrespa(fast)
    call timer_exit( timer_commstep,quiet_timers )
 end subroutine commposrespa
 
-!     subroutine sendallpos : everybody gets all the positions
-!
-module subroutine sendallpos
-   use atomsMirror
-   use domdec
-   use mpi
-   implicit none
-   integer i,iglob,iloc,iproc,tag,ierr
-   integer idomlen,ibufbeg
-   integer status(MPI_STATUS_SIZE),count
-   integer, allocatable :: reqsend(:),reqrec(:)
-   real(r_p), allocatable :: postemp(:,:)
-!
-   if (nproc.eq.1) return
 
-   allocate (reqsend(nproc))
-   allocate (reqrec(nproc))
-   allocate (postemp(3,n))
-!$acc data create(postemp) present(x,y,z,glob) async
-!
-!     put the arrays to be sent in the right order
-!
-!$acc parallel loop collapse(2) async
-   do i = 1, n
-      do iloc = 1, 3
-         postemp(iloc,i) = 0
-      end do
-   end do
-
-!$acc parallel loop async
-   do i = 1, nloc
-      iglob = glob(i)
-      postemp(1,i) = x(iglob)
-      postemp(2,i) = y(iglob)
-      postemp(3,i) = z(iglob)
-   end do
-!
-!     get the sizes of the domains
-!
-   do iproc = 0, nproc-1
-      if (iproc.ne.rank) then
-         tag = nproc*rank + iproc + 1
-         call MPI_IRECV(domlen(iproc+1),1,MPI_INT,iproc,tag,&
-            &get_domain_comm(),reqrec(iproc+1),ierr)
-      end if
-   end do
-   do iproc = 0, nproc-1
-      if (iproc.ne.rank) then
-         tag = nproc*iproc + rank + 1
-         call MPI_ISEND(domlen(rank+1),1,MPI_INT,iproc,tag,&
-            &get_domain_comm(),reqsend(iproc+1),ierr)
-      end if
-   end do
-   do iproc = 0, nproc-1
-      if (iproc.ne.rank) then
-         call MPI_WAIT(reqsend(iproc+1),status,ierr)
-         call MPI_WAIT(reqrec(iproc+1),status,ierr)
-      end if
-   end do
-!
-   bufbeg(rank+1) = 1
-   count = domlen(rank+1)
-   do iproc = 0, nproc-1
-      if (iproc.ne.rank) then
-         if (domlen(iproc+1).eq.0) then
-            bufbeg(iproc+1) = 1
-         else
-            bufbeg(iproc+1) = count + 1
-         end if
-         count = count + domlen(iproc+1)
-      end if
-   end do
-!
-!     get the indexes
-!
-!$acc host_data use_device(glob)
-   do iproc = 0, nproc-1
-      if (iproc.ne.rank) then
-         tag = nproc*rank + iproc + 1
-         call MPI_IRECV(glob(bufbeg(iproc+1)),domlen(iproc+1),MPI_INT,&
-            &iproc,tag,get_domain_comm(),reqrec(iproc+1),ierr)
-      end if
-   end do
-!$acc wait
-   do iproc = 0, nproc-1
-      if (iproc.ne.rank) then
-         tag = nproc*iproc + rank + 1
-         call MPI_ISEND(glob,domlen(rank+1),MPI_INT,iproc,tag,&
-            &get_domain_comm(),reqsend(iproc+1),ierr)
-      end if
-   end do
-!$acc end host_data
-
-   do iproc = 0, nproc-1
-      if (iproc.ne.rank) then
-         call MPI_WAIT(reqsend(iproc+1),status,ierr)
-         call MPI_WAIT(reqrec(iproc+1),status,ierr)
-      end if
-   end do
-!
-!     get the positions
-!
-!$acc host_data use_device(postemp)
-   do iproc = 0, nproc-1
-      if (iproc.ne.rank) then
-         tag = nproc*rank + iproc + 1
-         call MPI_IRECV(postemp(1,bufbeg(iproc+1)),3*domlen(iproc+1),&
-            &MPI_RPREC,iproc,tag,get_domain_comm(),reqrec(iproc+1),ierr)
-      end if
-   end do
-   do iproc = 0, nproc-1
-      if (iproc.ne.rank) then
-         tag = nproc*iproc + rank + 1
-         call MPI_ISEND(postemp,3*nloc,MPI_RPREC,iproc,tag,&
-            &get_domain_comm(),reqsend(iproc+1),ierr)
-      end if
-   end do
-!$acc end host_data
-
-   do iproc = 0, nproc-1
-      if (iproc.ne.rank) then
-         call MPI_WAIT(reqsend(iproc+1),status,ierr)
-         call MPI_WAIT(reqrec(iproc+1),status,ierr)
-      end if
-   end do
-!
-!     put it back in the global arrays
-!
-   do iproc = 0, nproc-1
-      if (iproc.ne.rank) then
-         ibufbeg = bufbeg(iproc+1)
-!$acc parallel loop async
-         do i = 1, domlen(iproc+1)
-            iloc  = ibufbeg+i-1
-            iglob = glob(iloc)
-            x(iglob) = postemp(1,iloc)
-            y(iglob) = postemp(2,iloc)
-            z(iglob) = postemp(3,iloc)
-         end do
-      end if
-   end do
-!
-!$acc end data
-   deallocate (reqsend)
-   deallocate (reqrec)
-   deallocate (postemp)
-end subroutine sendallpos
-!
-!     subroutine sendvecmin : deal with communications during minimization routine
-!
-module subroutine sendvecmin(xx)
-   use atomsMirror
-   use domdec
-   use mpi
-   use tinheader ,only:ti_p,re_p
-   implicit none
-   integer i,iglob,iloc,iproc,tag,ierr,j
-   integer ibufbeg
-   integer status(MPI_STATUS_SIZE),count
-   integer, allocatable :: reqsend(:),reqrec(:)
-   real(r_p), allocatable :: temp(:,:)
-   real(r_p), intent(inout) :: xx(*)
-!
-   if (nproc.eq.1) return
-
-   allocate (reqrec(nproc))
-   allocate (reqsend(nproc))
-   allocate (temp(3,n))
-!$acc data create(temp) present(xx) async
-
-!$acc parallel loop collapse(2) async
-   do i = 1, n
-      do j = 1, 3
-         temp(j,i) = 0.0_re_p
-      end do
-   end do
-!
-!     put the arrays to be sent in the right order
-!
-!$acc parallel loop collapse(2) async
-   do i = 1, nloc
-      do j = 1, 3
-         iglob = glob(i)
-         temp(j,i) = xx(3*(iglob-1)+j)
-      end do
-   end do
-!
-!     get the sizes of the domains
-!
-   do iproc = 0, nproc-1
-      if (iproc.ne.rank) then
-         tag = nproc*rank + iproc + 1
-         call MPI_IRECV(domlen(iproc+1),1,MPI_INT,iproc,tag,&
-            &get_domain_comm(),reqrec(iproc+1),ierr)
-      end if
-   end do
-   do iproc = 0, nproc-1
-      if (iproc.ne.rank) then
-         tag = nproc*iproc + rank + 1
-         call MPI_ISEND(domlen(rank+1),1,MPI_INT,iproc,tag,&
-            &get_domain_comm(),reqsend(iproc+1),ierr)
-      end if
-   end do
-   do iproc = 0, nproc-1
-      if (iproc.ne.rank) then
-         call MPI_WAIT(reqsend(iproc+1),status,ierr)
-         call MPI_WAIT(reqrec(iproc+1),status,ierr)
-      end if
-   end do
-!
-   bufbeg(rank+1) = 1
-   count = domlen(rank+1)
-   do iproc = 0, nproc-1
-      if (iproc.ne.rank) then
-         if (domlen(iproc+1).eq.0) then
-            bufbeg(iproc+1) = 1
-         else
-            bufbeg(iproc+1) = count + 1
-         end if
-         count = count + domlen(iproc+1)
-      end if
-   end do
-!
-!     get the indexes
-!
-!$acc host_data use_device(glob)
-   do iproc = 0, nproc-1
-      if (iproc.ne.rank) then
-         tag = nproc*rank + iproc + 1
-         call MPI_IRECV(glob(bufbeg(iproc+1)),domlen(iproc+1),MPI_INT,&
-            &iproc,tag,get_domain_comm(),reqrec(iproc+1),ierr)
-      end if
-   end do
-!$acc wait
-   do iproc = 0, nproc-1
-      if (iproc.ne.rank) then
-         tag = nproc*iproc + rank + 1
-         call MPI_ISEND(glob,domlen(rank+1),MPI_INT,iproc,tag,&
-            &get_domain_comm(),reqsend(iproc+1),ierr)
-      end if
-   end do
-!$acc end host_data
-   do iproc = 0, nproc-1
-      if (iproc.ne.rank) then
-         call MPI_WAIT(reqsend(iproc+1),status,ierr)
-         call MPI_WAIT(reqrec(iproc+1),status,ierr)
-      end if
-   end do
-!
-!     get the values of xx
-!
-!$acc host_data use_device(temp)
-   do iproc = 0, nproc-1
-      if (iproc.ne.rank) then
-         tag = nproc*rank + iproc + 1
-         call MPI_IRECV(temp(1,bufbeg(iproc+1)),3*domlen(iproc+1),&
-            &MPI_RPREC,iproc,tag,get_domain_comm(),reqrec(iproc+1),ierr)
-      end if
-   end do
-   do iproc = 0, nproc-1
-      if (iproc.ne.rank) then
-         tag = nproc*iproc + rank + 1
-         call MPI_ISEND(temp,3*nloc,MPI_RPREC,iproc,tag,&
-            &get_domain_comm(),reqsend(iproc+1),ierr)
-      end if
-   end do
-   do iproc = 0, nproc-1
-      if (iproc.ne.rank) then
-         call MPI_WAIT(reqsend(iproc+1),status,ierr)
-         call MPI_WAIT(reqrec(iproc+1),status,ierr)
-      end if
-   end do
-!$acc end host_data
-!
-!     put it back in the global arrays
-!
-   do iproc = 0, nproc-1
-      if (iproc.ne.rank) then
-         ibufbeg = bufbeg(iproc+1)
-!$acc parallel loop present(glob,xx,temp) async
-         do i = 1, domlen(iproc+1)
-            iloc  = ibufbeg+i-1
-            iglob = glob(iloc)
-            xx(3*(iglob-1)+1) = temp(1,iloc)
-            xx(3*(iglob-1)+2) = temp(2,iloc)
-            xx(3*(iglob-1)+3) = temp(3,iloc)
-         end do
-      end if
-   end do
-!
-!$acc end data
-   deallocate (reqrec)
-   deallocate (reqsend)
-   deallocate (temp)
-end subroutine sendvecmin
 !
 
 !     subroutine orderbuffer : get the indexes of the particules in the neighboring processes
@@ -4416,13 +4004,13 @@ module subroutine orderbufrec_gpu
       call MPI_ISEND(globrec,domlenrec(rankloc+1),MPI_INT&
          &,prec_send(iproc),tag,merge(get_recip_comm(),get_domain_comm(),use_pmecore),reqsend(iproc),ierr)
    end do
-!$acc end host_data
    do iproc = 1, nrec_recep
       call MPI_WAIT(reqrec(iproc),status,ierr)
    end do
    do iproc = 1, nrec_send
       call MPI_WAIT(reqsend(iproc),status,ierr)
    end do
+!$acc end host_data
 !
 !$acc data present(globrec,locrec,repartrec)
    do iproc = 1, nrec_recep
@@ -4446,15 +4034,16 @@ module subroutine orderbufrec_gpu
 
    !Debug Stuff
    if (tinkerdebug.gt.0) then
-
-      call MPI_AllReduce(nlocrec,reqsend(1),1,MPI_INT&
-         &,MPI_SUM,merge(get_recip_comm(),get_domain_comm(),use_pmecore),ierr)
-      if (reqsend(1).ne.n.and.&
-         &((use_pmecore.and.rank.eq.ndir).or.&
-         &(.not.use_pmecore.and.rank.eq.0)) ) then
-48       format('orderbufrec_gpu::Error',/&
-            &,' nlocrec reduction',I8,'.ne. natoms',I9)
-         print 48, reqsend(1),n
+      if (.not.use_pmecore .or. rank.ge.ndir) then
+         call MPI_AllReduce(nlocrec,reqsend(1),1,MPI_INT&
+            &,MPI_SUM,merge(get_recip_comm(),get_domain_comm(),use_pmecore),ierr)
+         if (reqsend(1).ne.n.and.&
+            &((use_pmecore.and.rank.eq.ndir).or.&
+            &(.not.use_pmecore.and.rank.eq.0)) ) then
+48          format('orderbufrec_gpu::Error',/&
+               &,' nlocrec reduction',I8,'.ne. natoms',I9)
+            print 48, reqsend(1),n
+         end if
       end if
       call MPI_BARRIER(get_host_comm(),ierr)
 
@@ -4475,5 +4064,1144 @@ module subroutine orderbufrec_gpu
    if (deb_Path) write(*,*) '   << orderbufrec_gpu'
    deallocate(reqsend,reqrec)
 end subroutine orderbufrec_gpu
+
+   module subroutine exchange_polymer_positions(polymer,send_centroid,fast)
+      use atomsMirror
+      use domdec
+      use parallel, only: get_domain_comm
+      use inform   ,only: deb_Path
+      use freeze
+      use mpi
+      use potent
+      use timestat ,only: timer_enter,timer_exit,timer_commstep&
+         &,quiet_timers
+      use parallel ,only: domain_workspace_rp
+      implicit none
+      type(POLYMER_COMM_TYPE), intent(inout) :: polymer
+      logical, intent(in) :: send_centroid
+      logical, intent(in) :: fast
+      integer i,k,j,tag,ierr,iproc
+      integer iloc,iglob,idomlen,ibufbeg
+      real(r_p),pointer:: buffer(:,:,:),buffers(:,:,:)
+      real(r_p),pointer:: buffer_rp1(:),buffer_rp2(:)
+      integer, allocatable :: reqrec(:),reqsend(:)
+      integer,dimension(nproc):: ptemp_recep,ptemp_send
+      integer status(MPI_STATUS_SIZE)
+      integer ntemp_recep,ntemp_send
+      integer nbeadsproc,ibeadbeg,ibeadend,nbeadssend
+      integer cshift
+
+      if (nproc.eq.1.or.(use_pmecore).and.(rank.gt.ndir-1)) return
+
+      if (fast) then
+         ptemp_recep = pneig_recep
+         ptemp_send  = pneig_send
+         ntemp_recep = nneig_recep
+         ntemp_send  = nneig_send
+      else
+         ptemp_recep = pbig_recep
+         ptemp_send  = pbig_send
+         ntemp_recep = nbig_recep
+         ntemp_send  = nbig_send
+      end if
+
+      if(send_centroid) then
+         cshift=1
+      else
+         cshift=0
+      endif
+
+      ibeadbeg=polymer%ibead_beg(rank_polymer+1)
+      ibeadend=polymer%ibead_end(rank_polymer+1)
+      nbeadsproc = ibeadend-ibeadbeg+1
+      nbeadssend = nbeadsproc+cshift
+!
+!
+!     communicate positions
+!
+      call timer_enter( timer_commstep )
+      if (deb_Path) write(*,*) '   >> commpos'
+
+      !Fetch memory from pool
+      allocate (reqsend(nproc))
+      allocate (reqrec(nproc))
+!$acc wait
+      call domain_workspace_rp(1,3*nbloc*nbeadssend,buffer_rp1)
+      call domain_workspace_rp(2,3*nloc*nbeadssend,buffer_rp2)
+      buffer (1:nbeadssend,1:3,1:nbloc)&
+         &=>buffer_rp1(1:3*nbloc*nbeadssend)
+      buffers(1:nbeadssend,1:3,1:nloc)&
+         &=>buffer_rp2(1:3*nloc*nbeadssend)
+!
+!     MPI : begin reception in buffer
+!
+!$acc host_data use_device(buffer)
+      do i = 1, ntemp_recep
+         tag = nproc*rank + ptemp_recep(i) + 1
+         call MPI_IRECV(buffer(1,1,bufbeg(ptemp_recep(i)+1)),&
+            &3*domlen(ptemp_recep(i)+1)*nbeadssend,&
+            &MPI_RPREC,ptemp_recep(i),tag,get_domain_comm(),reqrec(i),ierr)
+      end do
+!$acc end host_data
+!
+!     MPI : move in buffer
+!
+!$acc parallel loop async default(present) collapse(3)
+      do i = 1, nloc; do j=1,3; do k=1,nbeadsproc
+               iglob = glob(i)
+               if(k==cshift) then
+                  buffers(1,j,i) = polymer%eigpos(j,iglob,1)
+               endif
+               buffers(k+cshift,j,i) = polymer%pos(j,iglob,k+ibeadbeg-1)
+            end do ; enddo ; enddo
+!
+!     MPI : begin sending
+!
+!$acc wait
+!$acc host_data use_device(buffers)
+      do i = 1, ntemp_send
+         tag = nproc*ptemp_send(i) + rank + 1
+         call MPI_ISEND(buffers,3*nloc*nbeadssend&
+            &,MPI_RPREC,&
+            &ptemp_send(i),tag,get_domain_comm(),&
+            &reqsend(i),ierr)
+      end do
+!$acc end host_data
+!
+      do i = 1, ntemp_recep
+         call MPI_WAIT(reqrec(i),status,ierr)
+      end do
+      do i = 1, ntemp_send
+         call MPI_WAIT(reqsend(i),status,ierr)
+      end do
+!
+!     MPI : move in global arrays
+!
+      do iproc = 1, ntemp_recep
+         idomlen = domlen(ptemp_recep(iproc)+1)
+         ibufbeg = bufbeg(ptemp_recep(iproc)+1)
+!$acc parallel loop async default(present)  collapse(2)
+         do i = 1, idomlen; do j=1,3
+               iloc   = ibufbeg+i-1
+               iglob  = glob(iloc)
+               if(cshift==1) then
+                  polymer%eigpos(j,iglob,1)=buffer(1,j,iloc)
+               endif
+!$acc loop seq
+               do k = 1, nbeadsproc
+                  polymer%pos(j,iglob,k+ibeadbeg-1)&
+                     &= buffer(k+cshift,j,iloc)
+               enddo
+            end do; enddo
+      end do
+!
+      nullify(buffer)
+      nullify(buffers)
+      deallocate (reqsend)
+      deallocate (reqrec)
+
+      if (deb_Path) write(*,*) '   << commpos'
+      call timer_exit( timer_commstep,quiet_timers )
+   end subroutine exchange_polymer_positions
+
+   module subroutine exchange_polymer_recip_positions(polymer,send_centroid)
+      use atomsMirror
+      use domdec
+      use parallel, only: get_domain_comm, get_recip_comm
+      use inform   ,only: deb_Path
+      use mpi
+      use potent   ,only: use_pmecore
+      use pme      ,only: GridDecomp1d
+      use timestat ,only: timer_enter,timer_exit,timer_commstep&
+         &,quiet_timers
+      use parallel ,only: domain_workspace_rp
+      implicit none
+      type(POLYMER_COMM_TYPE), intent(inout) :: polymer
+      logical, intent(in) :: send_centroid
+      integer i,iproc,iprec
+      integer iglob,iloc,j,k
+      integer tag,ierr,ibufbeg,idomlen
+      integer rankloc,nprocloc
+      integer status(MPI_STATUS_SIZE)
+      real(r_p),pointer :: buffer(:,:,:),buffers(:,:,:)
+      real(r_p),pointer :: buffer_rp1(:),buffer_rp2(:)
+      integer, allocatable :: reqsend(:),reqrec(:)
+      integer nbeadsproc,ibeadbeg,ibeadend,nbeadssend
+      integer cshift
+
+      if (nproc.eq.1) return
+      if(send_centroid) then
+         cshift=1
+      else
+         cshift=0
+      endif
+
+!
+      if (GridDecomp1d.and.Bdecomp1d.and..not.use_pmecore) return
+
+      call timer_enter( timer_commstep )
+      if (deb_Path) write(*,*) '   >> commposrecpi'
+
+      ibeadbeg=polymer%ibead_beg(rank_polymer+1)
+      ibeadend=polymer%ibead_end(rank_polymer+1)
+      nbeadsproc = ibeadend-ibeadbeg+1
+      nbeadssend = nbeadsproc+cshift
+      allocate(reqsend(max(1,nproc)),reqrec(max(1,nproc)))
+      reqsend = MPI_REQUEST_NULL
+      reqrec = MPI_REQUEST_NULL
+!
+      if (use_pmecore) then
+         nprocloc = nrec
+         rankloc  = rank_bis
+      else
+         nprocloc = nproc
+         rankloc  = rank
+      end if
+!
+!     allocate some arrays
+!
+!$acc wait
+      call domain_workspace_rp(1,3*max(nblocrecdir,nlocrec2)*nbeadssend,buffer_rp1)
+      call domain_workspace_rp(2,3*max(nloc,nlocrec)*nbeadssend,buffer_rp2)
+      buffer (1:nbeadssend,1:3,1:nblocrecdir)&
+         &=>buffer_rp1(1:3*nblocrecdir*nbeadssend)
+      buffers(1:nbeadssend,1:3,1:nloc)&
+         &=>buffer_rp2(1:3*nloc*nbeadssend)
+!
+!     first do dir rec communications
+!
+!
+!     MPI : begin reception in buffer
+!
+!$acc data present(x,y,z,glob,globrec)
+!$acc data present(buffer,buffers)
+
+!$acc host_data use_device(buffer,buffers)
+      do i = 1, nrecdir_recep2
+         if (precdir_recep2(i).ne.rank) then
+            tag = nproc*rank + precdir_recep2(i) + 1
+            call MPI_IRECV(buffer(1,1,bufbeg(precdir_recep2(i)+1)),&
+               &3*domlen(precdir_recep2(i)+1)*nbeadssend,MPI_RPREC,&
+               &precdir_recep2(i),tag,get_domain_comm(),reqrec(i),ierr)
+         end if
+      end do
+!
+!     MPI : move in buffer
+!
+!$acc parallel loop async default(present) collapse(3)
+      do i = 1, nloc; do j=1,3; do k=1,nbeadsproc
+               iglob = glob(i)
+               if(k==cshift) then
+                  buffers(1,j,i) = polymer%eigpos(j,iglob,1)
+               endif
+               buffers(k+cshift,j,i) = polymer%pos(j,iglob,k+ibeadbeg-1)
+            end do ; enddo ; enddo
+!
+!     MPI : begin sending
+!
+!$acc wait
+      do i = 1, nrecdir_send2
+         if (precdir_send2(i).ne.rank) then
+            tag = nproc*precdir_send2(i) + rank + 1
+            call MPI_ISEND(buffers,3*nloc*nbeadssend&
+               &,MPI_RPREC,precdir_send2(i),&
+               &tag,get_domain_comm(),reqsend(i),ierr)
+         end if
+      end do
+!$acc end host_data
+!
+!     MPI : move in global arrays
+!
+      do iproc = 1, nrecdir_recep2
+         if (precdir_recep2(iproc).ne.rank) then
+            call MPI_WAIT(reqrec(iproc),status,ierr)
+            ibufbeg = bufbeg(precdir_recep2(iproc)+1)
+            idomlen = domlen(precdir_recep2(iproc)+1)
+!$acc parallel loop async collapse(3) default(present)
+            do i = 1, idomlen; do j=1,3; do k=1,nbeadsproc
+                     iloc     = ibufbeg+i-1
+                     iglob    = glob(iloc)
+                     if(k==cshift) then
+                        polymer%eigpos(j,iglob,1) = buffer(1,j,iloc)
+                     endif
+                     polymer%pos(j,iglob,k+ibeadbeg-1) = buffer(k+cshift,j,iloc)
+                  enddo; enddo; enddo
+         end if
+      end do
+!
+      do i = 1, nrecdir_send2
+         if (precdir_send2(i).ne.rank) then
+            call MPI_WAIT(reqsend(i),status,ierr)
+         end if
+      end do
+!
+!$acc end data
+!$acc wait
+      nullify(buffer)
+      nullify(buffers)
+!
+!     then do rec rec communications
+!
+      buffer (1:nbeadssend,1:3,1:nlocrec2)&
+         &=>buffer_rp1(1:3*nlocrec2*nbeadssend)
+      buffers(1:nbeadssend,1:3,1:nlocrec)&
+         &=>buffer_rp2(1:3*nlocrec*nbeadssend)
+
+!$acc data present(buffer,buffers)
+!
+!     MPI : begin reception in buffer
+!
+!$acc host_data use_device(buffer,buffers)
+      do i = 1, nrec_recep
+         tag = nprocloc*rankloc + prec_recep(i) + 1
+         call MPI_IRECV(buffer(1,1,bufbegrec(prec_recep(i)+1))&
+            &,3*domlenrec(prec_recep(i)+1)*nbeadssend,MPI_RPREC&
+            &,prec_recep(i),tag,merge(get_recip_comm(),get_domain_comm(),use_pmecore),reqrec(i),ierr)
+      end do
+!
+!     MPI : move in buffer
+!
+!$acc parallel loop async default(present) collapse(3)
+      do i = 1, nlocrec; do j=1,3; do k=1,nbeadsproc
+               iglob = globrec(i)
+               if(k==cshift) then
+                  buffers(1,j,i) = polymer%eigpos(j,iglob,1)
+               endif
+               buffers(k+cshift,j,i) = polymer%pos(j,iglob,k+ibeadbeg-1)
+            end do ; enddo ; enddo
+!
+!     MPI : begin sending
+!
+!$acc wait
+      do i = 1, nrec_send
+         tag = nprocloc*prec_send(i) + rankloc+1
+         call MPI_ISEND(buffers,3*nlocrec*nbeadssend&
+            &,MPI_RPREC,prec_send(i)&
+            &,tag,merge(get_recip_comm(),get_domain_comm(),use_pmecore),reqsend(i),ierr)
+      end do
+!$acc end host_data
+!
+!     MPI : move in global arrays
+!
+      do iproc = 1, nrec_recep
+         call MPI_WAIT(reqrec(iproc),status,ierr)
+         ibufbeg = bufbegrec(prec_recep(iproc)+1)
+         idomlen = domlenrec(prec_recep(iproc)+1)
+!$acc parallel loop async collapse(3) default(present)
+         do i = 1, idomlen; do j=1,3; do k=1,nbeadsproc
+                  iloc     = ibufbeg+i-1
+                  iglob    = globrec(iloc)
+                  if(k==cshift) then
+                     polymer%eigpos(j,iglob,1) = buffer(1,j,iloc)
+                  endif
+                  polymer%pos(j,iglob,k+ibeadbeg-1) = buffer(k+cshift,j,iloc)
+               enddo; enddo; enddo
+      end do
+      ! Wait for sending requests
+      do i = 1, nrec_send
+         call MPI_WAIT(reqsend(i),status,ierr)
+      end do
+
+!$acc end data
+!$acc end data
+      nullify(buffer)
+      nullify(buffers)
+      deallocate(reqsend,reqrec)
+
+      if (deb_Path) write(*,*) '   << commposrecpi'
+      call timer_exit( timer_commstep,quiet_timers )
+   end subroutine exchange_polymer_recip_positions
+
+   module subroutine exchange_polymer_gradient_state(polymer,send_centroid,send_vel)
+      use beads
+      use mpi
+      use domdec
+      use parallel, only: get_replica_comm
+      use inform, only: deb_path
+      implicit none
+      type(POLYMER_COMM_TYPE),intent(inout) :: polymer
+      logical, intent(in) :: send_centroid
+      logical, intent(in), optional :: send_vel
+      integer :: ibead,k,i,j,iglob,iproc,maxsend,nsend,maxloc
+      integer :: maxrecv,nproc_recv
+      integer :: isend,ii,ierr,ns,nr,iloc,kk
+      integer, parameter :: mptag_size=0,mptag_data=1
+      integer :: reqs(2*nproc_polymer)
+      LOGICAL :: flag
+      real(r_p) :: sqrtnu
+      integer :: nbeadslocmax, nlocproc
+      integer :: ibeadbeg,ibeadend,nu
+      integer :: ilocend,ilocbeg
+      integer :: cshift,nelt
+      integer :: send_vel_
+      real(r_p), allocatable :: bufferpi_s(:,:,:)
+      real(r_p), allocatable :: bufferpi_r(:,:,:)
+
+      if(nproc_polymer==1) return
+      reqs(:)=MPI_REQUEST_NULL
+
+      if(deb_path) then
+         write(*,*) '>> exchange_polymer_gradient_state'
+      endif
+      if(send_centroid) then
+         cshift=1
+      else
+         cshift=0
+      endif
+
+      send_vel_=.true.
+      if(present(send_vel)) send_vel_=send_vel
+      if(allocated(polymer%vel) .and. send_vel_) then
+         nelt=2
+      else
+         nelt=1
+      endif
+
+      nu=polymer%nbeads
+      sqrtnu=sqrt(real(nu))
+
+      if(pi_comm_report) then
+         write(pi_comm_unit,*) "  entering exchange_polymer_gradient_state"
+         FLUSH(pi_comm_unit)
+      endif
+
+      maxloc=nlocpis(nproc_polymer)
+      nbeadslocmax=polymer%nbeadsloc(nproc_polymer)
+      nlocproc=int(nloc/nproc_polymer)
+
+      allocate(bufferpi_s(nelt*3,maxloc*(nbeadslocmax+cshift)&
+         &,nproc_polymer))
+      allocate(bufferpi_r(nelt*3,maxloc*(nbeadslocmax+cshift)&
+         &,nproc_polymer))
+
+!$acc enter data create(bufferpi_r,bufferpi_s) async
+
+      !PUT DATA INTO BUFFER ARRAYS
+
+      ilocbeg=ilocpi_beg(rank_polymer+1)
+      ilocend=ilocpi_end(rank_polymer+1)
+
+!$acc parallel loop collapse(2) async &
+!$acc present(bufferpi_s)
+      DO k=1,nu; DO iloc=0,ilocend-ilocbeg !; DO j=1,3
+            iproc=polymer%iproc(k)
+            if(rank_polymer==iproc-1) CYCLE
+            ibeadbeg=polymer%ibead_beg(iproc)
+            i=glob(ilocbeg+iloc)
+            if(k-ibeadbeg==0 .and. send_centroid) then
+               kk=iloc +1
+!$acc loop seq
+               DO j=1,3
+                  bufferpi_s(j,kk,iproc) = polymer%eigpos(j,i,1)
+               ENDDO
+               if(nelt==2) then
+!$acc loop seq
+                  DO j=1,3
+                     bufferpi_s(3+j,kk,iproc) = polymer%eigvel(j,i,1)
+                  ENDDO
+               endif
+            endif
+            kk=(k-ibeadbeg + cshift)*nlocpi+ iloc +1
+!$acc loop seq
+            DO j=1,3
+               bufferpi_s(j,kk,iproc)=polymer%pos(j,i,k)
+            ENDDO
+            if(nelt==2) then
+!$acc loop seq
+               DO j=1,3
+                  bufferpi_s(3+j,kk,iproc)=polymer%vel(j,i,k)
+               ENDDO
+            endif
+         ENDDO; ENDDO !; ENDDO
+
+!$acc wait
+!$acc host_data use_device(bufferpi_s,bufferpi_r)
+      ii=0
+      DO iproc=1,nproc_polymer
+         if(rank_polymer==iproc-1) CYCLE
+         ii=ii+1
+         ibeadbeg = polymer%ibead_beg(iproc)
+         ibeadend = polymer%ibead_end(iproc)
+         if(pi_comm_report) then
+            write(pi_comm_unit,*) "  send"&
+               &,nelt*3*(ilocend-ilocbeg+1)*(ibeadend-ibeadbeg+1+cshift)&
+               &,"ats to",iproc-1
+         endif
+         call MPI_ISEND(bufferpi_s(1,1,iproc)&
+            &,nelt*3*(ilocend-ilocbeg+1)*(ibeadend-ibeadbeg+1+cshift)&
+            &,MPI_RPREC&
+            &,iproc-1, mptag_data, get_replica_comm(), reqs(ii),ierr)
+      ENDDO
+
+      ibeadbeg = polymer%ibead_beg(rank_polymer+1)
+      ibeadend = polymer%ibead_end(rank_polymer+1)
+      DO iproc=1,nproc_polymer
+         if(rank_polymer==iproc-1) CYCLE
+         ii=ii+1
+         ilocbeg=ilocpi_beg(iproc)
+         ilocend=ilocpi_end(iproc)
+         if(pi_comm_report) then
+            write(pi_comm_unit,*) "  receive"&
+               &,nelt*3*(ilocend-ilocbeg+1)*(ibeadend-ibeadbeg+1+cshift)&
+               &,"ats from",iproc-1
+         endif
+         call MPI_IRECV(bufferpi_r(1,1,iproc)&
+            &,nelt*3*(ilocend-ilocbeg+1)*(ibeadend-ibeadbeg+1+cshift)&
+            &,MPI_RPREC,iproc-1,mptag_data, get_replica_comm()&
+            &,reqs(ii),ierr)
+      ENDDO
+!$acc end host_data
+
+      !WAIT FOR COMMUNICATIONS
+      if(pi_comm_report) then
+         write(pi_comm_unit,*) "  Wait for data"
+         FLUSH(pi_comm_unit)
+      endif
+      call MPI_WAITALL(ii,reqs,MPI_STATUSES_IGNORE,ierr)
+
+
+      !PUT DATA INTO POLYMER ARRAYS
+
+!$acc parallel loop collapse(2) async &
+!$acc present(bufferpi_r,ilocpi_beg,ilocpi_end)
+      DO k=1-cshift,ibeadend-ibeadbeg+1; DO iloc=1,nloc !; DO j=1,3
+            iproc=min(nproc_polymer,int((iloc-1)/nlocproc)+1)
+            if(rank_polymer==iproc-1) CYCLE
+            ilocbeg=ilocpi_beg(iproc)
+            ilocend=ilocpi_end(iproc)
+            i=glob(iloc)
+            if(k==0) then
+               kk=iloc-ilocbeg + 1
+!$acc loop seq
+               DO j=1,3
+                  polymer%eigpos(j,i,1)=bufferpi_r(j,kk,iproc)
+               ENDDO
+               if(nelt==2) then
+!$acc loop seq
+                  DO j=1,3
+                     polymer%eigvel(j,i,1)=bufferpi_r(3+j,kk,iproc)
+                  ENDDO
+               endif
+            else
+               ibead=k+ibeadbeg-1
+               kk=(k+cshift-1)*(ilocend-ilocbeg+1)+ iloc-ilocbeg +1
+!$acc loop seq
+               DO j=1,3
+                  polymer%pos(j,i,ibead)=bufferpi_r(j,kk,iproc)
+               ENDDO
+               if(nelt==2) then
+!$acc loop seq
+                  DO j=1,3
+                     polymer%vel(j,i,ibead)=bufferpi_r(3+j,kk,iproc)
+                  ENDDO
+               endif
+            endif
+         ENDDO; ENDDO !; ENDDO
+
+!!$acc wait
+!      call MPI_BARRIER(COMM_POLYMER,ierr)
+
+!$acc exit data delete(bufferpi_s,bufferpi_r) async
+      deallocate(bufferpi_s,bufferpi_r)
+
+      if(pi_comm_report) then
+         write(pi_comm_unit,*) "  exiting exchange_polymer_gradient_state"
+         FLUSH(pi_comm_unit)
+      endif
+
+      if(deb_path) then
+         write(*,*) '<< exchange_polymer_gradient_state'
+      endif
+
+   end subroutine exchange_polymer_gradient_state
+   module subroutine exchange_polymer_normal_modes(polymer&
+      &,array1,array2,array3,array4)
+      use beads
+      use mpi
+      use domdec
+      use parallel, only: get_replica_comm
+      use inform, only: deb_path
+      implicit none
+      type(POLYMER_COMM_TYPE),intent(inout) :: polymer
+      real(r_p), intent(inout) :: array1(:,:,:)
+      real(r_p), intent(inout), optional :: array2(:,:,:)
+      real(r_p), intent(inout), optional :: array3(:,:,:)
+      real(r_p), intent(inout), optional :: array4(:,:,:)
+      logical :: send_pos_, send_vel_,slow_
+      logical :: correctorder
+      integer :: ibead,k,i,j,iglob,iproc,maxsend,nsend,maxloc
+      integer :: maxrecv,nproc_recv
+      integer :: isend,ii,ierr,ns,nr,iloc,kk
+      integer, parameter :: mptag_size=0,mptag_data=1
+      integer :: reqs(2*nproc_polymer)
+      LOGICAL :: flag
+      real(r_p) :: sqrtnu
+      integer :: nbeadslocmax,nlocproc
+      integer :: ibeadbeg,ibeadend,nu
+      integer :: ilocend,ilocbeg,nelt,ielt
+      real(r_p), allocatable :: bufferpi_s(:,:,:)
+      real(r_p), allocatable :: bufferpi_r(:,:,:)
+
+      if(nproc_polymer==1) return
+
+      if(deb_path) then
+!$acc wait
+         write(*,*) '>> exchange_polymer_normal_modes'
+      endif
+
+      reqs(:)=MPI_REQUEST_NULL
+
+      nu=polymer%nbeads
+      sqrtnu=sqrt(real(nu,r_p))
+
+      if(pi_comm_report) then
+         write(pi_comm_unit,*) "  entering exchange_polymer_normal_modes"
+         FLUSH(pi_comm_unit)
+      endif
+
+      maxloc=nlocpis(nproc_polymer)
+      nbeadslocmax=polymer%nbeadsloc(nproc_polymer)
+      nlocproc=int(nloc/nproc_polymer)
+
+      nelt=1
+      if(present(array2)) then
+         nelt=nelt+1
+      endif
+      if(present(array3)) then
+         if(.not. present(array2)) then
+            write(*,*) 'Error in exchange_polymer_normal_modes: array3'&
+               &,' is present but array2 is not'
+            call fatal
+         endif
+         nelt=nelt+1
+      endif
+      if(present(array4)) then
+         if(.not. present(array3)) then
+            write(*,*) 'Error in exchange_polymer_normal_modes: array4'&
+               &,' is present but array3 is not'
+            call fatal
+         endif
+         nelt=nelt+1
+      endif
+      allocate(bufferpi_s(nelt*3,maxloc*nbeadslocmax,nproc_polymer))
+      allocate(bufferpi_r(nelt*3,maxloc*nbeadslocmax,nproc_polymer))
+
+!      allocate(bufferpi_s(3*3,maxloc*nbeadslocmax,nproc_polymer))
+!      allocate(bufferpi_r(3*3,maxloc*nbeadslocmax,nproc_polymer))
+
+!$acc enter data create(bufferpi_r,bufferpi_s) async
+
+      !PUT DATA INTO BUFFER ARRAYS
+      ibeadbeg = polymer%ibead_beg(rank_polymer+1)
+      ibeadend = polymer%ibead_end(rank_polymer+1)
+!$acc parallel loop collapse(2) async &
+!$acc present(bufferpi_s,ilocpi_beg,ilocpi_end)
+      DO k=0,ibeadend-ibeadbeg; DO iloc=1,nloc !; DO j=1,3
+            iproc=min(nproc_polymer,int((iloc-1)/nlocproc)+1)
+            if(rank_polymer==iproc-1) cycle
+            ilocbeg=ilocpi_beg(iproc)
+            ilocend=ilocpi_end(iproc)
+            i=glob(iloc)
+            ibead=k+ibeadbeg
+            kk=k*(ilocend-ilocbeg+1)+ iloc-ilocbeg + 1
+!$acc loop seq
+            do j=1,3
+               bufferpi_s(  j,kk,iproc)=array1(j,i,ibead)
+            enddo
+            if(nelt==1) cycle
+!$acc loop seq
+            do j=1,3
+               bufferpi_s(3+j,kk,iproc)=array2(j,i,ibead)
+            enddo
+            if(nelt==2) cycle
+!$acc loop seq
+            do j=1,3
+               bufferpi_s(6+j,kk,iproc)=array3(j,i,ibead)
+            enddo
+            if(nelt==3) cycle
+!$acc loop seq
+            do j=1,3
+               bufferpi_s(9+j,kk,iproc)=array4(j,i,ibead)
+            enddo
+         ENDDO; ENDDO !; ENDDO
+
+!$acc wait
+!$acc host_data use_device(bufferpi_s,bufferpi_r)
+      ii=0
+      DO iproc=1,nproc_polymer
+         if(rank_polymer==iproc-1) CYCLE
+         ii=ii+1
+         ilocbeg=ilocpi_beg(iproc)
+         ilocend=ilocpi_end(iproc)
+         if(pi_comm_report) then
+            write(pi_comm_unit,*) "  send"&
+               &,nelt*3*(ilocend-ilocbeg+1)*(ibeadend-ibeadbeg+1)&
+               &,"ats to",iproc-1
+         endif
+         call MPI_ISEND(bufferpi_s(1,1,iproc)&
+            &,nelt*3*(ilocend-ilocbeg+1)*(ibeadend-ibeadbeg+1)&
+            &,MPI_RPREC&
+            &,iproc-1, mptag_data, get_replica_comm(), reqs(ii),ierr)
+      ENDDO
+
+      !RECEIVE DATA
+      ilocbeg=ilocpi_beg(rank_polymer+1)
+      ilocend=ilocpi_end(rank_polymer+1)
+      DO iproc=1,nproc_polymer
+         if(rank_polymer==iproc-1) CYCLE
+         ii=ii+1
+         ibeadbeg = polymer%ibead_beg(iproc)
+         ibeadend = polymer%ibead_end(iproc)
+         if(pi_comm_report) then
+            write(pi_comm_unit,*) "  receive"&
+               &,nelt*3*(ilocend-ilocbeg+1)*(ibeadend-ibeadbeg+1)&
+               &,"ats to",iproc-1
+         endif
+         call MPI_IRECV(bufferpi_r(1,1,iproc)&
+            &,nelt*3*(ilocend-ilocbeg+1)*(ibeadend-ibeadbeg+1)&
+            &,MPI_RPREC,iproc-1,mptag_data, get_replica_comm()&
+            &,reqs(ii),ierr)
+      ENDDO
+!$acc end host_data
+
+      !WAIT FOR COMMUNICATIONS
+      call MPI_WAITALL(ii,reqs,MPI_STATUSES_IGNORE,ierr)
+
+      !PUT DATA INTO POLYMER ARRAYS
+
+!$acc parallel loop collapse(2) async &
+!$acc present(polymer,bufferpi_r,polymer%ibead_beg,polymer%iproc)
+      DO k=1,nu; DO iloc=0,ilocend-ilocbeg !; DO j=1,3
+            iproc=polymer%iproc(k)
+            if(rank_polymer==iproc-1) cycle
+            ibeadbeg=polymer%ibead_beg(iproc)
+            i=glob(ilocbeg+iloc)
+            kk=(k-ibeadbeg)*nlocpi + iloc + 1
+!$acc loop seq
+            do j=1,3
+               array1(j,i,k)=bufferpi_r(j,kk,iproc)
+            enddo
+            if(nelt==1) cycle
+!$acc loop seq
+            do j=1,3
+               array2(j,i,k)=bufferpi_r(3+j,kk,iproc)
+            enddo
+            if(nelt==2) cycle
+!$acc loop seq
+            do j=1,3
+               array3(j,i,k)=bufferpi_r(6+j,kk,iproc)
+            enddo
+            if(nelt==3) cycle
+!$acc loop seq
+            do j=1,3
+               array4(j,i,k)=bufferpi_r(9+j,kk,iproc)
+            enddo
+         ENDDO; ENDDO !; ENDDO
+
+!!$acc wait
+!      call MPI_BARRIER(COMM_POLYMER,ierr)
+
+!$acc exit data delete(bufferpi_s,bufferpi_r) async
+      deallocate(bufferpi_s,bufferpi_r)
+
+      if(pi_comm_report) then
+         write(pi_comm_unit,*) "  exiting exchange_polymer_normal_modes"
+         FLUSH(pi_comm_unit)
+      endif
+
+      if(deb_path) then
+         write(*,*) '<< exchange_polymer_normal_modes'
+      endif
+
+   end subroutine exchange_polymer_normal_modes
+   module subroutine exchange_polymer_recip_forces(polymer,derivs,temprec)
+      use deriv
+      use domdec
+      use parallel, only: get_domain_comm, get_recip_comm
+      use mpi
+      use potent ,pa=>PotentialAll
+      use pme    ,only: GridDecomp1d
+      use inform ,only: deb_Path
+      use sizes
+      use timestat ,only: timer_enter,timer_exit,quiet_timers&
+         &,timer_dirreccomm,timer_fmanage
+      use parallel ,only: domain_workspace_rp
+      implicit none
+      type(POLYMER_COMM_TYPE), intent(in) :: polymer
+      integer :: nbeadsproc
+      real(r_p), intent(inout) :: derivs(:,:,:)
+      real(r_p), intent(inout) :: temprec(:,:,:)
+      integer i,j,k,tag,ierr,iproc,iglob,iloc,ilocrec,ibufbeg
+      integer ibeadbeg,ibeadend
+      integer jloc,jglob,jlocrec,ii
+      integer sz1,sz2,sz3
+      integer rankloc,nprocloc
+      integer reqsend(nproc),reqrec(nproc)
+      integer status(MPI_STATUS_SIZE)
+      real(r_p),pointer:: buffer(:,:,:,:)
+      real(r_p),pointer:: buffers(:,:,:),temprecbuf(:,:,:)
+      real(r_p),pointer:: buffer_rp1(:),buffer_rp2(:),buffer_rp3(:)
+
+      ibeadbeg=polymer%ibead_beg(rank_polymer+1)
+      ibeadend=polymer%ibead_end(rank_polymer+1)
+      nbeadsproc=ibeadend-ibeadbeg+1
+
+      !case sequential
+      if (nproc.eq.1) then
+!$acc parallel loop collapse(3) &
+!$acc         default(present) async
+         do k= 1,nbeadsproc; do i = 1, nloc
+               do j = 1, 3
+                  derivs(j,i,k) = derivs(j,i,k) + temprec(j,i,k)
+               end do
+            end do; end do
+
+         return
+      end if
+
+      if (GridDecomp1d.and.Bdecomp1d.and..not.use_pmecore) then
+!$acc parallel loop collapse(3) &
+!$acc         default(present) async
+         do k= 1,nbeadsproc; do i = 1, nbloc
+               do j = 1, 3
+                  ilocrec = locrec(glob(i))
+                  if (ilocrec.eq.0) cycle
+                  derivs(j,i,k) = derivs(j,i,k) + temprec(j,ilocrec,k)
+               end do
+            end do; end do
+
+         return
+      end if
+
+      if (deb_Path) write(*,*) '   >> exchange_polymer_recip_forces'
+      call timer_enter( timer_dirreccomm )
+!
+      if (use_pmecore) then
+         nprocloc = nrec
+         rankloc  = rank_bis
+      else
+         nprocloc = nproc
+         rankloc  = rank
+      end if
+!
+!     allocate some arrays
+!
+!$acc wait
+      sz1=3*max(max(1,nloc)*nrecdir_send1,nlocrec*nrec_send)*nbeadsproc
+      sz2=3*max(1,nblocrecdir)*nbeadsproc
+      sz3=3*max(1,nlocrec2)*nbeadsproc
+      call domain_workspace_rp(1,sz1,buffer_rp1)
+      call domain_workspace_rp(2,sz2,buffer_rp2)
+      call domain_workspace_rp(3,sz3,buffer_rp3)
+
+      sz1 = 3*max(1,nlocrec)*nrec_send
+      buffer(1:nbeadsproc,1:3,1:max(1,nlocrec),1:nrec_send)&
+         &=> buffer_rp1(1:sz1)
+      buffers(1:nbeadsproc,1:3,1:max(1,nblocrecdir))&
+         &=> buffer_rp2(1:sz2)
+      temprecbuf(1:nbeadsproc,1:3,1:max(1,nlocrec2))&
+         &=> buffer_rp3(1:sz3)
+!$acc enter data attach(buffer,buffers)
+!
+!     first do rec rec communications
+!
+!
+!     MPI : begin reception in buffer
+!
+!$acc host_data use_device(buffer)
+      do i = 1, nrec_send
+         tag = nprocloc*rankloc + prec_send(i) + 1
+         call MPI_IRECV(buffer(1,1,1,i),3*nlocrec*nbeadsproc,MPI_RPREC&
+            &,prec_send(i),tag,merge(get_recip_comm(),get_domain_comm(),use_pmecore),reqrec(i),ierr)
+      end do
+!$acc end host_data
+!
+!     MPI : move in buffer
+!
+!$acc data present(temprec,temprecbuf,buffers,derivs)
+
+!$acc parallel loop collapse(3) &
+!$acc         default(present) async
+      do k= 1,nbeadsproc; do i = 1, nlocrec2
+            do j = 1, 3
+               temprecbuf(k,j,i) = temprec(j,i,k)
+            end do
+         end do; end do
+!
+!$acc wait
+!$acc host_data use_device(temprec)
+      do i = 1, nrec_recep
+         tag = nprocloc*prec_recep(i) + rankloc + 1
+         call MPI_ISEND(temprecbuf(1,1,bufbegrec(prec_recep(i)+1))&
+            &,3*domlenrec(prec_recep(i)+1)*nbeadsproc&
+            &,MPI_RPREC&
+            &,prec_recep(i),tag,merge(get_recip_comm(),get_domain_comm(),use_pmecore),reqsend(i),ierr)
+      end do
+!$acc end host_data
+!
+      do i = 1, nrec_send
+         call MPI_WAIT(reqrec(i),status,ierr)
+      end do
+      do i = 1, nrec_recep
+         call MPI_WAIT(reqsend(i),status,ierr)
+      end do
+!
+!     mpi : move in global arrays
+!
+!$acc parallel loop collapse(3) present(buffer)
+      do k=1,nbeadsproc; do i = 1,nlocrec
+            do j = 1,3
+!$acc loop seq
+               do ii = 1,nrec_send
+                  temprec(j,i,k) = temprec(j,i,k) + buffer(k,j,i,ii)
+               end do
+            end do
+         end do; enddo
+
+!$acc exit data detach(buffer)
+      sz1 = 3*max(1,nloc)*nrecdir_send1*nbeadsproc
+      nullify(buffer)
+      buffer(1:nbeadsproc,1:3,1:max(1,nloc),1:nrecdir_send1)&
+         &=> buffer_rp1(1:sz1)
+!$acc enter data attach(buffer)
+!
+!     then do rec dir communications
+!
+!     MPI : begin reception in buffer
+!
+!$acc host_data use_device(buffer)
+      do i = 1, nrecdir_send1
+         if (precdir_send1(i).ne.rank) then
+            tag = nproc*rank + precdir_send1(i) + 1
+            call MPI_IRECV(buffer(1,1,1,i),3*nloc*nbeadsproc,MPI_RPREC&
+               &,precdir_send1(i),tag,get_domain_comm(),reqrec(i),ierr)
+         end if
+      end do
+!$acc end host_data
+!
+!     Move in array
+!
+      do ii = 1, nrecdir_recep1
+         if (precdir_recep1(ii).ne.rank) then
+            ibufbeg =bufbeg(precdir_recep1(ii)+1)-1
+!$acc parallel loop collapse(3) &
+!$acc    present(repartrec,locrec,glob)
+            do k=1,nbeadsproc; do i = 1, domlen(precdir_recep1(ii)+1)
+                  do j = 1,3
+                     iloc = ibufbeg+i
+                     iglob = glob(iloc)
+                     if (repartrec(iglob).eq.rankloc) then
+                        ilocrec = locrec(iglob)
+                        buffers(k,j,iloc) = temprec(j,ilocrec,k)
+                     else
+                        buffers(k,j,iloc) = 0
+                     end if
+                  end do
+               end do; enddo
+         end if
+      end do
+!
+!$acc host_data use_device(buffers)
+      do i = 1, nrecdir_recep1
+         if (precdir_recep1(i).ne.rank) then
+            tag = nproc*precdir_recep1(i) + rank + 1
+            call MPI_ISEND(buffers(1,1,bufbeg(precdir_recep1(i)+1))&
+               &,3*domlen(precdir_recep1(i)+1)*nbeadsproc,MPI_RPREC&
+               &,precdir_recep1(i),tag,get_domain_comm(),reqsend(i),ierr)
+         end if
+      end do
+!$acc end host_data
+!
+      do i = 1, nrecdir_send1
+         if (precdir_send1(i).ne.rank) then
+            call MPI_WAIT(reqrec(i),status,ierr)
+         end if
+      end do
+!
+!     MPI : move in global arrays
+!
+      do ii = 1, nrecdir_send1
+         if (precdir_send1(ii).ne.rank) then
+!$acc parallel loop collapse(3) async present(buffer)
+            do k=1,nbeadsproc; do i = 1,nloc
+                  do j = 1,3
+                     derivs(j,i,k) = derivs(j,i,k) + buffer(k,j,i,ii)
+                  end do
+               end do; enddo
+         else
+!$acc parallel loop collapse(3) async
+            do k=1,nbeadsproc; do i = 1, nlocrec
+                  do j = 1,3
+                     iglob = globrec(i)
+                     iloc  = loc(iglob)
+                     if (repart(iglob).eq.rank) then
+                        derivs(j,iloc,k) = derivs(j,iloc,k) + temprec(j,i,k)
+                     end if
+                  end do
+               end do; enddo
+         end if
+      end do
+
+      do i = 1, nrecdir_recep1
+         if (precdir_recep1(i).ne.rank) then
+            call MPI_WAIT(reqsend(i),status,ierr)
+         end if
+      end do
+
+!$acc wait
+!$acc end data
+!$acc exit data detach(buffer,buffers,temprecbuf)
+      nullify(buffer)
+      nullify(buffers)
+      nullify(temprecbuf)
+
+      call timer_exit( timer_dirreccomm,quiet_timers )
+      if (deb_Path) write(*,*) '   << exchange_polymer_recip_forces'
+
+
+   end subroutine exchange_polymer_recip_forces
+   module subroutine exchange_polymer_contracted_forces(polymer_ctr,derivs_ctr)
+      use beads
+      use mpi
+      use domdec
+      use parallel, only: get_replica_comm
+      implicit none
+      type(POLYMER_COMM_TYPE),intent(inout) :: polymer_ctr
+      real(r_p), intent(inout) :: derivs_ctr(:,:,:)
+      integer :: ibead,k,i,j,iglob,iproc,maxsend,nsend,maxloc
+      integer :: maxrecv,nproc_recv
+      integer :: isend,ii,ierr,ns,nr,iloc,kk
+      integer, parameter :: mptag_size=0,mptag_data=1
+      integer :: reqs(2*nproc_polymer)
+      LOGICAL :: flag
+      real(r_p) :: sqrtnu
+      integer :: nbeadslocmax,nlocproc,nbeadsproc
+      integer :: ibeadbeg,ibeadend,nu
+      integer :: ilocend,ilocbeg
+      real(r_p), allocatable :: bufferpi_s(:,:,:)
+      real(r_p), allocatable :: bufferpi_r(:,:,:)
+
+      nu=polymer_ctr%nbeads
+
+      ilocbeg=ilocpi_beg(rank_polymer+1)
+      ilocend=ilocpi_end(rank_polymer+1)
+      ibeadbeg = polymer_ctr%ibead_beg(rank_polymer+1)
+      ibeadend = polymer_ctr%ibead_end(rank_polymer+1)
+      nbeadsproc = ibeadend-ibeadbeg+1
+
+!$acc parallel loop collapse(3) async &
+!$acc present(polymer_ctr,glob,derivs_ctr)
+      DO k=1,nbeadsproc; DO iloc=ilocbeg,ilocend ; DO j=1,3
+               i=glob(iloc)
+               polymer_ctr%forces_slow(j,i,k+ibeadbeg-1)&
+                  &=-derivs_ctr(j,iloc,k)
+            ENDDO; ENDDO ; ENDDO
+
+      if(nproc_polymer==1)   return
+
+      reqs(:)=MPI_REQUEST_NULL
+
+      if(pi_comm_report) then
+         write(pi_comm_unit,*) "  entering exchange_polymer_contracted_forces"
+         FLUSH(pi_comm_unit)
+      endif
+
+      maxloc=nlocpis(nproc_polymer)
+      nbeadslocmax=polymer_ctr%nbeadsloc(nproc_polymer)
+      nlocproc=int(nloc/nproc_polymer)
+
+      allocate(bufferpi_s(3,maxloc*nbeadslocmax,nproc_polymer))
+      allocate(bufferpi_r(3,maxloc*nbeadslocmax,nproc_polymer))
+
+!$acc enter data create(bufferpi_r,bufferpi_s) async
+
+      !PUT DATA INTO BUFFER ARRAYS
+
+!$acc parallel loop collapse(2) async &
+!$acc present(polymer_ctr,bufferpi_s,ilocpi_beg,ilocpi_end)
+      DO k=1,ibeadend-ibeadbeg+1; DO iloc=1,nloc !; DO j=1,3
+            iproc=min(nproc_polymer,int((iloc-1)/nlocproc)+1)
+            if(rank_polymer/=iproc-1) then
+               ilocbeg=ilocpi_beg(iproc)
+               ilocend=ilocpi_end(iproc)
+               kk=(k-1)*(ilocend-ilocbeg+1)+ iloc-ilocbeg + 1
+!$acc loop seq
+               do j=1,3
+                  bufferpi_s(j,kk,iproc)=derivs_ctr(j,iloc,k)
+               enddo
+            endif
+         ENDDO; ENDDO !; ENDDO
+
+!$acc wait
+!$acc host_data use_device(bufferpi_s,bufferpi_r)
+      ii=0
+      DO iproc=1,nproc_polymer
+         if(rank_polymer==iproc-1) CYCLE
+         ii=ii+1
+         ilocbeg=ilocpi_beg(iproc)
+         ilocend=ilocpi_end(iproc)
+         if(pi_comm_report) then
+            write(pi_comm_unit,*) "  send"&
+               &,3*(ilocend-ilocbeg+1)*(ibeadend-ibeadbeg+1)&
+               &,"ats to",iproc-1
+         endif
+         call MPI_ISEND(bufferpi_s(1,1,iproc)&
+            &,3*(ilocend-ilocbeg+1)*(ibeadend-ibeadbeg+1)&
+            &,MPI_RPREC&
+            &,iproc-1, mptag_data, get_replica_comm(), reqs(ii),ierr)
+      ENDDO
+
+      !RECEIVE DATA
+      ilocbeg=ilocpi_beg(rank_polymer+1)
+      ilocend=ilocpi_end(rank_polymer+1)
+      DO iproc=1,nproc_polymer
+         if(rank_polymer==iproc-1) CYCLE
+         ii=ii+1
+         ibeadbeg = polymer_ctr%ibead_beg(iproc)
+         ibeadend = polymer_ctr%ibead_end(iproc)
+         if(pi_comm_report) then
+            write(pi_comm_unit,*) "  receive"&
+               &,3*(ilocend-ilocbeg+1)*(ibeadend-ibeadbeg+1)&
+               &,"ats to",iproc-1
+         endif
+         call MPI_IRECV(bufferpi_r(1,1,iproc)&
+            &,3*(ilocend-ilocbeg+1)*(ibeadend-ibeadbeg+1)&
+            &,MPI_RPREC,iproc-1,mptag_data, get_replica_comm()&
+            &,reqs(ii),ierr)
+      ENDDO
+!$acc end host_data
+
+      !WAIT FOR COMMUNICATIONS
+      call MPI_WAITALL(ii,reqs,MPI_STATUSES_IGNORE,ierr)
+
+      !PUT DATA INTO POLYMER ARRAYS
+
+!$acc parallel loop collapse(2) async &
+!$acc present(polymer_ctr,bufferpi_r,polymer_ctr%ibead_beg,polymer_ctr%iproc)
+      DO k=1,nu; DO iloc=0,ilocend-ilocbeg !; DO j=1,3
+            iproc=polymer_ctr%iproc(k)
+            if(rank_polymer/=iproc-1) then
+               ibeadbeg=polymer_ctr%ibead_beg(iproc)
+               i=glob(ilocbeg+iloc)
+               kk=(k-ibeadbeg)*nlocpi + iloc + 1
+!$acc loop seq
+               do j=1,3
+                  polymer_ctr%forces_slow(j,i,k)=-bufferpi_r(j,kk,iproc)
+               enddo
+            endif
+         ENDDO; ENDDO !; ENDDO
+
+!!$acc wait
+!      call MPI_BARRIER(COMM_POLYMER,ierr)
+
+!$acc exit data delete(bufferpi_s,bufferpi_r) async
+      deallocate(bufferpi_s,bufferpi_r)
+
+      if(pi_comm_report) then
+         write(pi_comm_unit,*) "  exiting exchange_polymer_contracted_forces"
+         FLUSH(pi_comm_unit)
+      endif
+
+   end subroutine exchange_polymer_contracted_forces
 
 end submodule parallel_communication

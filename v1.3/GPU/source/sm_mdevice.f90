@@ -22,25 +22,25 @@ submodule (mdevice) mdevice_lifecycle
    use openacc
    use cudafor
 #endif
+   implicit none
 #ifndef _OPENACC
    integer, parameter :: cuda_stream_kind_local = 8
 #endif
-   implicit none
 
    integer ngpus
    integer :: devicenum = -1
    integer gpu_gangs, gpu_workers, gpu_vector
-   integer rec_queue, dir_queue, def_queue, syn_queue
+   integer rec_queue, dir_queue, syn_queue
    logical mod_gangs
    integer nSMP, nSPcores, cores_SMP
 #ifdef _OPENACC
    type(cudaDeviceProp) devProp
-   integer(cuda_stream_kind) dir_stream, rec_stream, syn_stream, def_stream
-   type(cudaEvent) dir_event, rec_event, def_event
+   integer(cuda_stream_kind) dir_stream, rec_stream, syn_stream
+   type(cudaEvent) dir_event, rec_event, sync_event
    integer, parameter :: zero_flag = 0
 #else
-   integer(cuda_stream_kind_local) dir_stream, rec_stream, syn_stream, def_stream
-   integer(cuda_stream_kind_local) dir_event, rec_event, def_event
+   integer(cuda_stream_kind_local) dir_stream, rec_stream, syn_stream
+   integer(cuda_stream_kind_local) dir_event, rec_event, sync_event
 #endif
 
 !$acc declare create(gpu_gangs,gpu_workers,gpu_vector,devicenum,ngpus)
@@ -193,11 +193,9 @@ contains
       if (present(status_code)) status_code = 0
       rec_queue = acc_async_noval
       dir_queue = acc_async_noval
-      def_queue = acc_async_noval
       syn_queue = acc_async_sync
       rec_stream = acc_get_cuda_stream(acc_async_noval)
       dir_stream = rec_stream
-      def_stream = rec_stream
       syn_stream = acc_get_cuda_stream(acc_async_sync)
 
       call Tinker_shellEnv("ASYNC_COVER",int_val,0)
@@ -228,7 +226,6 @@ contains
          call acc_set_cuda_stream(dir_queue,dir_stream)
       else
          dir_stream = rec_stream
-         def_stream = rec_stream
       end if
       if (cuda_success.ne.0) then
          if (present(status_code)) status_code = cuda_success
@@ -239,7 +236,7 @@ contains
       cuda_success = cuda_success + cudaEventCreateWithFlags( &
          &rec_event,cudaEventDisableTiming)
       cuda_success = cuda_success + cudaEventCreateWithFlags( &
-         &def_event,cudaEventDisableTiming)
+         &sync_event,cudaEventDisableTiming)
       if (present(status_code)) status_code = cuda_success
    end subroutine initDevice_stream
 
@@ -264,25 +261,20 @@ contains
          if (rank.eq.0) write(*,'(/,1x,a,/)') &
             &'***** Asynchronous Computation Overlapping disabled *****'
          dir_stream = rec_stream
-         def_stream = rec_stream
          dir_queue = rec_queue
-         def_queue = rec_queue
       end if
    end subroutine Finalize_async_recover
 
    subroutine stream_wait_async(wait_s,async_s,event_,status_code)
       implicit none
       integer(cuda_stream_kind), intent(in) :: wait_s, async_s
-      type(cudaEvent), optional :: event_
+      type(cudaEvent), intent(in) :: event_
       integer, intent(out), optional :: status_code
-      type(cudaEvent) :: event
       integer cuda_success
 
       if (present(status_code)) status_code = 0
-      event = def_event
-      if (present(event_)) event = event_
-      cuda_success = cudaEventRecord(event,wait_s)
-      cuda_success = cuda_success + cudaStreamWaitEvent(async_s,event,zero_flag)
+      cuda_success = cudaEventRecord(event_,wait_s)
+      cuda_success = cuda_success + cudaStreamWaitEvent(async_s,event_,zero_flag)
       if (present(status_code)) status_code = cuda_success
    end subroutine stream_wait_async
 
@@ -458,7 +450,6 @@ contains
 #endif
       reciprocal_work = channel_t('reciprocal', rec_queue, rec_stream)
       direct_work     = channel_t('direct',     dir_queue, dir_stream)
-      default_work    = channel_t('default',    rec_queue, rec_stream)
       sync_work       = channel_t('synchronous',syn_queue, syn_stream)
       phase = phase_active
       call clear_status(status_value)
@@ -474,6 +465,12 @@ contains
          call set_status(status_value, status_invalid_argument, 'A device dependency requires an active device')
          return
       end if
+      if ((consumer%name /= 'direct' .and. consumer%name /= 'reciprocal' .and. &
+            &consumer%name /= 'synchronous') .or. (producer%name /= 'direct' .and. &
+            &producer%name /= 'reciprocal' .and. producer%name /= 'synchronous')) then
+         call set_status(status_value, status_invalid_argument, 'A device dependency requires a named execution channel')
+         return
+      end if
       if (consumer%stream /= producer%stream) then
 #ifdef _OPENACC
          dep_status = 0
@@ -482,8 +479,8 @@ contains
             call stream_wait_async(producer%stream, consumer%stream, rec_event, dep_status)
          case ('reciprocal')
             call stream_wait_async(producer%stream, consumer%stream, dir_event, dep_status)
-         case default
-            call stream_wait_async(producer%stream, consumer%stream, def_event, dep_status)
+         case ('synchronous')
+            call stream_wait_async(producer%stream, consumer%stream, sync_event, dep_status)
          end select
          if (dep_status /= 0) then
             call set_status(status_value, StatusDeviceError, 'Unable to establish GPU stream dependency')
@@ -600,7 +597,6 @@ contains
       call Finalize_async_recover
       reciprocal_work = channel_t('reciprocal', rec_queue, rec_stream)
       direct_work     = channel_t('direct',     dir_queue, dir_stream)
-      default_work    = channel_t('default',    def_queue, def_stream)
       sync_work       = channel_t('synchronous',syn_queue, syn_stream)
 #endif
    end subroutine disable_overlap
@@ -623,36 +619,6 @@ contains
       character(len=128) :: text
       text = warning
    end function warning_text
-
-   module subroutine init_legacy(platform_ready)
-      implicit none
-      logical, intent(in), optional :: platform_ready
-      logical :: platform_rdy
-      integer :: device_status
-
-      platform_rdy = .false.
-      if (present(platform_ready)) platform_rdy = platform_ready
-      if (.not.platform_rdy) then
-         ngpus = 0
-         nSMP = 1
-         nSPcores = 1
-         cores_SMP = 1
-#ifdef _OPENACC
-         device_status = 0
-         call selectDevice(device_status)
-         if (device_status /= 0) then
-            call record_platform_error(device_status, 'Unable to query GPU device properties')
-            return
-         end if
-         device_status = 0
-         call initDevice_stream(device_status)
-         if (device_status /= 0) then
-            call record_platform_error(device_status, 'Unable to initialize GPU execution channels')
-            return
-         end if
-#endif
-      end if
-   end subroutine init_legacy
 
    module subroutine publish_warning
       implicit none
@@ -711,7 +677,7 @@ contains
          if (cuda_status /= 0 .and. cleanup_status == 0) cleanup_status = cuda_status
          cuda_status = cudaEventDestroy(rec_event)
          if (cuda_status /= 0 .and. cleanup_status == 0) cleanup_status = cuda_status
-         cuda_status = cudaEventDestroy(def_event)
+         cuda_status = cudaEventDestroy(sync_event)
          if (cuda_status /= 0 .and. cleanup_status == 0) cleanup_status = cuda_status
          cuda_status = cudaStreamDestroy(dir_stream)
          if (cuda_status /= 0 .and. cleanup_status == 0) cleanup_status = cuda_status
@@ -722,15 +688,12 @@ contains
       if (present(status_code)) status_code = cleanup_status
       rec_queue = -1
       dir_queue = -1
-      def_queue = -1
       rec_stream = 0
       dir_stream = 0
-      def_stream = 0
       gpu_sm_count = 1
       cores_per_sm = 1
       direct_work = channel_t()
       reciprocal_work = channel_t()
-      default_work = channel_t()
       sync_work    = channel_t()
    end subroutine release_platform_resources
 

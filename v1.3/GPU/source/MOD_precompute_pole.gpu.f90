@@ -116,7 +116,6 @@ contains
       use ewald   , only : aewald
       use group
       use math    , only : sqrtpi
-      use mdevice , only : default_work
       use mpole   , only : ipole,poleloc,npolelocnl
       use mplpot  , only : m2scale,m3scale,m4scale,m5scale
       use neigh   , only : nelst, nshortelst, elst, shortelst, nelstc,&
@@ -290,7 +289,7 @@ contains
       use neigh   , only : nelst, elst
       use polar   , only : polarity,  tinypol
       use shunt   , only : cut2
-      use mdevice , only : default_work
+      use mdevice , only : direct_work
       use domdec  , only : loc
       implicit none
       real(t_p) ,intent(in)   ::  mu(:,:,:)
@@ -325,7 +324,7 @@ contains
          precompute_tmat=.false.
       end if
 
-!$acc parallel loop async(default_work%queue) &
+!$acc parallel loop async(direct_work%queue) &
 !$acc         present(poleglobnl,ipole,poleloc,polarity,mu,efi) &
 !$acc         present(rx_precompute,ry_precompute,rz_precompute &
 !$acc  ,rr3_bn1_precompute, rr5_bn2_precompute, iploc_precompute &

@@ -18,10 +18,10 @@ submodule (parallel) parallel_lifecycle
 
 contains
 
-   module subroutine construct_topology(platform, configuration, topology_kind, status_value)
+   module subroutine construct_topology(platform, topo_config, topology_kind, status_value)
       implicit none
       type(parallel_t), target, intent(inout) :: platform
-      type(config_t), intent(in) :: configuration
+      type(topo_cfg_t), intent(in) :: topo_config
       integer, intent(in) :: topology_kind
       type(status_t), intent(out) :: status_value
       integer :: ierr, color, nbeads_para
@@ -40,17 +40,18 @@ contains
          return
       end if
 
-      if (topology_kind == topology_polymer .and. configuration%replicas_enabled) then
+      if (topology_kind == topology_polymer .and. topo_config%replicas_enabled) then
          call set_status(status_value, status_invalid_argument, 'PIMD and classical replicas cannot be combined')
          return
       end if
-      if (configuration%replicas_enabled) then
-         if (configuration%replica_count <= 0 .or. platform%world_size < configuration%replica_count .or. &
-               mod(platform%world_size, configuration%replica_count) /= 0) then
+      if (topo_config%replicas_enabled) then
+         if (topo_config%replica_count <= 0 .or. &
+               platform%world_size < topo_config%replica_count .or. &
+               mod(platform%world_size, topo_config%replica_count) /= 0) then
             call set_status(status_value, status_invalid_argument, 'Invalid classical replica MPI topology')
             return
          end if
-         domain_processes = platform%world_size / configuration%replica_count
+         domain_processes = platform%world_size / topo_config%replica_count
       else if (topology_kind == topology_polymer) then
          nbeads_para = merge(nbeads_ctr, nbeads, contract .and. nbeads_ctr > 1)
          if (nbeads_para <= 0 .or. (platform%world_size >= nbeads_para .and. &
@@ -106,7 +107,7 @@ contains
          end if
          call MPI_Comm_size(platform%replica%communicator, platform%replica%size, ierr)
          call MPI_Comm_rank(platform%replica%communicator, platform%replica%rank, ierr)
-      else if (configuration%replicas_enabled) then
+      else if (topo_config%replicas_enabled) then
          color = merge(0, MPI_UNDEFINED, platform%domain%rank == 0)
          call MPI_Comm_split(MPI_COMM_WORLD, color, platform%world_rank, &
             &platform%root_exchange%communicator, ierr)
@@ -118,21 +119,21 @@ contains
       end if
 
       platform%replica%index = replica_index
-      call publish_legacy_topology(platform, configuration)
+      call publish_legacy_topology(platform, topo_config)
       call initDebugEnv
       call activate_domain(platform)
       extra_alloc = platform%domain%size > 1
    end subroutine construct_topology
 
-   module subroutine configure_layout(platform, configuration, structure_value, status_value)
+   module subroutine configure_layout(platform, key_discovered, atom_count, status_value)
       implicit none
       type(parallel_t), target, intent(inout) :: platform
-      type(config_t), intent(in) :: configuration
-      type(structure_t), intent(in) :: structure_value
+      logical, intent(in) :: key_discovered
+      integer, intent(in) :: atom_count
       type(status_t), intent(out) :: status_value
 
       call clear_status(status_value)
-      if (.not.configuration%key_discovered .or. structure_value%atom_count <= 0) then
+      if (.not.key_discovered .or. atom_count <= 0) then
          call set_status(status_value, status_invalid_argument, 'MPI layout requires complete configuration and geometry')
          return
       end if
@@ -393,15 +394,15 @@ contains
       error stop 'polar_comm_t is noncopyable'
    end subroutine reject_polar_ticket_copy
 
-   subroutine publish_legacy_topology(platform, configuration)
+   subroutine publish_legacy_topology(platform, topo_config)
       implicit none
       type(parallel_t), intent(inout) :: platform
-      type(config_t), intent(in) :: configuration
+      type(topo_cfg_t), intent(in) :: topo_config
 
       call bind_parallel_views(platform%world_size, platform%world_rank, platform%domain%size, &
          &platform%domain%rank, platform%replica%size, platform%replica%rank, platform%host%rank)
       call bind_replica_view(platform%replica%index)
-      use_reps = configuration%replicas_enabled
-      nreps = configuration%replica_count
+      use_reps = topo_config%replicas_enabled
+      nreps = topo_config%replica_count
    end subroutine publish_legacy_topology
 end submodule parallel_lifecycle

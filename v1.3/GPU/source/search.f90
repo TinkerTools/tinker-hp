@@ -46,10 +46,9 @@
 subroutine search (n,f,g,x,p,f_move,angle,ncalls,&
    &fgvalue,status)
    use domdec
-   use parallel, only: get_domain_comm
+   use parallel, only: get_domain_comm, replicate
    use linmin
    use inform    ,only: deb_Path
-   use parallel, only: sendvecmin
    use math
    use mpi
    use sizes     ,only:tinkerdebug
@@ -193,11 +192,11 @@ subroutine search (n,f,g,x,p,f_move,angle,ncalls,&
 !
 !     send s,x_0,xx vector among the neighbors, the dd is going to change
 !
-   call sendvecmin(s)
-   call sendvecmin(x_0)
-   call sendvecmin(x)
-   call sendvecmin(g)
-   call sendvecmin(p)
+   call replicate(glob(1:nloc), s, 3)
+   call replicate(glob(1:nloc), x_0, 3)
+   call replicate(glob(1:nloc), x(1:3*n), 3)
+   call replicate(glob(1:nloc), g(1:3*n), 3)
+   call replicate(glob(1:nloc), p(1:3*n), 3)
 !
 !     get new function and projected gradient following a step
 !
@@ -295,11 +294,11 @@ subroutine search (n,f,g,x,p,f_move,angle,ncalls,&
 !
 !     send s,x_0,x,g and p vector among the neighbors, the dd is going to change
 !
-   call sendvecmin(s)
-   call sendvecmin(x_0)
-   call sendvecmin(x)
-   call sendvecmin(g)
-   call sendvecmin(p)
+   call replicate(glob(1:nloc), s, 3)
+   call replicate(glob(1:nloc), x_0, 3)
+   call replicate(glob(1:nloc), x(1:3*n), 3)
+   call replicate(glob(1:nloc), g(1:3*n), 3)
+   call replicate(glob(1:nloc), p(1:3*n), 3)
 !
 !     get new function and gradient, then test for termination
 !
@@ -415,11 +414,11 @@ subroutine search (n,f,g,x,p,f_move,angle,ncalls,&
 !
 !     send s,x_0,x,g and p vector among the neighbors, the dd is going to change
 !
-      call sendvecmin(s)
-      call sendvecmin(x_0)
-      call sendvecmin(x)
-      call sendvecmin(g)
-      call sendvecmin(p)
+      call replicate(glob(1:nloc), s, 3)
+      call replicate(glob(1:nloc), x_0, 3)
+      call replicate(glob(1:nloc), x(1:3*n), 3)
+      call replicate(glob(1:nloc), g(1:3*n), 3)
+      call replicate(glob(1:nloc), p(1:3*n), 3)
       ncalls = ncalls + 1
       f = fgvalue (x,g)
       status = 'IntplnErr'
@@ -449,11 +448,11 @@ subroutine search (n,f,g,x,p,f_move,angle,ncalls,&
 !
 !     send s,x_0,x,g and p vector among the neighbors, the dd is going to change
 !
-      call sendvecmin(s)
-      call sendvecmin(x_0)
-      call sendvecmin(x)
-      call sendvecmin(g)
-      call sendvecmin(p)
+      call replicate(glob(1:nloc), s, 3)
+      call replicate(glob(1:nloc), x_0, 3)
+      call replicate(glob(1:nloc), x(1:3*n), 3)
+      call replicate(glob(1:nloc), g(1:3*n), 3)
+      call replicate(glob(1:nloc), p(1:3*n), 3)
       ncalls = ncalls + 1
       f = fgvalue (x,g)
       status = 'BadIntpln'

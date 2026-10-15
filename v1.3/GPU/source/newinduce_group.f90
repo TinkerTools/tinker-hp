@@ -49,7 +49,7 @@ subroutine newinduce_group
    use uprior
    use utils
    use tinMemory,only: prmem_request
-   use mdevice  ,only: default_work
+   use mdevice  ,only: reciprocal_work
    use parallel ,only: polar_comm_t,polar_post_group_comm,polar_finish
    use timestat
    use mpi
@@ -78,26 +78,26 @@ subroutine newinduce_group
 !
    call prmem_request(mu,3,nrhs,npolegroup,async=.true.)
    call prmem_request(ef,3,nrhs,npolegroup,async=.true.)
-   call set_to_zero2(mu,ef,3*nrhs*npolegroup,default_work%queue)
+   call set_to_zero2(mu,ef,3*nrhs*npolegroup,reciprocal_work%queue)
 !
    !call orderbuffergroup
 !
 !     compute the electric fields:
 !
-!$acc wait
+!$acc wait(reciprocal_work%queue)
    if (deb_Path)&
       &write(*,'(3x,a)') '>>>efld0_group'
-   call efld0_group(nrhs,ef)
+   call efld0_group(nrhs,ef,channel=reciprocal_work)
    if (deb_Path)&
       &write(*,'(3x,a)') '<<<efld0_group'
 !
-   call commfieldfull(nrhs,ef)
+   call commfieldfull(nrhs,ef,channel=reciprocal_work)
 !
 !     guess the dipoles:
 !
 !     predicted values for always stable predictor-corrector method
 !
-!$acc parallel loop async(default_work%queue) default(present) collapse(3)
+!$acc parallel loop async(reciprocal_work%queue) default(present) collapse(3)
    do i = 1, npolelocgroup; do k = 1, nrhs; do j = 1, 3
             iglobgroup = ipolegroup(poleglobgroup(i))
             iglob = globglobgroup(iglobgroup)
@@ -105,9 +105,9 @@ subroutine newinduce_group
             mu(j,k,i) = polarity(iipole)*ef(j,k,i)
          enddo; enddo; enddo
 !
-!$acc wait(default_work%queue)
-   call polar_post_group_comm(comm_ticket,nrhs,mu)
-   call polar_finish(comm_ticket,nrhs,mu)
+!$acc wait(reciprocal_work%queue)
+   call polar_post_group_comm(comm_ticket,nrhs,mu,channel=reciprocal_work)
+   call polar_finish(comm_ticket,nrhs,mu,channel=reciprocal_work)
 !
 
 !
@@ -123,7 +123,7 @@ subroutine newinduce_group
 !
 !     move the computed dipoles in the module.
 !
-!$acc parallel loop async(default_work%queue) default(present) collapse(2)
+!$acc parallel loop async(reciprocal_work%queue) default(present) collapse(2)
    do i = 1, npolelocgroup; do j=1,3
          iipolegroup = poleglobgroup(i)
          uindgroup(j,iipolegroup) = mu(j,1,i)
@@ -153,7 +153,7 @@ subroutine inducepcg_group(nrhs,precnd,ef,mu)
    use sizes
    use units
    use utils
-   use mdevice    ,only: default_work
+   use mdevice    ,only: direct_work, reciprocal_work
    use parallel   ,only: polar_comm_t,polar_post_group_comm,polar_finish
    use mpi
    use group
@@ -258,8 +258,8 @@ subroutine inducepcg_group(nrhs,precnd,ef,mu)
 !
 !     initialize
 !
-   call set_to_zero2(res,zr,3*nrhs*npolelocgroup,default_work%queue)
-   call set_to_zero2( pp, h,3*nrhs*npolegroup ,default_work%queue)
+   call set_to_zero2(res,zr,3*nrhs*npolelocgroup,reciprocal_work%queue)
+   call set_to_zero2( pp, h,3*nrhs*npolegroup ,reciprocal_work%queue)
 !
 !     now, compute the initial direction
 !
@@ -270,7 +270,7 @@ subroutine inducepcg_group(nrhs,precnd,ef,mu)
 !$acc wait
    call tmatxb_group(nrhs,.true.,mu,h)
 
-   call commfieldfull(nrhs,h)
+   call commfieldfull(nrhs,h,channel=direct_work)
 !
 !$acc parallel loop collapse(3) async &
 !$acc         reduction(+:ggold1,ggold2)
@@ -293,8 +293,8 @@ subroutine inducepcg_group(nrhs,precnd,ef,mu)
       call MPI_IALLREDUCE(MPI_IN_PLACE,ggold(1),nrhs,MPI_TPREC,&
          &MPI_SUM,get_domain_comm(),req1,ierr)
 !
-      call polar_post_group_comm(comm_ticket,nrhs,pp)
-      call polar_finish(comm_ticket,nrhs,pp)
+      call polar_post_group_comm(comm_ticket,nrhs,pp,channel=reciprocal_work)
+      call polar_finish(comm_ticket,nrhs,pp,channel=reciprocal_work)
       call MPI_WAIT(req1,status,ierr)
    endif
 !
@@ -303,12 +303,12 @@ subroutine inducepcg_group(nrhs,precnd,ef,mu)
    do it = 1, politer
 !
       call tmatxb_group(nrhs,.true.,pp,h)
-      call commfieldfull(nrhs,h)
+      call commfieldfull(nrhs,h,channel=direct_work)
 !$acc serial async
       gg1=zerom; gg2=zerom
 !$acc end serial
 !
-!$acc parallel loop collapse(3) async(default_work%queue)
+!$acc parallel loop collapse(3) async(reciprocal_work%queue)
       do i = 1,npolelocgroup
          do j = 1,nrhs
             do k = 1, 3
@@ -320,7 +320,7 @@ subroutine inducepcg_group(nrhs,precnd,ef,mu)
             end do
          end do
       end do
-!$acc update host(gg1,gg2) async(default_work%queue)
+!$acc update host(gg1,gg2) async(reciprocal_work%queue)
 !$acc wait
       gg(1)=gg1; gg(2)=gg2
       if(nproc>1) then
@@ -328,7 +328,7 @@ subroutine inducepcg_group(nrhs,precnd,ef,mu)
             &get_domain_comm(),req2,ierr)
          call MPI_WAIT(req2,status,ierr)
          gg1 = gg(1); gg2 = gg(2)
-!$acc update device(gg1,gg2) async(default_work%queue)
+!$acc update device(gg1,gg2) async(reciprocal_work%queue)
       endif
       do k = 1, nrhs
          if (gg(k).eq.zero) goto 30
@@ -340,7 +340,7 @@ subroutine inducepcg_group(nrhs,precnd,ef,mu)
       ene1   = zerom; ene2   = zerom;
       ggdev1 = ggold1/gg1; ggdev2 = ggold2/gg2
 
-!$acc parallel loop collapse(3) async(default_work%queue)
+!$acc parallel loop collapse(3) async(reciprocal_work%queue)
       do k=1,npolelocgroup; do j=1,nrhs; do i=1,3
                if (btest(j,0)) then
                   mu (i,j,k) = mu (i,j,k) + ggdev1*pp(i,j,k)
@@ -356,7 +356,7 @@ subroutine inducepcg_group(nrhs,precnd,ef,mu)
                   ene2    = ene2 + (mu(i,j,k)*(res(i,j,k)+ef(i,j,k)))
                end if
             end do; end do; end do
-!$acc wait(default_work%queue)
+!$acc wait(reciprocal_work%queue)
       ene2 = -pt5*ene2; ene1 = -pt5*ene1
       ggnew(1)=ggnew1; ggnew(2)=ggnew2
       ene(1)=  ene1;   ene(2)=  ene2
@@ -391,7 +391,7 @@ subroutine inducepcg_group(nrhs,precnd,ef,mu)
          goto 10
       end if
 
-!$acc parallel loop collapse(3) async(default_work%queue)
+!$acc parallel loop collapse(3) async(reciprocal_work%queue)
       do k = 1,npolelocgroup; do j = 1,nrhs; do i = 1, 3
                if (btest(j,0)) then
                   pp(i,j,k) = zr(i,j,k) + ggdev1*pp(i,j,k)
@@ -400,14 +400,14 @@ subroutine inducepcg_group(nrhs,precnd,ef,mu)
                end if
             end do; end do; end do
 !
-      call polar_post_group_comm(comm_ticket,nrhs,pp)
-      call polar_finish(comm_ticket,nrhs,pp)
+      call polar_post_group_comm(comm_ticket,nrhs,pp,channel=reciprocal_work)
+      call polar_finish(comm_ticket,nrhs,pp,channel=reciprocal_work)
 
    end do
 10 continue
 !
-   call polar_post_group_comm(comm_ticket,nrhs,mu)
-   call polar_finish(comm_ticket,nrhs,mu)
+   call polar_post_group_comm(comm_ticket,nrhs,mu,channel=reciprocal_work)
+   call polar_finish(comm_ticket,nrhs,mu,channel=reciprocal_work)
 !
 !     finalize and debug printing:
 !
@@ -439,7 +439,7 @@ subroutine inducepcg_group(nrhs,precnd,ef,mu)
 end
 
 
-subroutine efld0_group(nrhs,ef)
+subroutine efld0_group(nrhs,ef,channel)
 !
 !     Compute the direct space contribution to the permanent electric field.
 !      Also compute the "p" field, which is used to
@@ -459,13 +459,14 @@ subroutine efld0_group(nrhs,ef)
    use potent  , only : use_polarshortreal
    !use polgrp  ,only: ip11,ip12,ip13,ip14,np11,np12,np13,np14
    use shunt   ,only: cut2
-   use mdevice ,only: default_work
+   use mdevice ,only: channel_t
    use timestat   ,only: timer_enter,timer_exit,timer_efld0_direct
    use tinheader  ,only: ti_p,re_p
    use group
    implicit none
    integer  , intent(in)    :: nrhs
    real(t_p), intent(inout) :: ef(:,:,:)
+   type(channel_t), intent(in) :: channel
 
    integer :: i,iglob,iploc,kk,kkk
    integer :: ii,j,k,ksp,kd,iipole,kbis,kpole,kglob
@@ -494,7 +495,7 @@ subroutine efld0_group(nrhs,ef)
 !$acc  pollist ,locgroup,pdamp,polelocgroup, &
 !$acc  thole,x,y,z,rpole) &
 !$acc         private(ip) &
-!$acc         async(default_work%queue)
+!$acc         async(channel%queue)
    do ii = 1, npolelocgroup
       iipolegroup = poleglobgroup(ii)
       iglobgroup = ipolegroup(iipolegroup)
@@ -580,12 +581,12 @@ subroutine efld0_group(nrhs,ef)
 
 
 !
-   call efld0_group_correct_scaling(nrhs,ef)
+   call efld0_group_correct_scaling(nrhs,ef,channel=channel)
 
    return
 end
 
-subroutine efld0_group_correct_scaling(nrhs,ef)
+subroutine efld0_group_correct_scaling(nrhs,ef,channel)
    use atmlst
    use group
    use atoms    ,only: x,y,z
@@ -599,7 +600,7 @@ subroutine efld0_group_correct_scaling(nrhs,ef)
    use potent   ,only: use_polarshortreal
    use polar    ,only: pdamp,thole
    use shunt    ,only: cut2
-   use mdevice  ,only: default_work
+   use mdevice  ,only: channel_t
    use timestat ,only: timer_enter,timer_exit,timer_efld0_direct
    use tinheader,only: ti_p
    implicit none
@@ -607,6 +608,7 @@ subroutine efld0_group_correct_scaling(nrhs,ef)
    ! shape(ef) = (/3,nrhs,npolegroup/)
    integer, intent(in) :: nrhs
    real(t_p),intent(inout):: ef(:,:,:)
+   type(channel_t), intent(in) :: channel
 
    integer i,iglob,iploc,kk
    integer ii,j,k,ksp,kd,iipole,kbis,kpole,kglob
@@ -632,7 +634,7 @@ subroutine efld0_group_correct_scaling(nrhs,ef)
 !$acc  pdamp,thole,x,y,z,rpole,nelst,elst,poleloc, &
 !$acc  dpcorrect_ik_group,dpcorrect_scale_group) &
 !$acc         private(fid,fip,fkd,fkp,pos,ip,kp) &
-!$acc         async(default_work%queue)
+!$acc         async(channel%queue)
    do ii = 1, n_dpscale_group
       iipole = dpcorrect_ik_group(2*(ii-1)+1)
       kpole  = dpcorrect_ik_group(2*(ii-1)+2)
@@ -1215,7 +1217,7 @@ end
 !
 !     subroutine commfieldfull : communicate some direct fields (Newton s third law)
 !
-subroutine commfieldfull(nrhs,ef)
+subroutine commfieldfull(nrhs,ef,channel)
    use parallel, only: get_direct_comm
    use atoms
    use domdec
@@ -1224,17 +1226,21 @@ subroutine commfieldfull(nrhs,ef)
    use mpole
    use potent
    use mpi
-   use mdevice  ,only: default_work
+   use mdevice  ,only: channel_t
    use tinMemory,only: prmem_request
    implicit none
    integer, intent(in) :: nrhs
    real(t_p), intent(inout) ::  ef(:,:,:)
+   type(channel_t), intent(in) :: channel
    integer i,j,k,l,tag,status(MPI_STATUS_SIZE),c
    integer ierr
    integer, allocatable :: reqrec(:), reqsend(:)
    real(t_p), allocatable :: buffer(:,:,:,:)
 !
-   if (nproc.eq.1.or.((use_pmecore).and.(rank.gt.ndir-1))) return
+   if (nproc.eq.1.or.((use_pmecore).and.(rank.gt.ndir-1))) then
+!$acc wait(channel%queue)
+      return
+   end if
 
 !
    call prmem_request(buffer,3,nrhs,&
@@ -1242,7 +1248,7 @@ subroutine commfieldfull(nrhs,ef)
    allocate (reqrec(nproc))
    allocate (reqsend(nproc))
 !
-!$acc wait
+!$acc wait(channel%queue)
 !$acc host_data use_device(buffer)
    c=0
    do i = 1, nproc
@@ -1280,7 +1286,7 @@ subroutine commfieldfull(nrhs,ef)
       end if
    end do
 !
-!$acc parallel loop collapse(3) present(ef,buffer) async(default_work%queue)
+!$acc parallel loop collapse(3) present(ef,buffer) async(channel%queue)
    do j = 1, npolelocgroup; do k = 1, nrhs; do l=1,3
 !$acc loop seq
             do c = 1, nproc-1
@@ -1290,7 +1296,7 @@ subroutine commfieldfull(nrhs,ef)
 !
    deallocate (reqrec)
    deallocate (reqsend)
-!$acc wait(default_work%queue)
+!$acc wait(channel%queue)
    if (allocated(buffer)) &
       &call prmem_request(buffer,0,0,0,0,async=.false.)
    return

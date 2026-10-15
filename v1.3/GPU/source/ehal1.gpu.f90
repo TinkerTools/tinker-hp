@@ -35,7 +35,7 @@ subroutine ehal1gpu
    use domdec     ,only: ndir,rank
    use ehal1gpu_inl,only: elrc,vlrc
    use energi     ,only: ev
-   use interfaces ,only: ehal1c_p
+   use interfaces ,only: ehal1c_p, evcorr1gpu
    use mdevice    ,only: after,direct_work,reciprocal_work
    use status     ,only: failed,status_t
    use potent
@@ -58,7 +58,7 @@ subroutine ehal1gpu
 !
    if (use_vcorr.and.(fullrange.or.use_vdwlong)) then
       mode = "VDW"
-      call evcorr1gpu (mode,elrc,vlrc)
+      call evcorr1gpu (mode,elrc,vlrc,channel=direct_work)
 !$acc serial present(ev,vir,elrc,vlrc) async(direct_work%queue)
       ev = ev + elrc
       vir(1,1) = vir(1,1) + vlrc
@@ -899,7 +899,7 @@ subroutine searchpair(nlst,lst,maxlst,int1,int2)
 !$acc parallel loop default(present)
    do i = 1, nbloc
       iglob = glob(i)
-      call distprocpart1(iglob,rank,rv2,.true.,x,y,z)
+      call distprocpart1(iglob,rank,rv2,.true.,n,x,y,z)
       if (iglob.eq.int1) print*, "found glob",int1,ii,real(rv2,4),rank
       if (iglob.eq.int2) print*, "found glob",int2,ii,real(rv2,4),rank
    end do

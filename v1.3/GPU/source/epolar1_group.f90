@@ -46,7 +46,6 @@ subroutine epolar1_group
    use mpi
    use tinMemory
    use tinheader, only: ti_p, re_p
-   use mdevice, only: default_work
    use utils
    use inform
    implicit none
@@ -147,7 +146,7 @@ subroutine epreal1_group
    use tinMemory
    use tinheader, only: ti_p, re_p
    use utils
-   use mdevice, only: default_work
+   use mdevice, only: reciprocal_work
    use tinTypes, only: rpole_elt,real6,real3,mdyn3_r
    use group
    implicit none
@@ -207,7 +206,7 @@ subroutine epreal1_group
    call prmem_request(fiy,3,npolegroup, async=.true.)
    call prmem_request(fiz,3,npolegroup, async=.true.)
    call prmem_request(trqvec,3,npolegroup, async=.true.)
-   call set_to_zero1(trqvec,3*npolegroup,default_work%queue)
+   call set_to_zero1(trqvec,3*npolegroup,reciprocal_work%queue)
 
 !
 !     set conversion factor, cutoff and switching coefficients
@@ -224,7 +223,7 @@ subroutine epreal1_group
 !$acc  rpole,thole,pdamp, &
 !$acc  loc,x,y,z,uindgroup,uinpgroup,depgroup) &
 !$acc         private(ip,dpui,posi) &
-!$acc         async(default_work%queue)
+!$acc         async(reciprocal_work%queue)
    do ii = 1, npolelocgroup
       iipolegroup = poleglobgroup(ii)
       iglobgroup = ipolegroup(iipolegroup)
@@ -343,7 +342,7 @@ subroutine epreal1_group
 
    if (use_virial) then
 
-!$acc parallel loop async(default_work%queue) &
+!$acc parallel loop async(reciprocal_work%queue) &
 !$acc   present(globglobgroup,ipolegroup,pollist & !,polelocgroup &
 !$acc  ,x,y,z,xaxis,yaxis,zaxis,fix,fiy,fiz)
       do i = 1, npolegroup
@@ -437,7 +436,7 @@ subroutine epreal1c_correct_scale_group&
    use shunt   ,only: off2
    use tinheader ,only: ti_p
    use tinTypes,only: real3,real6,mdyn3_r,rpole_elt
-   use mdevice ,only: default_work
+   use mdevice ,only: reciprocal_work
    use group
    use virial
    implicit none
@@ -478,7 +477,7 @@ subroutine epreal1c_correct_scale_group&
 !$acc  uindgroup,uinpgroup,depgroup,epgroup,vir,polelocnl &
 !$acc  ,dpucorrect_ik_group,dpucorrect_scale_group) &
 !$acc         private(pos,ip,kp,dpui,dpuk,trqk,trqi,frc_r,frc) &
-!$acc         async(default_work%queue)
+!$acc         async(reciprocal_work%queue)
    do ii = 1, n_dpuscale_group
       iipole   = dpucorrect_ik_group(2*(ii-1)+1)
       kpole    = dpucorrect_ik_group(2*(ii-1)+2)

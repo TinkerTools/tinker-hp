@@ -44,6 +44,7 @@ program testgrad
    call MPI_FINALIZE(ierr)
 
    contains
+#include "convert.inc.f90"
 
 subroutine testgrad_bis(raw_cli,status_value)
    use atomsMirror
@@ -53,7 +54,6 @@ subroutine testgrad_bis(raw_cli,status_value)
    use config, only: config_t, max_raw_cli_args, parse_common_cli, raw_cli_length, raw_cli_t
    use deriv
    use domdec
-   use gradient_inl, only: enr2en
    use parallel, only: get_domain_comm
    use energi
    use sizes

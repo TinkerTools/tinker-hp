@@ -162,6 +162,7 @@ lib_dir__      := $(HOME)/local/lib
 #  -----------------  #
 MOD_SRCS  = MOD_tinheader.o
 MOD_SRCS += MOD_sizes.o
+MOD_SRCS += MOD_status_types.f90
 MOD_SRCS += MOD_status.f90
 MOD_SRCS += MOD_restart.f90
 MOD_SRCS += MOD_structure.f90
@@ -283,7 +284,7 @@ MOD_SRCS += MOD_potent.f90
 MOD_SRCS += MOD_precis.f90
 MOD_SRCS += MOD_ptable.f90
 MOD_SRCS += MOD_scaling.f90
-MOD_SRCS += MOD_precompute_polegpu.f90
+MOD_SRCS += MOD_precompute_pole.gpu.f90
 MOD_SRCS += MOD_qtb.f90
 MOD_SRCS += MOD_reduction.f90
 MOD_SRCS += MOD_tmatxb.f90
@@ -298,10 +299,6 @@ MOD_SRCS += MOD_shunt.f90
 MOD_SRCS += MOD_spectra.f90
 MOD_SRCS += MOD_strbnd.f90
 MOD_SRCS += MOD_strtor.f90
-MOD_SRCS += MOD_subDeriv.f90
-MOD_SRCS += MOD_subMemory.f90
-MOD_SRCS += MOD_subInform.f90
-MOD_SRCS += MOD_subAtoms.f90
 MOD_SRCS += MOD_timestat.f90
 MOD_SRCS += MOD_titles.f90
 MOD_SRCS += MOD_torpot.f90
@@ -345,7 +342,7 @@ F_SRCS   += bbk.f90
 F_SRCS   += bitors.f90
 F_SRCS   += bonds.f90 bounds.f90 boundspi.f90
 F_SRCS   += calendar.f90
-F_SRCS   += chkpole.f90 chkpolegpu.f90
+F_SRCS   += chkpole.f90 chkpole.gpu.f90
 F_SRCS   += chkring.f90 chkxyz.f90
 F_SRCS   += cholesky.f90
 F_SRCS   += cluster.f90
@@ -359,49 +356,49 @@ F_SRCS   += dcdio.f90
 F_SRCS   += dcflux.f90 dcflux.gpu.f90
 F_SRCS   += diis.f90
 F_SRCS   += domdecstuff.f90
-F_SRCS   += dcinduce_pme.f90 dcinduce_pmegpu.f90
-F_SRCS   += dcinduce_pme2.f90 dcinduce_pme2gpu.f90
-F_SRCS   += dcinduce_shortreal.f90 dcinduce_shortrealgpu.f90
+F_SRCS   += dcinduce_pme.f90 dcinduce_pme.gpu.f90
+F_SRCS   += dcinduce_pme2.f90 dcinduce_pme2.gpu.f90
+F_SRCS   += dcinduce_shortreal.f90 dcinduce_shortreal.gpu.f90
 F_SRCS   += eamd1.f90
 F_SRCS   += eangang.f90 eangang1.f90 eangang3.f90
-F_SRCS   += eangle.f90 eangle1.f90 eangle1gpu.f90
-F_SRCS   += eangle3.f90 eangle3gpu.f90
+F_SRCS   += eangle.f90 eangle1.f90 eangle1.gpu.f90
+F_SRCS   += eangle3.f90 eangle3.gpu.f90
 F_SRCS   += eangtor.f90 eangtor1.f90 eangtor3.f90
-F_SRCS   += ebond.f90 ebond1.f90 ebond1gpu.f90 ebond3.f90 ebond3gpu.f90
-F_SRCS   += echarge1gpu.f90 echarge3gpu.f90
-F_SRCS   += echgtrn.f90 echgtrn1.f90 echgtrn1gpu.f90
-F_SRCS   += echgtrn3.f90 echgtrn3gpu.f90
+F_SRCS   += ebond.f90 ebond1.f90 ebond1.gpu.f90 ebond3.f90 ebond3.gpu.f90
+F_SRCS   += echarge1.gpu.f90 echarge3.gpu.f90
+F_SRCS   += echgtrn.f90 echgtrn1.f90 echgtrn1.gpu.f90
+F_SRCS   += echgtrn3.f90 echgtrn3.gpu.f90
 F_SRCS   += edisp.f90 edisp1.f90 edisp3.f90
-F_SRCS   += efld0_direct.f90 efld0_directgpu.f90
-F_SRCS   += egeom.f90 egeom1.f90 egeom1gpu.f90
-F_SRCS   += egeom3.f90 egeom3gpu.f90
-F_SRCS   += ehal1gpu.f90
-F_SRCS   += ehal3gpu.f90
-F_SRCS   += eimprop.f90 eimprop1.f90 eimprop1gpu.f90
+F_SRCS   += efld0_direct.f90 efld0_direct.gpu.f90
+F_SRCS   += egeom.f90 egeom1.f90 egeom1.gpu.f90
+F_SRCS   += egeom3.f90 egeom3.gpu.f90
+F_SRCS   += ehal1.gpu.f90
+F_SRCS   += ehal3.gpu.f90
+F_SRCS   += eimprop.f90 eimprop1.f90 eimprop1.gpu.f90
 F_SRCS   += eimprop3.f90
-F_SRCS   += eimptor.f90 eimptor1.f90 eimptor1gpu.f90
+F_SRCS   += eimptor.f90 eimptor1.f90 eimptor1.gpu.f90
 F_SRCS   += eimptor3.f90
-F_SRCS   += elj1gpu.f90
-F_SRCS   += elj3gpu.f90
-F_SRCS   += eliaison1gpu.f90
+F_SRCS   += elj1.gpu.f90
+F_SRCS   += elj3.gpu.f90
+F_SRCS   += eliaison1.gpu.f90
 F_SRCS   += empole1_group.f90
 F_SRCS   += empole3_group.f90
-F_SRCS   += empole1gpu.f90 empole3gpu.f90
+F_SRCS   += empole1.gpu.f90 empole3.gpu.f90
 F_SRCS   += energy.f90
-F_SRCS   += eopbend.f90 eopbend1.f90 eopbend1gpu.f90
-F_SRCS   += eopbend3.f90 eopbend3gpu.f90
+F_SRCS   += eopbend.f90 eopbend1.f90 eopbend1.gpu.f90
+F_SRCS   += eopbend3.f90 eopbend3.gpu.f90
 F_SRCS   += eopdist.f90 eopdist1.f90 eopdist3.f90
-F_SRCS   += epitors.f90 epitors1.f90 epitors1gpu.f90 epitors3.f90
-F_SRCS   += epolar1gpu.f90 epolar1_group.f90
-F_SRCS   += epolar3gpu.f90 epolar3_group.f90
+F_SRCS   += epitors.f90 epitors1.f90 epitors1.gpu.f90 epitors3.f90
+F_SRCS   += epolar1.gpu.f90 epolar1_group.f90
+F_SRCS   += epolar3.gpu.f90 epolar3_group.f90
 F_SRCS   += erepel.f90 erepel1.f90 erepel3.f90
 F_SRCS   += esmd1.f90
-F_SRCS   += estrbnd.f90 estrbnd1.f90 estrbnd1gpu.f90 estrbnd3.f90
-F_SRCS   += estrtor.f90 estrtor1.f90 estrtor1gpu.f90 estrtor3.f90
-F_SRCS   += etors.f90 etors1.f90 etors1gpu.f90 etors3.f90
-F_SRCS   += etortor.f90 etortor1.f90 etortor1gpu.f90 etortor3.f90
-F_SRCS   += eurey.f90 eurey1.f90 eurey1gpu.f90
-F_SRCS   += eurey3.f90  eurey3gpu.f90
+F_SRCS   += estrbnd.f90 estrbnd1.f90 estrbnd1.gpu.f90 estrbnd3.f90
+F_SRCS   += estrtor.f90 estrtor1.f90 estrtor1.gpu.f90 estrtor3.f90
+F_SRCS   += etors.f90 etors1.f90 etors1.gpu.f90 etors3.f90
+F_SRCS   += etortor.f90 etortor1.f90 etortor1.gpu.f90 etortor3.f90
+F_SRCS   += eurey.f90 eurey1.f90 eurey1.gpu.f90
+F_SRCS   += eurey3.f90  eurey3.gpu.f90
 F_SRCS   += evcorr.f90 extra.f90 extra1.f90 extra3.f90
 F_SRCS   += fatal.f90
 F_SRCS   += fft_mpi.f90
@@ -462,15 +459,15 @@ F_SRCS   += mechanic.f90
 F_SRCS   += mlpot.f90 
 F_SRCS   += molecule.f90
 F_SRCS   += mutate.f90
-F_SRCS   += nblist.f90 nblistgpu.f90
+F_SRCS   += nblist.f90 nblist.gpu.f90
 F_SRCS   += nblist_build.gpu.f90
 F_SRCS   += newinduce_pme.f90
 F_SRCS   += newinduce_pme2.f90
 F_SRCS   += newinduce_group.f90
 F_SRCS   += newinduce_shortreal.f90
-F_SRCS   += newinduce_pmegpu.f90
-F_SRCS   += newinduce_pme2gpu.f90
-F_SRCS   += newinduce_shortrealgpu.f90
+F_SRCS   += newinduce_pme.gpu.f90
+F_SRCS   += newinduce_pme2.gpu.f90
+F_SRCS   += newinduce_shortreal.gpu.f90
 F_SRCS   += nextarg.f90
 F_SRCS   += nexttext.f90
 F_SRCS   += nspline.f90
@@ -480,7 +477,7 @@ F_SRCS   += orthogonalize.f90
 F_SRCS   += openend.f90
 F_SRCS   += optsave.f90
 F_SRCS   += plumed.f90
-F_SRCS   += pmestuff.f90 pmestuffgpu.f90
+F_SRCS   += pmestuff.f90 pmestuff.gpu.f90
 F_SRCS   += precise.f90
 F_SRCS   += pressure.f90
 F_SRCS   += prime.f90
@@ -489,16 +486,16 @@ F_SRCS   += prmkey.f90
 F_SRCS   += readprm.f90
 F_SRCS   += respa.f90 respa1.f90
 F_SRCS   += rings.f90
-F_SRCS   += rotpole.f90 rotpolegpu.f90
+F_SRCS   += rotpole.f90 rotpole.gpu.f90
 F_SRCS   += search.f90
 F_SRCS   += sort.f90
 F_SRCS   += rattle.f90 shakeup.f90
 F_SRCS   += suffix.f90
 F_SRCS   += switch.f90 switch_group.f90
 F_SRCS   += temper.f90
-F_SRCS   += tmatxb_pme.f90 tmatxb_pmegpu.f90
+F_SRCS   += tmatxb_pme.f90 tmatxb_pme.gpu.f90
 F_SRCS   += torphase.f90
-F_SRCS   += torque.f90 torquegpu.f90
+F_SRCS   += torque.f90 torque.gpu.f90
 F_SRCS   += torsions.f90
 F_SRCS   += trimtext.f90
 F_SRCS   += unitcell.f90
@@ -810,8 +807,8 @@ sm_%.gpu.o: $(src_dir)/sm_%.gpu.f90
 	$(RunF77) $(GPUFLAGS) -I$(src_dir) -c $< -o $@
 sm_%.o: $(src_dir)/sm_%.f90
 	$(RunF77) $(GPUFLAGS) -I$(src_dir) -c $< -o $@
-%gpu.o: $(src_dir)/%gpu.f90
-	$(RunF77) $(GPUFLAGS) -I$(src_dir) -c $<
+%.gpu.o: $(src_dir)/%.gpu.f90
+	$(RunF77) $(GPUFLAGS) -I$(src_dir) -c $< -o $@
 e%.o: $(src_dir)/e%.f90
 	$(RunF77) $(GPUFLAGS) -I$(src_dir) -c $<
 k%.o: $(src_dir)/k%.f90
@@ -821,8 +818,8 @@ k%.o: $(src_dir)/k%.f90
 %.o: $(src_dir)/%.f90
 	$(RunF77) $(FFLAGS) -I$(src_dir) -I$(INC_FFTDECOMP) -c $< -o $@
 
-# mdevice's public channel type is owned and installed by 2DECOMP&FFT.
-MOD_mdevice.o: $(FFTDECOMP_CHANNEL_MOD)
+# Public channel types are owned and installed by 2DECOMP&FFT.
+MOD_mdevice.o MOD_parallel.o: $(FFTDECOMP_CHANNEL_MOD)
 
 # -- Build directories
 BUILD_DIR     ?= build

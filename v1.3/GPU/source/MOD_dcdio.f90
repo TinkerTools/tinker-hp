@@ -30,18 +30,9 @@
 !
 #include "tinker_precision.h"
 module dcdmod
-   use status, only: status_t
+   use tinTypes , only: dcdinfo_t
+   use status   , only: status_t
    implicit none
-
-   type dcdinfo_t
-      integer(kind=4) :: idcd,nframes,istart,iend,nevery
-      integer(kind=8) :: nframes_pos,iend_pos,curr_pos
-      integer(kind=8) :: filesize, framesize
-      integer(kind=4) :: natoms
-      real(kind=4) :: timestep
-      character(len=80), allocatable :: titlesdcd(:)
-      character(:), allocatable :: filename
-   end type dcdinfo_t
 
    logical dcdio
    save

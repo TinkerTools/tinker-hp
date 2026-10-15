@@ -148,7 +148,7 @@ subroutine bndchg1 (pdelta)
    use cflux
    use domdec  ,only: loc,nproc
    use sizes
-   use mdevice  ,only: default_work
+   use mdevice  ,only: reciprocal_work
    implicit none
    integer i,ia,ib
    integer ibond
@@ -160,7 +160,7 @@ subroutine bndchg1 (pdelta)
 !
 !     loop over all the bond distances in the system
 !
-!$acc parallel loop async(default_work%queue) default(present)
+!$acc parallel loop async(reciprocal_work%queue) default(present)
    do ibond = 1, nbondloc
       i   = bndglob(ibond)
       ia  = ibnd(1,i)
@@ -211,7 +211,7 @@ subroutine angchg1 (pdelta)
    use domdec  ,only: loc,nproc
    use math
    use sizes
-   use mdevice  ,only: default_work
+   use mdevice  ,only: reciprocal_work
    implicit none
    integer i,ia,ib,ic
    integer iangle
@@ -234,7 +234,7 @@ subroutine angchg1 (pdelta)
 !
 !     loop over all the bond angles in the system
 !
-!$acc parallel loop async(default_work%queue) default(present)
+!$acc parallel loop async(reciprocal_work%queue) default(present)
    do iangle = 1, nangleloc
       i   = angleglob(iangle)
       ia  = iang(1,i)

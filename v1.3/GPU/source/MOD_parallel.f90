@@ -5,16 +5,15 @@
 !
 #include "tinker_macro.h"
 module parallel
-   use config   , only: config_t
-   use mdevice  , only: channel_t
+   use tinTypes , only: POLYMER_COMM_TYPE
+   use mdevice_channel, only: channel_t
    use mpi      , only: MPI_COMM_NULL
-   use status   , only: status_t
-   use structure, only: structure_t
+   use status_types, only: status_t
    implicit none
 
    private :: reject_parallel_copy, reject_domain_copy, reject_polar_ticket_copy, &
       &capture_halo_layout, refresh_domain_layout, release_halo_layout, check_domain_layout, activate_domain, &
-      &deactivate_domain, release_migration_workspace, migrate_atoms_legacy, polar_post_comm_legacy, &
+      &deactivate_domain, migrate_atoms_legacy, polar_post_comm_legacy, &
       &polar_finish_legacy, &
       &active_domain, active_platform, &
       &polar_post_dip_comm_legacy, polar_finish_dip_comm_legacy, &
@@ -24,9 +23,8 @@ module parallel
       &polar_post_receives_direct, polar_post_sends_direct, polar_finish_direct, &
       &polar_post_receives_dip, polar_post_sends_dip, polar_finish_dip, &
       &polar_set_finish_failure_legacy, &
-      &polar_post_recdir_receive_legacy, polar_post_recdir_send_legacy, &
-      &polar_finish_recdir_legacy, &
-      &reset_polar_ticket, replicate_rp, replicate_legacy_rp, &
+      &reset_polar_ticket, replicate_rp, replicate_full_rp, replicate_legacy_rp, &
+      &orderbuffer, orderbuffer_gpu, orderbufferrec, orderbufrec_gpu, &
       &extend_tp, accumulate_tp, accumulate_rec_to_dir_tp, &
       &reduce_sum_i_vector, reduce_sum_rp_vector, reduce_sum_rp_matrix, &
       &reduce_sum_legacy_i_vector, reduce_sum_legacy_rp_vector, reduce_sum_legacy_rp_matrix, &
@@ -46,6 +44,11 @@ module parallel
    !
    ! TYPES
    !
+   type :: topo_cfg_t
+      logical :: replicas_enabled = .false.
+      integer :: replica_count = 0
+   end type topo_cfg_t
+
    type :: domain_t
       ! Noncopyable owner; reset_topology releases and restores its state explicitly.
       integer :: communicator = MPI_COMM_NULL
@@ -94,6 +97,8 @@ module parallel
       logical :: active = .false.
       logical :: dip_active = .false.
       logical :: recdir_active = .false.
+      logical :: recdir_send_phase = .false.
+      logical :: recdir_receive_phase = .false.
       logical :: use_short_range = .false.
       logical :: use_group = .false.
       logical :: use_gpu = .false.
@@ -187,6 +192,7 @@ module parallel
 
    interface replicate
       module procedure replicate_rp
+      module procedure replicate_full_rp
    end interface replicate
 
    interface reduce_sum
@@ -201,17 +207,17 @@ module parallel
    end interface reduce_sum
 
    interface
-      module subroutine construct_topology(platform, configuration, topology_kind, status_value)
+      module subroutine construct_topology(platform, topo_config, topology_kind, status_value)
          type(parallel_t), target, intent(inout) :: platform
-         type(config_t), intent(in) :: configuration
+         type(topo_cfg_t), intent(in) :: topo_config
          integer, intent(in) :: topology_kind
          type(status_t), intent(out) :: status_value
       end subroutine construct_topology
 
-      module subroutine configure_layout(platform, configuration, structure_value, status_value)
+      module subroutine configure_layout(platform, key_discovered, atom_count, status_value)
          type(parallel_t), target, intent(inout) :: platform
-         type(config_t), intent(in) :: configuration
-         type(structure_t), intent(in) :: structure_value
+         logical, intent(in) :: key_discovered
+         integer, intent(in) :: atom_count
          type(status_t), intent(out) :: status_value
       end subroutine configure_layout
 
@@ -251,6 +257,46 @@ module parallel
          type(domain_t), intent(inout) :: domain
          integer, intent(out), optional :: cleanup_status
       end subroutine release_halo_layout
+
+      module subroutine migrate_polymer_atoms(polymer, polymer_ctr)
+         type(POLYMER_COMM_TYPE), intent(inout) :: polymer
+         type(POLYMER_COMM_TYPE), intent(inout), optional :: polymer_ctr
+      end subroutine migrate_polymer_atoms
+
+      module subroutine exchange_polymer_positions(polymer, send_centroid, fast)
+         type(POLYMER_COMM_TYPE), intent(inout) :: polymer
+         logical, intent(in) :: send_centroid, fast
+      end subroutine exchange_polymer_positions
+
+      module subroutine exchange_polymer_recip_positions(polymer, send_centroid)
+         type(POLYMER_COMM_TYPE), intent(inout) :: polymer
+         logical, intent(in) :: send_centroid
+      end subroutine exchange_polymer_recip_positions
+
+      module subroutine exchange_polymer_gradient_state(polymer,send_centroid,send_vel)
+         type(POLYMER_COMM_TYPE), intent(inout) :: polymer
+         logical, intent(in) :: send_centroid
+         logical, intent(in), optional :: send_vel
+      end subroutine exchange_polymer_gradient_state
+
+      module subroutine exchange_polymer_normal_modes(polymer,array1,array2,array3,array4)
+         type(POLYMER_COMM_TYPE), intent(inout) :: polymer
+         real(r_p), intent(inout) :: array1(:,:,:)
+         real(r_p), intent(inout), optional :: array2(:,:,:)
+         real(r_p), intent(inout), optional :: array3(:,:,:)
+         real(r_p), intent(inout), optional :: array4(:,:,:)
+      end subroutine exchange_polymer_normal_modes
+
+      module subroutine exchange_polymer_recip_forces(polymer,derivs,temprec)
+         type(POLYMER_COMM_TYPE), intent(in) :: polymer
+         real(r_p), intent(inout) :: derivs(:,:,:)
+         real(r_p), intent(inout) :: temprec(:,:,:)
+      end subroutine exchange_polymer_recip_forces
+
+      module subroutine exchange_polymer_contracted_forces(polymer_ctr,derivs_ctr)
+         type(POLYMER_COMM_TYPE), intent(inout) :: polymer_ctr
+         real(r_p), intent(inout) :: derivs_ctr(:,:,:)
+      end subroutine exchange_polymer_contracted_forces
 
       module subroutine release_migration_workspace()
       end subroutine release_migration_workspace
@@ -301,20 +347,23 @@ module parallel
       module subroutine migrate_atoms_legacy()
       end subroutine migrate_atoms_legacy
 
-      module subroutine polar_post_comm_legacy(ticket, nrhs, values, use_short_range, send_values, group_comm)
+      module subroutine polar_post_comm_legacy(ticket, nrhs, values, use_short_range, send_values, group_comm, &
+         &channel)
          type(polar_comm_t), intent(inout) :: ticket
          integer, intent(in) :: nrhs
          real(t_p), intent(inout) :: values(3,nrhs,*)
          logical, intent(in) :: use_short_range
          real(t_p), intent(inout) :: send_values(3,nrhs,*)
          logical, intent(in) :: group_comm
+         type(channel_t), intent(in) :: channel
       end subroutine polar_post_comm_legacy
 
-      module subroutine polar_finish_legacy(ticket, nrhs, values, status_value)
+      module subroutine polar_finish_legacy(ticket, nrhs, values, status_value, channel)
          type(polar_comm_t), intent(inout) :: ticket
          integer, intent(in) :: nrhs
          real(t_p), intent(inout) :: values(3,nrhs,*)
          type(status_t), intent(out), optional :: status_value
+         type(channel_t), intent(in) :: channel
       end subroutine polar_finish_legacy
 
       module subroutine polar_post_dip_comm_legacy(ticket, nrhs, diprec, dip, &
@@ -338,23 +387,26 @@ module parallel
          type(status_t), intent(out), optional :: status_value
       end subroutine polar_finish_dip_comm_legacy
 
-      module subroutine polar_post_receives_direct_legacy(ticket, nrhs, values)
+      module subroutine polar_post_receives_direct_legacy(ticket, nrhs, values, channel)
          type(polar_comm_t), intent(inout) :: ticket
          integer, intent(in) :: nrhs
          real(t_p), intent(inout) :: values(3,nrhs,*)
+         type(channel_t), intent(in) :: channel
       end subroutine polar_post_receives_direct_legacy
 
-      module subroutine polar_post_sends_direct_legacy(ticket, nrhs, values)
+      module subroutine polar_post_sends_direct_legacy(ticket, nrhs, values, channel)
          type(polar_comm_t), intent(inout) :: ticket
          integer, intent(in) :: nrhs
          real(t_p), intent(inout) :: values(3,nrhs,*)
+         type(channel_t), intent(in) :: channel
       end subroutine polar_post_sends_direct_legacy
 
-      module subroutine polar_finish_direct_legacy(ticket, nrhs, values, status_value)
+      module subroutine polar_finish_direct_legacy(ticket, nrhs, values, status_value, channel)
          type(polar_comm_t), intent(inout) :: ticket
          integer, intent(in) :: nrhs
          real(t_p), intent(inout) :: values(3,nrhs,*)
          type(status_t), intent(out), optional :: status_value
+         type(channel_t), intent(in) :: channel
       end subroutine polar_finish_direct_legacy
 
       module subroutine polar_post_receives_dip_legacy(ticket, nrhs, diprec, dip, &
@@ -390,60 +442,41 @@ module parallel
          logical, intent(in) :: enabled
       end subroutine polar_set_finish_failure_legacy
 
-      module subroutine polar_post_recdir_receive_legacy(ticket, nrhs, buffer, channel)
-         type(polar_comm_t), intent(inout) :: ticket
-         integer, intent(in) :: nrhs
-         real(t_p), intent(inout) :: buffer(3,nrhs,*)
-         type(channel_t), intent(in) :: channel
-      end subroutine polar_post_recdir_receive_legacy
-
-      module subroutine polar_post_recdir_send_legacy(ticket, nrhs, values, buffer, channel)
+      module subroutine polar_post_recdir(ticket, nrhs, values, receive_buffer, send_buffer, channel, use_gpu, send_phase)
          type(polar_comm_t), intent(inout) :: ticket
          integer, intent(in) :: nrhs
          real(t_p), intent(in) :: values(3,nrhs,*)
-         real(t_p), intent(inout) :: buffer(3,nrhs,*)
+         real(t_p), intent(inout) :: receive_buffer(3,nrhs,*), send_buffer(3,nrhs,*)
          type(channel_t), intent(in) :: channel
-      end subroutine polar_post_recdir_send_legacy
+         logical, intent(in), optional :: use_gpu
+         logical, intent(in), optional :: send_phase
+      end subroutine polar_post_recdir
 
-      module subroutine polar_finish_recdir_legacy(ticket, nrhs, values, buffer, channel)
+      module subroutine polar_finish_recdir(ticket, nrhs, values, buffer, channel, use_gpu)
          type(polar_comm_t), intent(inout) :: ticket
          integer, intent(in) :: nrhs
          real(t_p), intent(inout) :: values(3,nrhs,*)
          real(t_p), intent(in) :: buffer(3,nrhs,*)
          type(channel_t), intent(in) :: channel
-      end subroutine polar_finish_recdir_legacy
+         logical, intent(in), optional :: use_gpu
+      end subroutine polar_finish_recdir
 
-      module subroutine commrecdirfields(rule, efrec, ef, buffermpi1, buffermpi2, &
-         &reqrecdirrec, reqrecdirsend)
-         integer, intent(in) :: rule
-         real(t_p), intent(inout) :: efrec(10,*), ef(10,*)
-         real(t_p), intent(inout) :: buffermpi1(10,*), buffermpi2(10,*)
-         integer, intent(inout) :: reqrecdirrec(:), reqrecdirsend(:)
-      end subroutine commrecdirfields
+      module subroutine polar_post_recdir_fields(ticket, values, receive_buffer, send_buffer, channel, use_gpu, send_phase)
+         type(polar_comm_t), intent(inout) :: ticket
+         real(t_p), intent(in) :: values(10,*)
+         real(t_p), intent(inout) :: receive_buffer(10,*), send_buffer(10,*)
+         type(channel_t), intent(in) :: channel
+         logical, intent(in) :: use_gpu
+         logical, intent(in), optional :: send_phase
+      end subroutine polar_post_recdir_fields
 
-      module subroutine commrecdirfieldsgpu(rule, efrec, ef, buffermpi1, buffermpi2, &
-         &reqrecdirrec, reqrecdirsend)
-         integer, intent(in) :: rule
-         real(t_p), intent(inout) :: efrec(10,*), ef(10,*)
-         real(t_p), intent(inout) :: buffermpi1(10,*), buffermpi2(10,*)
-         integer, intent(inout) :: reqrecdirrec(:), reqrecdirsend(:)
-      end subroutine commrecdirfieldsgpu
-
-      module subroutine commrecdirsolv(nrhs, rule, dipfieldbis, dipfield, &
-         &buffermpi1, buffermpi2, reqrecdirrec, reqrecdirsend)
-         integer, intent(in) :: nrhs, rule
-         real(t_p), intent(inout) :: dipfield(3,nrhs,*), dipfieldbis(3,nrhs,*)
-         real(t_p), intent(inout) :: buffermpi1(3,nrhs,*), buffermpi2(3,nrhs,*)
-         integer, intent(inout) :: reqrecdirrec(:), reqrecdirsend(:)
-      end subroutine commrecdirsolv
-
-      module subroutine commrecdirsolvgpu(nrhs, rule, dipfieldbis, dipfield, &
-         &buffermpi1, buffermpi2, reqrecdirrec, reqrecdirsend)
-         integer, intent(in) :: nrhs, rule
-         real(t_p), intent(inout) :: dipfield(3,nrhs,*), dipfieldbis(3,nrhs,*)
-         real(t_p), intent(inout) :: buffermpi1(3,nrhs,*), buffermpi2(3,nrhs,*)
-         integer, intent(inout) :: reqrecdirrec(:), reqrecdirsend(:)
-      end subroutine commrecdirsolvgpu
+      module subroutine polar_finish_recdir_fields(ticket, values, buffer, channel, use_gpu)
+         type(polar_comm_t), intent(inout) :: ticket
+         real(t_p), intent(inout) :: values(10,*)
+         real(t_p), intent(in) :: buffer(10,*)
+         type(channel_t), intent(in) :: channel
+         logical, intent(in) :: use_gpu
+      end subroutine polar_finish_recdir_fields
 
       module subroutine commfield(nrhs, ef)
          integer, intent(in) :: nrhs
@@ -455,9 +488,10 @@ module parallel
          real(t_p), intent(inout) :: ef(3,nrhs,*)
       end subroutine commfieldgpu
 
-      module subroutine commfieldshort(nrhs, ef)
+      module subroutine commfieldshort(nrhs, ef, channel)
          integer, intent(in) :: nrhs
          real(t_p), intent(inout) :: ef(3,nrhs,*)
+         type(channel_t), intent(in) :: channel
       end subroutine commfieldshort
 
       module subroutine commchgflx(pdelta)
@@ -484,9 +518,6 @@ module parallel
       module subroutine commposrec()
       end subroutine commposrec
 
-      module subroutine commposshort()
-      end subroutine commposshort
-
       module subroutine commposrespa(fast)
          logical, intent(in) :: fast
       end subroutine commposrespa
@@ -509,6 +540,9 @@ module parallel
       module subroutine assign_direct()
       end subroutine assign_direct
 
+      module subroutine initialize_direct_communication()
+      end subroutine initialize_direct_communication
+
       module subroutine assign_reciprocal()
       end subroutine assign_reciprocal
 
@@ -526,13 +560,6 @@ module parallel
       module subroutine orderbufrec_gpu()
       end subroutine orderbufrec_gpu
 
-      module subroutine sendallpos()
-      end subroutine sendallpos
-
-      module subroutine sendvecmin(xx)
-         real(r_p), intent(inout) :: xx(*)
-      end subroutine sendvecmin
-
       module subroutine reset_polar_ticket(ticket)
          type(polar_comm_t), intent(inout) :: ticket
       end subroutine reset_polar_ticket
@@ -547,6 +574,12 @@ module parallel
          real(r_p), intent(out) :: global_values(:)
          integer, intent(in) :: components
       end subroutine replicate_legacy_rp
+
+      module subroutine replicate_full_rp(global_ids, global_values, components)
+         integer, intent(in) :: global_ids(:)
+         real(r_p), intent(inout) :: global_values(:)
+         integer, intent(in) :: components
+      end subroutine replicate_full_rp
 
 #if TINKER_MIXED_PREC
       module subroutine reduce_sum_legacy_tp_vector(values, visibility, root)
@@ -790,63 +823,70 @@ contains
       call migrate_atoms_legacy()
    end subroutine migrate_atoms
 
-   subroutine polar_post_comm_default(ticket, nrhs, values)
+   subroutine polar_post_comm_default(ticket, nrhs, values, channel)
       type(polar_comm_t), intent(inout) :: ticket
       integer, intent(in) :: nrhs
       real(t_p), intent(inout) :: values(3,nrhs,*)
-      call polar_post_comm_legacy(ticket, nrhs, values, .false., values, .false.)
+      type(channel_t), intent(in) :: channel
+      call polar_post_comm_legacy(ticket, nrhs, values, .false., values, .false., channel)
    end subroutine polar_post_comm_default
 
-   subroutine polar_post_comm_short(ticket, nrhs, values, use_short_range)
+   subroutine polar_post_comm_short(ticket, nrhs, values, use_short_range, channel)
       type(polar_comm_t), intent(inout) :: ticket
       integer, intent(in) :: nrhs
       real(t_p), intent(inout) :: values(3,nrhs,*)
       logical, intent(in) :: use_short_range
-      call polar_post_comm_legacy(ticket, nrhs, values, use_short_range, values, .false.)
+      type(channel_t), intent(in) :: channel
+      call polar_post_comm_legacy(ticket, nrhs, values, use_short_range, values, .false., channel)
    end subroutine polar_post_comm_short
 
-   subroutine polar_post_comm_send(ticket, nrhs, values, use_short_range, send_values)
+   subroutine polar_post_comm_send(ticket, nrhs, values, use_short_range, send_values, channel)
       type(polar_comm_t), intent(inout) :: ticket
       integer, intent(in) :: nrhs
       real(t_p), intent(inout) :: values(3,nrhs,*), send_values(3,nrhs,*)
       logical, intent(in) :: use_short_range
-      call polar_post_comm_legacy(ticket, nrhs, values, use_short_range, send_values, .false.)
+      type(channel_t), intent(in) :: channel
+      call polar_post_comm_legacy(ticket, nrhs, values, use_short_range, send_values, .false., channel)
    end subroutine polar_post_comm_send
 
-   subroutine polar_post_group_comm(ticket, nrhs, values)
+   subroutine polar_post_group_comm(ticket, nrhs, values, channel)
       type(polar_comm_t), intent(inout) :: ticket
       integer, intent(in) :: nrhs
       real(t_p), intent(inout) :: values(3,nrhs,*)
-      call polar_post_comm_legacy(ticket, nrhs, values, .false., values, .true.)
+      type(channel_t), intent(in) :: channel
+      call polar_post_comm_legacy(ticket, nrhs, values, .false., values, .true., channel)
    end subroutine polar_post_group_comm
 
-   subroutine polar_finish_direct(ticket, nrhs, values, status_value)
+   subroutine polar_finish_direct(ticket, nrhs, values, status_value, channel)
       type(polar_comm_t), intent(inout) :: ticket
       integer, intent(in) :: nrhs
       real(t_p), intent(inout) :: values(3,nrhs,*)
       type(status_t), intent(out), optional :: status_value
+      type(channel_t), intent(in) :: channel
 
       if (ticket%use_group .or. ticket%use_short_range .or. ticket%use_gpu) then
-         call polar_finish_legacy(ticket, nrhs, values, status_value)
+         call polar_finish_legacy(ticket, nrhs, values, status_value, channel)
       else
-         call polar_finish_direct_legacy(ticket, nrhs, values, status_value)
+         call polar_finish_direct_legacy(ticket, nrhs, values, status_value, channel)
       end if
    end subroutine polar_finish_direct
 
-   subroutine polar_post_receives_direct(ticket, nrhs, values)
+   subroutine polar_post_receives_direct(ticket, nrhs, values, channel)
       type(polar_comm_t), intent(inout) :: ticket
       integer, intent(in) :: nrhs
       real(t_p), intent(inout) :: values(3,nrhs,*)
+      type(channel_t), intent(in) :: channel
 
-      call polar_post_receives_direct_legacy(ticket, nrhs, values)
+      call polar_post_receives_direct_legacy(ticket, nrhs, values, channel)
    end subroutine polar_post_receives_direct
 
-   subroutine polar_post_sends_direct(ticket, nrhs, values)
+   subroutine polar_post_sends_direct(ticket, nrhs, values, channel)
       type(polar_comm_t), intent(inout) :: ticket
       integer, intent(in) :: nrhs
       real(t_p), intent(inout) :: values(3,nrhs,*)
+      type(channel_t), intent(in) :: channel
 
-      call polar_post_sends_direct_legacy(ticket, nrhs, values)
+      call polar_post_sends_direct_legacy(ticket, nrhs, values, channel)
    end subroutine polar_post_sends_direct
 
    subroutine polar_post_receives_dip(ticket, nrhs, diprec, dip, buffer_send, buffer_recv)
@@ -882,35 +922,6 @@ contains
 
       call polar_set_finish_failure_legacy(enabled)
    end subroutine polar_set_finish_failure
-
-   subroutine polar_post_recdir_receive(ticket, nrhs, buffer, channel)
-      type(polar_comm_t), intent(inout) :: ticket
-      integer, intent(in) :: nrhs
-      real(t_p), intent(inout) :: buffer(3,nrhs,*)
-      type(channel_t), intent(in) :: channel
-
-      call polar_post_recdir_receive_legacy(ticket, nrhs, buffer, channel)
-   end subroutine polar_post_recdir_receive
-
-   subroutine polar_post_recdir_send(ticket, nrhs, values, buffer, channel)
-      type(polar_comm_t), intent(inout) :: ticket
-      integer, intent(in) :: nrhs
-      real(t_p), intent(in) :: values(3,nrhs,*)
-      real(t_p), intent(inout) :: buffer(3,nrhs,*)
-      type(channel_t), intent(in) :: channel
-
-      call polar_post_recdir_send_legacy(ticket, nrhs, values, buffer, channel)
-   end subroutine polar_post_recdir_send
-
-   subroutine polar_finish_recdir(ticket, nrhs, values, buffer, channel)
-      type(polar_comm_t), intent(inout) :: ticket
-      integer, intent(in) :: nrhs
-      real(t_p), intent(inout) :: values(3,nrhs,*)
-      real(t_p), intent(in) :: buffer(3,nrhs,*)
-      type(channel_t), intent(in) :: channel
-
-      call polar_finish_recdir_legacy(ticket, nrhs, values, buffer, channel)
-   end subroutine polar_finish_recdir
 
    subroutine polar_post_dip_comm_default(ticket, nrhs, diprec, dip, buffer_send, buffer_recv)
       type(polar_comm_t), intent(inout) :: ticket

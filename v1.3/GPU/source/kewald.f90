@@ -559,7 +559,7 @@ subroutine kewald
 !
 !     print a message listing some of the Ewald parameters
 !
-   if (verbose.and.(rank.eq.0)) then
+   if (verbose.and.(ranktot.eq.0)) then
       write (iout,80)
 80    format (/,' Particle Mesh Ewald Parameters :',&
          &//,5x,'Type',16x,'Ewald Alpha',4x,'Grid',&

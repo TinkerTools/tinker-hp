@@ -16,7 +16,7 @@
 !
 #include "tinker_macro.h"
 module nblist_b_inl
-   use mdevice  ,only: reciprocal_work,default_work
+   use mdevice  ,only: reciprocal_work
    use tinheader,only: ti_p
    integer   ,parameter :: BLOCK_SIZE=32
    real(t_p) ,parameter :: inf=4*huge(0.0_ti_p)
@@ -58,7 +58,7 @@ subroutine set_VdwData_CellOrder
    call prmem_request(radv      ,nab_,async=.true.)
    call prmem_request(epsv      ,nab_,async=.true.)
 
-!$acc parallel loop async(default_work%queue) &
+!$acc parallel loop async(reciprocal_work%queue) &
 !$acc         present(sgl_id,slc_id,cellv_jvdw, &
 !$acc   s_key,loc,jvdw_c,jvdw,vdwglobnl,rad,eps,radv,epsv)
    do i = 1, nab_
@@ -77,17 +77,19 @@ subroutine set_VdwData_CellOrder
    end do
 end subroutine
 
-subroutine spatialOrder_pos
+subroutine spatialOrder_pos(channel)
    use atoms   ,only: n,x,y,z
    use domdec
    use neigh
    use nblist_b_inl
+   use mdevice, only: channel_t
    use vdw
    implicit none
+   type(channel_t), intent(in) :: channel
    integer i,iglob
    real(t_p) xr,yr,zr
 
-!$acc parallel loop async(default_work%queue) default(present)
+!$acc parallel loop async(channel%queue) default(present)
    do i = 1, nab
       if (i.le.na) then
          iglob     = sgl_id(i)

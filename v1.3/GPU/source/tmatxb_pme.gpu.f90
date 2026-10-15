@@ -131,8 +131,8 @@ subroutine tmatxb_gen( X,h,shortRange,skip_communication )
    use interfaces ,only: tmatxb_p
    use mpole
    use parallel, only: polar_comm_t, polar_post_comm, polar_finish, &
-      &polar_post_dip_comm, polar_finish_dip_comm, polar_post_recdir_receive, &
-      &polar_post_recdir_send, polar_finish_recdir, domain_workspace_tp2d, &
+      &polar_post_dip_comm, polar_finish_dip_comm, polar_post_recdir, &
+      &polar_finish_recdir, domain_workspace_tp2d, &
       &domain_workspace_tp3d
    use parallel, only: commfield, commfieldgpu, commfieldshort
    use math
@@ -140,7 +140,7 @@ subroutine tmatxb_gen( X,h,shortRange,skip_communication )
    use polar_temp
    use timestat
    use tinMemory  ,only: prmem_request
-   use mdevice    ,only: reciprocal_work
+   use mdevice    ,only: direct_work, reciprocal_work
    implicit none
    logical   ,intent(in) :: shortRange
    logical   ,intent(in) :: skip_communication
@@ -169,12 +169,12 @@ subroutine tmatxb_gen( X,h,shortRange,skip_communication )
    ! get neighbor contribution of field
    if (shortRange) then
       if (.not.skip_communication) then
-         call polar_post_comm(polar_ticket, nrhs, X, shortRange)
-         call polar_finish(polar_ticket, nrhs, X)
+         call polar_post_comm(polar_ticket, nrhs, X, shortRange, channel=direct_work)
+         call polar_finish(polar_ticket, nrhs, X, channel=direct_work)
       end if
    else
-      call polar_post_comm(polar_ticket, nrhs, X)
-      call polar_finish(polar_ticket, nrhs, X)
+      call polar_post_comm(polar_ticket, nrhs, X, channel=reciprocal_work)
+      call polar_finish(polar_ticket, nrhs, X, channel=reciprocal_work)
 
       call polar_post_dip_comm(polar_ticket,nrhs,murec,X,buffermpimu1,buffermpimu2)
       call polar_finish_dip_comm(polar_ticket,nrhs,murec,X,buffermpimu1,buffermpimu2)
@@ -193,12 +193,11 @@ subroutine tmatxb_gen( X,h,shortRange,skip_communication )
 
    ! Completion communications
    if (shortRange) then
-      call commfieldshort(nrhs,h)
+      call commfieldshort(nrhs,h,direct_work)
    else
       call commfieldgpu(nrhs,h)
-      call polar_post_recdir_receive(polar_ticket,nrhs,buffermpi1,reciprocal_work)
-      call polar_post_recdir_send(polar_ticket,nrhs,dipfieldbis,buffermpi2,reciprocal_work)
-      call polar_finish_recdir(polar_ticket,nrhs,dipfield,buffermpi1,reciprocal_work)
+      call polar_post_recdir(polar_ticket,nrhs,dipfieldbis,buffermpi1,buffermpi2,reciprocal_work,.true.)
+      call polar_finish_recdir(polar_ticket,nrhs,dipfield,buffermpi1,reciprocal_work,.true.)
 !$acc parallel loop collapse(3) default(present) async(reciprocal_work%queue)
       do k=1,npoleloc; do j=1,nrhs; do i=1,3
          h(i,j,k) = h(i,j,k) + dipfield(i,j,k) - term*X(i,j,k)

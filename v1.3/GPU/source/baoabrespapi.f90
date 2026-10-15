@@ -51,6 +51,8 @@ subroutine baoabrespapi(istep,dt)
    use moldyn
    use utilbaoabpi
    use commstuffpi
+   use parallel, only: exchange_polymer_recip_forces, &
+      &exchange_polymer_normal_modes, exchange_polymer_contracted_forces
    use spectra
    implicit none
    integer, intent(in) :: istep
@@ -171,7 +173,7 @@ subroutine baoabrespapi(istep,dt)
       if(PITIMER) call stopwatchpi(timegrad,.false.,.false.)
 
       if(.not.centroid_recip)&
-         &call commforcesrecpi(derivs,derivsRec,nbeadsloc)
+         &call exchange_polymer_recip_forces(polymer_main,derivs,derivsRec)
       call commforcesblocpi(derivs,nbeadsloc,.FALSE.)
 
       ibeadbeg=polymer_main%ibead_beg(rank_polymer+1)
@@ -183,7 +185,7 @@ subroutine baoabrespapi(istep,dt)
                   &-derivs(j,iloc,k)
             ENDDO ; ENDDO ; ENDDO
 
-      call comm_for_normal_modes(polymer_main,polymer_main%forces_slow )
+      call exchange_polymer_normal_modes(polymer_main,polymer_main%forces_slow )
       if(PITIMER) call stopwatchpi(timecom,.true.,.false.)
    endif
 
@@ -204,9 +206,9 @@ subroutine baoabrespapi(istep,dt)
       if(PITIMER) call stopwatchpi(timecontract,.false.,.false.)
 
       if(.not.centroid_recip)&
-         &call commforcesrecpi(derivs_ctr,derivsRec,nbeadsloc_ctr)
+         &call exchange_polymer_recip_forces(polymer_ctr,derivs_ctr,derivsRec)
       call commforcesblocpi(derivs_ctr,nbeadsloc_ctr,.FALSE.)
-      call commforces_ctr(polymer_ctr,derivs_ctr)
+      call exchange_polymer_contracted_forces(polymer_ctr,derivs_ctr)
       call project_forces_ctr(polymer_main,polymer_ctr,.TRUE.)
       if(PITIMER) call stopwatchpi(timecom,.true.,.false.)
    endif
@@ -314,6 +316,7 @@ subroutine baoabrespapi_fast(istep,dta,nsteps,epot,vir_&
    use moldyn
    use utilbaoabpi
    use commstuffpi
+   use parallel, only: exchange_polymer_normal_modes
    implicit none
    integer, intent(in) :: istep,nsteps
    real(r_p), intent(in) :: dta
@@ -384,7 +387,7 @@ subroutine baoabrespapi_fast(istep,dta,nsteps,epot,vir_&
                polymer_main%forces(j,i,k+ibeadbeg-1) = -derivs(j,iloc,k)
             ENDDO ; ENDDO ; ENDDO
 
-      call comm_for_normal_modes(polymer_main,polymer_main%forces)
+      call exchange_polymer_normal_modes(polymer_main,polymer_main%forces)
       if(PITIMER) call stopwatchpi(timecom,.true.,.false.)
 
       call set_eigforces_pi(polymer_main,polymer_main%forces)

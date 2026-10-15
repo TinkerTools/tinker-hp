@@ -132,43 +132,43 @@ MODSNZ = MOD_math.o MOD_mamd.o MOD_msmd.o MOD_merck.o MOD_mpole.o MOD_mdstuf.o\
    MOD_tors.o MOD_tortor.o MOD_units.o MOD_uprior.o\
    MOD_urey.o MOD_urypot.o MOD_usage.o MOD_vdwpot.o MOD_virial.o\
    MOD_vdw.o MOD_utilbaoab.o MOD_utilbaoabpi.o MOD_utils.o MOD_utilvec.o\
-	MOD_subDeriv.o MOD_subMemory.o MOD_subInform.o MOD_subAtoms.o\
+	sm_deriv.o sm_memory.o sm_inform.o sm_atoms.o\
    MOD_vec.o MOD_vec_elec.o MOD_vec_vdw.o\
    MOD_vec_list.o MOD_vec_mpole.o MOD_vec_polar.o MOD_vec_charge.o\
-   MOD_precompute_polegpu.o MOD_USampling.o
+   MOD_precompute_pole.gpu.o MOD_USampling.o
 
 OBJSAM = active.o analysis.o analyze.o angles.o\
    attach.o bar.o beeman.o bicubic.o\
    baoab.o baoabrespa.o baoabrespa1.o baoabpi.o baoabrespapi.o bbk.o\
    bitors.o bonds.o bounds.o calendar.o\
-   chkpole.o chkpolegpu.o chkring.o chkxyz.o cholesky.o cluster.o\
+   chkpole.o chkpole.gpu.o chkring.o chkxyz.o cholesky.o cluster.o\
    command.o control.o cspline.o\
    cutoffs.o dcdio.o diis.o domdecstuff.o dynamic.o\
-   dcinduce_pme.o dcinduce_pmegpu.o dcinduce_pme2.o dcinduce_pme2gpu.o dcinduce_shortreal.o dcinduce_shortrealgpu.o\
+   dcinduce_pme.o dcinduce_pme.gpu.o dcinduce_pme2.o dcinduce_pme2.gpu.o dcinduce_shortreal.o dcinduce_shortreal.gpu.o\
    eamd1.o eangang.o eangang1.o eangang3.o\
-   eangle.o eangle1.o eangle1gpu.o eangle3.o eangle3gpu.o\
+   eangle.o eangle1.o eangle1.gpu.o eangle3.o eangle3.gpu.o\
 	eangtor.o eangtor1.o eangtor3.o\
-   ebond.o ebond1.o ebond1gpu.o ebond3.o ebond3gpu.o\
-   echarge1vec.o echarge1gpu.o echarge3vec.o echarge3gpu.o\
-   efld0_direct.o efld0_directvec.o efld0_directgpu.o\
-   egeom.o egeom1.o egeom1gpu.o egeom3.o egeom3gpu.o\
-   ehal1vec.o ehal1gpu.o ehal3vec.o ehal3gpu.o\
+   ebond.o ebond1.o ebond1.gpu.o ebond3.o ebond3.gpu.o\
+   echarge1vec.o echarge1.gpu.o echarge3vec.o echarge3.gpu.o\
+   efld0_direct.o efld0_directvec.o efld0_direct.gpu.o\
+   egeom.o egeom1.o egeom1.gpu.o egeom3.o egeom3.gpu.o\
+   ehal1vec.o ehal1.gpu.o ehal3vec.o ehal3.gpu.o\
    eimprop.o eimprop1.o eimprop3.o\
    eimptor.o eimptor1.o eimptor3.o\
-   elj1vec.o eimprop1gpu.o elj1gpu.o elj3vec.o elj3gpu.o\
-   empole1vec.o empole1gpu.o empole1_group.o\
-   empole3gpu.o empole3_group.o\
-   energy.o eopbend.o eopbend1.o eopbend1gpu.o  eopbend3.o eopbend3gpu.o\
+   elj1vec.o eimprop1.gpu.o elj1.gpu.o elj3vec.o elj3.gpu.o\
+   empole1vec.o empole1.gpu.o empole1_group.o\
+   empole3.gpu.o empole3_group.o\
+   energy.o eopbend.o eopbend1.o eopbend1.gpu.o  eopbend3.o eopbend3.gpu.o\
    eopdist.o eopdist1.o eopdist3.o\
-   epitors.o epitors1.o epitors1gpu.o epitors3.o\
-   epolarvec.o epolar1vec.o epolar1gpu.o epolar1_group.o\
-   epolar3vec.o epolar3gpu.o epolar3_group.o\
+   epitors.o epitors1.o epitors1.gpu.o epitors3.o\
+   epolarvec.o epolar1vec.o epolar1.gpu.o epolar1_group.o\
+   epolar3vec.o epolar3.gpu.o epolar3_group.o\
    eprecip1vec.o esmd1.o\
-   estrbnd.o estrbnd1.o estrbnd1gpu.o estrbnd3.o\
-   estrtor.o estrtor1.o estrtor1gpu.o estrtor3.o\
-   etors.o etors1.o etors1gpu.o etors3.o\
-   etortor.o etortor1.o etortor1gpu.o etortor3.o\
-   eurey.o eurey1.o eurey1gpu.o eurey3.o  eurey3gpu.o\
+   estrbnd.o estrbnd1.o estrbnd1.gpu.o estrbnd3.o\
+   estrtor.o estrtor1.o estrtor1.gpu.o estrtor3.o\
+   etors.o etors1.o etors1.gpu.o etors3.o\
+   etortor.o etortor1.o etortor1.gpu.o etortor3.o\
+   eurey.o eurey1.o eurey1.gpu.o eurey3.o  eurey3.gpu.o\
    evcorr.o extra.o extra1.o extra3.o\
    fatal.o fft_mpi.o\
    final.o freeunit.o geometry.o\
@@ -186,18 +186,18 @@ OBJSAM = active.o analysis.o analyze.o angles.o\
    mdsave.o mdsavebeads.o mdstat.o mdstatpi.o mechanic.o minimize.o\
    molecule.o mutate.o
 
-OBJSNZ = nblist.o nblistvec.o nblistgpu.o newinduce_pme.o newinduce_pmevec.o newinduce_pmegpu.o\
-   newinduce_pme2.o newinduce_pme2vec.o newinduce_pme2gpu.o newinduce_group.o\
-   newinduce_shortreal.o newinduce_shortrealgpu.o\
+OBJSNZ = nblist.o nblistvec.o nblist.gpu.o newinduce_pme.o newinduce_pmevec.o newinduce_pme.gpu.o\
+   newinduce_pme2.o newinduce_pme2vec.o newinduce_pme2.gpu.o newinduce_group.o\
+   newinduce_shortreal.o newinduce_shortreal.gpu.o\
    nextarg.o nexttext.o nspline.o number.o\
-   numeral.o orthogonalize.o openend.o optsave.o pimd.o plumed.o pmestuff.o pmestuffgpu.o\
+   numeral.o orthogonalize.o openend.o optsave.o pimd.o plumed.o pmestuff.o pmestuff.gpu.o\
    precise.o pressure.o prime.o promo.o promoamd.o promosmd.o prmkey.o\
    radial.o\
    readprm.o respa.o respa1.o\
-   rings.o rotpole.o rotpolegpu.o search.o sort.o\
+   rings.o rotpole.o rotpole.gpu.o search.o sort.o\
    rattle.o shakeup.o\
-   suffix.o switch.o switch_group.o temper.o testgrad.o tmatxb_pme.o tmatxb_pmevec.o tmatxb_pmegpu.o\
-   torphase.o torque.o torquegpu.o torquevec2.o torsions.o trimtext.o\
+   suffix.o switch.o switch_group.o temper.o testgrad.o tmatxb_pme.o tmatxb_pmevec.o tmatxb_pme.gpu.o\
+   torphase.o torque.o torque.gpu.o torquevec2.o torsions.o trimtext.o\
    unitcell.o verlet.o version.o
 
 MODS   = $(MODSAM) $(MODSNZ)
@@ -298,10 +298,10 @@ libtinker: $(MODS) $(OBJS)
  
 
 # Absolute dependencies between files and modules
-MOD_subAtoms.o: MOD_atoms.o
-MOD_subMemory.o: MOD_memory.o
-MOD_subDeriv.o: MOD_deriv.o
-MOD_subInform.o: MOD_inform.o
+sm_atoms.o: MOD_atoms.o
+sm_memory.o: MOD_memory.o
+sm_deriv.o: MOD_deriv.o
+sm_inform.o: MOD_inform.o
 
 #
 ## Generics Rules

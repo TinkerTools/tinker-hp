@@ -188,7 +188,8 @@ subroutine makebarpi(raw_cli,configuration,molecular_structure,platform,status_v
    use config, only: config_t, max_raw_cli_args, parse_positional_cli, raw_cli_t, &
       &select_positional_cli
    use initialization, only: initialize_state, pibar_application
-   use parallel, only: parallel_t, assign_direct, assign_reciprocal
+   use parallel, only: parallel_t, assign_direct, assign_reciprocal, &
+      &exchange_polymer_gradient_state
    use status, only: clear_status, failed, status_t
    use structure, only: read_frame, structure_t
    use atoms
@@ -469,7 +470,7 @@ subroutine makebarpi(raw_cli,configuration,molecular_structure,platform,status_v
 
          if(contract .and. nbeads_ctr>1) then
             call contract_polymer(polymer_main,polymer_ctr)
-            call comm_for_gradient(polymer_ctr,.FALSE.,.FALSE.)
+            call exchange_polymer_gradient_state(polymer_ctr,.FALSE.,.FALSE.)
 
             call compute_energy_beads(epot,polymer_ctr&
                &,.not.centroid_longrange, .TRUE., .FALSE.&  ![LONG, INT  , SHORT]
@@ -650,7 +651,7 @@ subroutine makebarpi(raw_cli,configuration,molecular_structure,platform,status_v
 
          if(contract .and. nbeads_ctr>1) then
             call contract_polymer(polymer_main,polymer_ctr)
-            call comm_for_gradient(polymer_ctr,.FALSE.,.FALSE.)
+            call exchange_polymer_gradient_state(polymer_ctr,.FALSE.,.FALSE.)
 
             call compute_energy_beads(epot,polymer_ctr&
                &,.not.centroid_longrange, .TRUE., .FALSE.&  ![LONG, INT  , SHORT]
@@ -865,7 +866,7 @@ subroutine makebarpi(raw_cli,configuration,molecular_structure,platform,status_v
 
          if(contract .and. nbeads_ctr>1) then
             call contract_polymer(polymer_main,polymer_ctr)
-            call comm_for_gradient(polymer_ctr,.FALSE.,.FALSE.)
+            call exchange_polymer_gradient_state(polymer_ctr,.FALSE.,.FALSE.)
 
             call compute_energy_beads(epot,polymer_ctr&
                &,.not.centroid_longrange, .TRUE., .FALSE.&  ![LONG, INT  , SHORT]
@@ -1048,7 +1049,7 @@ subroutine makebarpi(raw_cli,configuration,molecular_structure,platform,status_v
 
          if(contract .and. nbeads_ctr>1) then
             call contract_polymer(polymer_main,polymer_ctr)
-            call comm_for_gradient(polymer_ctr,.FALSE.,.FALSE.)
+            call exchange_polymer_gradient_state(polymer_ctr,.FALSE.,.FALSE.)
 
             call compute_energy_beads(epot,polymer_ctr&
                &,.not.centroid_longrange, .TRUE., .FALSE.&  ![LONG, INT  , SHORT]

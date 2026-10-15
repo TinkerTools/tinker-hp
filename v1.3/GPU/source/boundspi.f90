@@ -226,7 +226,7 @@ subroutine bounds_by_mol_pi(polymer,ibead_beg,ibead_end)
    use atmtyp
    use atoms       ,only: pbcWrapIdx,pbcunwrap
    use atomsMirror
-   use bounds_inl
+   use boundspi_inl
    use boxes ,box34_p=>box34
    use colvars     ,only: use_colvars
    use plumed      ,only: lplumed

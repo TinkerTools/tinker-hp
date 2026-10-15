@@ -692,7 +692,7 @@ subroutine ddbuild_gpu(dcut)
       !accept=   .or.  d_b.le.ncell2buffb .or. d_c.le.ncell2buffc
 
       if (accept) then
-      !  call distprocpart1(iglob,rank,d,.true.,x,y,z)
+      !  call distprocpart1(iglob,rank,d,.true.,n,x,y,z)
       !  if (rank.eq.0.and.d.gt.dcut) then
       !     print*, iglob,real(d,4),d_a,d_b,d_c
       !  end if

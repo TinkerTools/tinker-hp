@@ -13,6 +13,7 @@
 module interfaces
    use config, only: config_t, raw_cli_t
    use iso_c_binding ,only: c_int,c_float,c_double
+   use mdevice , only: channel_t
    use status, only: status_t
 #ifdef _OPENACC
    use cudafor ,only:cuda_stream_kind
@@ -143,6 +144,11 @@ module interfaces
       subroutine set_ElecData_CellOrder(rebuild_nl)
          logical,intent(in):: rebuild_nl
       end subroutine
+
+      subroutine spatialOrder_pos(channel)
+         import :: channel_t
+         type(channel_t), intent(in) :: channel
+      end subroutine
    end interface
 
    interface
@@ -166,6 +172,14 @@ module interfaces
 !  #############################################################################
    interface
       subroutine ehal1c_ac
+      end subroutine
+   end interface
+   interface
+      subroutine evcorr1gpu(mode,elrc,vlrc,channel)
+         import :: channel_t
+         character*11, intent(in) :: mode
+         real(r_p), intent(inout) :: elrc,vlrc
+         type(channel_t), intent(in) :: channel
       end subroutine
    end interface
    procedure(ehal1c_ac):: ehal1c,ehal3c,ehal3c_ac,ehal1c_cu,ehal3c_cu
@@ -438,33 +452,41 @@ module interfaces
       &otf_dc_efld0_directgpu_p
 
    interface
-      subroutine pcg_newDirection(siz,ggn,ggo,ggn2,ggo2,zr,pp)
+      subroutine pcg_newDirection(siz,ggn,ggo,ggn2,ggo2,zr,pp,channel)
+         import channel_t
          integer  ,intent(in   ):: siz
          real(t_p),intent(in   ):: ggo,ggo2
          real(r_p),intent(in   ):: ggn,ggn2
          real(t_p),intent(in   ):: zr(*)
          real(t_p),intent(inout):: pp(*)
+         type(channel_t),intent(in):: channel
       end subroutine
-      subroutine pcg_a(siz,pp,h,gg1,gg2)
+      subroutine pcg_a(siz,pp,h,gg1,gg2,channel)
+         import channel_t
          integer  ,intent(in   ):: siz
          real(r_p),intent(inout):: gg1,gg2
          real(t_p),intent(in   ):: pp(*),h(*)
+         type(channel_t),intent(in):: channel
       end subroutine
       subroutine pcg_b(siz,siz1,gg,ggo,gg2,ggo2,ggnew1,ene1,ggnew2,ene2&
-         &,mu,pp,res,h,zr,diag,ef)
+         &,mu,pp,res,h,zr,diag,ef,channel)
+         import channel_t
          integer  ,intent(in   ):: siz,siz1
          real(t_p),intent(in   ):: ggo,ggo2
          real(r_p),intent(in   ):: gg,gg2
          real(r_p),intent(inout):: ggnew1,ggnew2,ene1,ene2
          real(t_p),intent(in   ):: ef(*),pp(*),h(*),diag(*)
          real(t_p),intent(inout):: mu(*),res(*),zr(*)
+         type(channel_t),intent(in):: channel
       end subroutine
-      subroutine pcg_aRec(siz,term,pp,dipf,h,gg1,gg2)
+      subroutine pcg_aRec(siz,term,pp,dipf,h,gg1,gg2,channel)
+         import channel_t
          integer  ,intent(in   ):: siz
          real(t_p),intent(in   ):: term
          real(r_p),intent(inout):: gg1,gg2
          real(t_p),intent(in   ):: pp(*),dipf(*)
          real(t_p),intent(inout):: h(*)
+         type(channel_t),intent(in):: channel
       end subroutine
    end interface
 
@@ -855,17 +877,23 @@ module interfaces
 !
 !  #############################################################################
    interface
-      subroutine efld0_group(nrhs,ef)
+      subroutine efld0_group(nrhs,ef,channel)
+         import :: channel_t
          integer  , intent(in)    :: nrhs
          real(t_p), intent(inout) :: ef(:,:,:)
+         type(channel_t), intent(in) :: channel
       end subroutine efld0_group
-      subroutine efld0_group_correct_scaling(nrhs,ef)
+      subroutine efld0_group_correct_scaling(nrhs,ef,channel)
+         import :: channel_t
          integer  , intent(in)    :: nrhs
          real(t_p), intent(inout) :: ef(:,:,:)
+         type(channel_t), intent(in) :: channel
       end subroutine efld0_group_correct_scaling
-      subroutine commfieldfull(nrhs,ef)
+      subroutine commfieldfull(nrhs,ef,channel)
+         import :: channel_t
          integer  , intent(in)    :: nrhs
          real(t_p), intent(inout) :: ef(:,:,:)
+         type(channel_t), intent(in) :: channel
       end subroutine commfieldfull
       subroutine inducepcg_group(nrhs,precnd,ef,mu)
          integer  ,intent(in)   :: nrhs

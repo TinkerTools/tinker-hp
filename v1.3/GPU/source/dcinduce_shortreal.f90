@@ -19,6 +19,7 @@ subroutine dcinduce_shortreal
    use ewald
    use iounit
    use math
+   use mdevice, only: direct_work
    use mpole
    use parallel, only: polar_comm_t, polar_post_comm, polar_finish, commfield, commfieldgpu, commfieldshort
    use pme
@@ -129,8 +130,8 @@ subroutine dcinduce_shortreal
       end do
    end if
 
-   call polar_post_comm(comm_ticket,nrhs,mu,.true.)
-   call polar_finish(comm_ticket,nrhs,mu)
+   call polar_post_comm(comm_ticket,nrhs,mu,.true.,channel=direct_work)
+   call polar_finish(comm_ticket,nrhs,mu,channel=direct_work)
 !
 !     now, call the proper solver.
 !
@@ -191,6 +192,7 @@ subroutine inducedc_shortreal(matvec,nrhs,dodiis,ef,mu)
    use ewald
    use iounit
    use math
+   use mdevice, only: direct_work
    use mpole
    use parallel, only: polar_comm_t, polar_post_comm, polar_finish, commfield, commfieldgpu, commfieldshort
    use polar
@@ -265,7 +267,7 @@ subroutine inducedc_shortreal(matvec,nrhs,dodiis,ef,mu)
       end do
 !
       call matvec(nrhs,.false.,mu,h)
-      call commfieldshort(nrhs,h)
+      call commfieldshort(nrhs,h,direct_work)
 
 !
 !
@@ -357,8 +359,8 @@ subroutine inducedc_shortreal(matvec,nrhs,dodiis,ef,mu)
          call extrap(3*nrhs*npoleloc,nmat-1,xdiis,cex,munew)
       end if
 !
-      call polar_post_comm(comm_ticket,nrhs,mu,.true.,munew)
-      call polar_finish(comm_ticket,nrhs,mu)
+      call polar_post_comm(comm_ticket,nrhs,mu,.true.,munew,channel=direct_work)
+      call polar_finish(comm_ticket,nrhs,mu,channel=direct_work)
       mu(:,:,1:npoleloc) = munew(:,:,1:npoleloc)
 !
 !     compute the norm of the increment.

@@ -1058,10 +1058,9 @@ end
 !
 !     Same a dispprocpart except for the interface
 !
-subroutine distprocpart1(i,iproc,dist,do3d,x,y,z)
+subroutine distprocpart1(i,iproc,dist,do3d,n,x,y,z)
 !$acc routine
    use tinheader
-   use atoms ,only:n
    use cell
    use domdecstuff_inl
    use domdec,only:xbegproc,xendproc,ybegproc,yendproc,&
@@ -1069,6 +1068,7 @@ subroutine distprocpart1(i,iproc,dist,do3d,x,y,z)
    implicit none
    integer iproc
    integer i,j
+   integer,intent(in):: n
    real(t_p) x(n),y(n),z(n)
    real(t_p) dist,dist1,dist2
    real(t_p) disttemp,disttemp2
@@ -1360,7 +1360,7 @@ subroutine ddpme3d
    use potent
    use mpi
    use tinheader
-   use parallel   ,only: comm_opt, orderbuffer
+   use parallel   ,only: comm_opt, initialize_direct_communication
    implicit none
    integer i,j,k,ierr
    integer nprocloc,rankloc,iproc
@@ -1953,7 +1953,7 @@ nc_buf = ceiling(neigbuf*nzdd/(2d0*scalc*zbox))
       write(*,*)
    end if
 !
-180 call orderbuffer(.true.)
+180 call initialize_direct_communication
     
    deallocate (abegproctemp)
    deallocate (aendproctemp)
@@ -2223,20 +2223,27 @@ subroutine AtomDebRepart(ierr)
    use potent
    implicit none
    integer nd,nr,ierr
-   call MPI_AllReduce(nloc,nd,1,MPI_INT,MPI_SUM,&
-      &merge(get_direct_comm(),get_domain_comm(),use_pmecore),ierr)
-   call MPI_AllReduce(nlocrec,nr,1,MPI_INT,MPI_SUM,&
-      &merge(get_recip_comm(),get_domain_comm(),use_pmecore),ierr)
+   nd = 0
+   nr = 0
+   if (.not.use_pmecore .or. rank.lt.ndir) then
+      call MPI_AllReduce(nloc,nd,1,MPI_INT,MPI_SUM,&
+         &merge(get_direct_comm(),get_domain_comm(),use_pmecore),ierr)
+   end if
+   if (.not.use_pmecore .or. rank.ge.ndir) then
+      call MPI_AllReduce(nlocrec,nr,1,MPI_INT,MPI_SUM,&
+         &merge(get_recip_comm(),get_domain_comm(),use_pmecore),ierr)
+   end if
 
 11 format("An issue has been detected during reassign process")
 12 format(A,' > nloc ',I10,' ntot ',3I10)
 
-   if (nd.ne.n) then
+   if ((.not.use_pmecore .or. rank.lt.ndir).and.nd.ne.n) then
       if (rank.eq.0) print 11
       write(*,12) " direct space",nloc,n,nd; ierr=1;
    end if
 
-   if (rank.eq.0.And.nr.ne.n) write(*,12) " rec    space",nlocrec,n
+   if ((.not.use_pmecore .or. rank.ge.ndir).and.nr.ne.n) &
+      &write(*,12) " rec    space",nlocrec,n
 end subroutine
 
 subroutine AtomDebLocation
@@ -2467,11 +2474,10 @@ subroutine ddpme3dnptaniso(scale,istep)
    use boxes
    use cutoff
    use domdec
-   use parallel, only: get_domain_comm, get_direct_comm
+   use parallel, only: get_domain_comm, get_direct_comm, assign_direct, assign_reciprocal
    use neigh
    use potent
    use mpi
-   use parallel, only: orderbuffer_gpu, orderbufrec_gpu
    use tinheader
    implicit none
    integer nprocloc,rankloc,iproc
@@ -2856,7 +2862,7 @@ nc_buf = ceiling(neigbuf*nzdd/(2d0*scalc*zbox))
       end if
    end do
 !
-80 call orderbuffer_gpu(.false.)
-   call orderbufrec_gpu
+80 call assign_direct
+   call assign_reciprocal
 
 end

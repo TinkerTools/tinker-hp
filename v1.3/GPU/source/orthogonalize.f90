@@ -154,7 +154,7 @@ subroutine MatxVec(Rin,Rout)
    use polar
    use parallel, only: polar_comm_t, polar_post_comm, polar_finish, &
       &polar_post_dip_comm, polar_finish_dip_comm, domain_workspace_tp3d
-   use parallel, only: commrecdirfields, commrecdirfieldsgpu, commrecdirsolv, commrecdirsolvgpu
+   use parallel, only: polar_post_recdir, polar_finish_recdir
    use parallel, only: commfield, commfieldgpu, commfieldshort
    use polar_temp,only: murec,dipfield,dipfieldbis,diag
    use polpot
@@ -163,13 +163,12 @@ subroutine MatxVec(Rin,Rout)
    use timestat
    use units
    use utils
-   use mdevice, only: reciprocal_work
+   use mdevice, only: direct_work, reciprocal_work
    use inform, only: Tinker_shellEnv
    implicit none
    integer i,j,k,nrhs
    real(t_p),contiguous:: Rin(:,:,:),Rout(:,:,:)
-   integer,dimension(nproc):: req2send,req2rec
-   type(polar_comm_t) :: comm_ticket
+   type(polar_comm_t) :: comm_ticket, recdir_ticket
    real(t_p), pointer :: buffermpi1(:,:,:),buffermpi2(:,:,:)
    real(t_p), pointer :: buffermpimu1(:,:,:),buffermpimu2(:,:,:)
    real(t_p) term
@@ -183,12 +182,12 @@ subroutine MatxVec(Rin,Rout)
    ! Extension communications
    if (use_polarshortreal) then
       if (.true.) then
-         call polar_post_comm(comm_ticket,nrhs,Rin,.true.)
-         call polar_finish(comm_ticket,nrhs,Rin)
+         call polar_post_comm(comm_ticket,nrhs,Rin,.true.,channel=direct_work)
+         call polar_finish(comm_ticket,nrhs,Rin,channel=direct_work)
       end if
    else
-      call polar_post_comm(comm_ticket,nrhs,Rin)
-      call polar_finish(comm_ticket,nrhs,Rin)
+      call polar_post_comm(comm_ticket,nrhs,Rin,channel=reciprocal_work)
+      call polar_finish(comm_ticket,nrhs,Rin,channel=reciprocal_work)
       call polar_post_dip_comm(comm_ticket,nrhs,murec,Rin,buffermpimu1,buffermpimu2)
       call polar_finish_dip_comm(comm_ticket,nrhs,murec,Rin,buffermpimu1,buffermpimu2)
    end if
@@ -207,15 +206,11 @@ subroutine MatxVec(Rin,Rout)
 
    ! Completion communications
    if (use_polarshortreal) then
-      call commfieldshort(nrhs,Rout)
+      call commfieldshort(nrhs,Rout,direct_work)
    else
       call commfieldgpu(nrhs,Rout)
-      call commrecdirsolvgpu(nrhs,0,dipfieldbis,dipfield,buffermpi1,&
-         &buffermpi2,req2send,req2rec)
-      call commrecdirsolvgpu(nrhs,1,dipfieldbis,dipfield,buffermpi1,&
-         &buffermpi2,req2send,req2rec)
-      call commrecdirsolvgpu(nrhs,2,dipfieldbis,dipfield,buffermpi1,&
-         &buffermpi2,req2send,req2rec)
+      call polar_post_recdir(recdir_ticket,nrhs,dipfieldbis,buffermpi1,buffermpi2,reciprocal_work)
+      call polar_finish_recdir(recdir_ticket,nrhs,dipfield,buffermpi1,reciprocal_work)
    end if
 
    ! Store result in tall matrix

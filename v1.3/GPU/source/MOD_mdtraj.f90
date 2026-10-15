@@ -11,23 +11,12 @@
 !
 #include "tinker_macro.h"
 module mdtraj
-   use dcdmod ,only: dcdinfo_t
-   use status ,only: status_t
+   use tinTypes, only: dcdinfo_t, trajectory_t
+   use status  , only: status_t
    implicit none
 
    integer,parameter :: arc_backend = 1
    integer,parameter :: dcd_backend = 2
-
-   type trajectory_t
-      ! Copy policy: noncopyable; use the lifecycle procedures only.
-      integer :: backend = 0
-      integer :: frame_count = 0
-      logical :: is_active = .false.
-      logical :: append_mode = .false.
-      logical :: owns_dcd_file = .false.
-      character(len=240) :: filename = ''
-      type(dcdinfo_t) :: dcdinfo
-   end type trajectory_t
 
    type frame_view_t
       ! Copy policy: value-copy of non-owning call-time aliases.

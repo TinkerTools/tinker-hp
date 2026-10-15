@@ -20,10 +20,12 @@ subroutine newinduce_pme
    use ewald, only: aewald
    use iounit, only: iout
    use math, only: sqrtpi
+   use mdevice, only: reciprocal_work
    use mpole, only: npolebloc, npolerecloc, npoleloc, rpole
-   use parallel, only: commfield, commrecdirfields, polar_comm_t, &
-      &polar_finish, polar_finish_dip_comm, polar_post_comm, &
-      &polar_post_dip_comm
+   use parallel, only: commfield, polar_comm_t, polar_finish, &
+      &polar_finish_dip_comm, polar_post_comm, polar_post_dip_comm, &
+      &polar_post_recdir_fields, polar_finish_recdir_fields, &
+      &polar_post_recdir, polar_finish_recdir
    use pme, only: cphirec, fphirec
    use polar, only: polarity, uind, uinp
    use polpot, only: polalg, polgsf, polprt
@@ -40,8 +42,7 @@ subroutine newinduce_pme
 !     MPI
 !
    integer ierr, iipole, proc,tag
-   integer, allocatable :: reqrecdirsend(:),reqrecdirrec(:)
-   type(polar_comm_t) :: comm_ticket, dip_ticket
+   type(polar_comm_t) :: comm_ticket, dip_ticket, recdir_ticket
    integer status(MPI_STATUS_SIZE)
 !
    parameter (nrhs=2)
@@ -97,26 +98,21 @@ subroutine newinduce_pme
       buffermpimu = 0.0_ti_p
    end if
 !
-   allocate (reqrecdirsend(nproc))
-   allocate (reqrecdirrec(nproc))
 !
 !     compute the electric fields:
 !
    wtime0 = mpi_wtime()
 !
    if (rank.le.ndir-1) then
-      call commrecdirfields(0,cphirec,cphi,buffermpi,buffermpi,&
-         &reqrecdirrec,reqrecdirsend)
+      call polar_post_recdir_fields(recdir_ticket,cphirec,buffermpi,buffermpi,reciprocal_work,.false.,send_phase=.false.)
    else
 !
 !    compute the reciprocal space contribution (fields)
 !
       call efld0_recip(cphi)
 !
-      call commrecdirfields(1,cphirec,cphi,buffermpi,buffermpi,&
-         &reqrecdirrec,reqrecdirsend)
-      call commrecdirfields(2,cphirec,cphi,buffermpi,buffermpi,&
-         &reqrecdirrec,reqrecdirsend)
+      call polar_post_recdir_fields(recdir_ticket,cphirec,buffermpi,buffermpi,reciprocal_work,.false.,send_phase=.true.)
+      call polar_finish_recdir_fields(recdir_ticket,cphi,buffermpi,reciprocal_work,.false.)
    end if
 !
 !    The real space processes compute the real fields and  add them to the recip ones
@@ -127,8 +123,7 @@ subroutine newinduce_pme
       call efld0_direct(nrhs,ef)
       call commfield(nrhs,ef)
 !
-      call commrecdirfields(2,cphirec,cphi,buffermpi,buffermpi,&
-         &reqrecdirrec,reqrecdirsend)
+      call polar_finish_recdir_fields(recdir_ticket,cphi,buffermpi,reciprocal_work,.false.)
 !
 !       Add direct and reciprocal fields
 !
@@ -184,8 +179,8 @@ subroutine newinduce_pme
       end if
 !
    end if
-   call polar_post_comm(comm_ticket,nrhs,mu)
-   call polar_finish(comm_ticket,nrhs,mu)
+   call polar_post_comm(comm_ticket,nrhs,mu,channel=reciprocal_work)
+   call polar_finish(comm_ticket,nrhs,mu,channel=reciprocal_work)
    call polar_post_dip_comm(dip_ticket,nrhs,murec,mu,buffermpimu,buffermpimu,.false.)
    call polar_finish_dip_comm(dip_ticket,nrhs,murec,mu,buffermpimu,buffermpimu,.false.)
 !
@@ -252,8 +247,6 @@ subroutine newinduce_pme
    else
       deallocate (murec)
    end if
-   deallocate (reqrecdirrec)
-   deallocate (reqrecdirsend)
 !
 !     update the lists of previous induced dipole values
 !
@@ -283,6 +276,7 @@ subroutine inducepcg_pme(matvec,nrhs,precnd,ef,mu,murec)
    use ewald
    use iounit
    use math
+   use mdevice, only: reciprocal_work
    use mpole
    use parallel
    use polar
@@ -323,8 +317,7 @@ subroutine inducepcg_pme(matvec,nrhs,precnd,ef,mu,murec)
    real(t_p), allocatable :: buffermpimu(:,:,:)
    integer ierr, tag, proc
    integer req1, req2, req3, req4
-   integer,allocatable :: reqrecdirrec(:),reqrecdirsend(:)
-   type(polar_comm_t) :: comm_ticket, dip_ticket
+   type(polar_comm_t) :: comm_ticket, dip_ticket, recdir_ticket
    integer status(MPI_STATUS_SIZE)
 !
 1000 format(' cgiter converged after ',I3,' iterations.',/,&
@@ -366,8 +359,6 @@ subroutine inducepcg_pme(matvec,nrhs,precnd,ef,mu,murec)
    buffermpi1 = 0.0_ti_p
    allocate (buffermpi2(3,nrhs,max(1,npolerecloc)))
    buffermpi2 = 0.0_ti_p
-   allocate (reqrecdirrec(nproc))
-   allocate (reqrecdirsend(nproc))
    if (precnd) then
       do i = 1, npoleloc
          iipole = poleglob(i)
@@ -392,14 +383,11 @@ subroutine inducepcg_pme(matvec,nrhs,precnd,ef,mu,murec)
    ggold = 0.0_ti_p
 !
    if (rank.le.ndir-1) then
-      call commrecdirsolv(nrhs,0,dipfieldbis,dipfield,buffermpi1,&
-         &buffermpi2,reqrecdirrec,reqrecdirsend)
-!
+      call polar_post_recdir(recdir_ticket,nrhs,dipfieldbis,buffermpi1,buffermpi2,reciprocal_work,send_phase=.false.)
       call matvec(nrhs,.true.,mu,h)
       call commfield(nrhs,h)
 !
-      call commrecdirsolv(nrhs,2,dipfieldbis,dipfield,buffermpi1,&
-         &buffermpi2,reqrecdirrec,reqrecdirsend)
+      call polar_finish_recdir(recdir_ticket,nrhs,dipfield,buffermpi1,reciprocal_work)
       term = (4.0_ti_p/3.0_ti_p) * aewald**3 / sqrtpi
 
       do i = 1, npoleloc
@@ -423,17 +411,15 @@ subroutine inducepcg_pme(matvec,nrhs,precnd,ef,mu,murec)
       end do
    end if
 
-   call polar_post_comm(comm_ticket,nrhs,pp)
-   call polar_finish(comm_ticket,nrhs,pp)
+   call polar_post_comm(comm_ticket,nrhs,pp,channel=reciprocal_work)
+   call polar_finish(comm_ticket,nrhs,pp,channel=reciprocal_work)
    call polar_post_dip_comm(dip_ticket,nrhs,murec,pp,buffermpimu,buffermpimu,.false.)
    call polar_finish_dip_comm(dip_ticket,nrhs,murec,pp,buffermpimu,buffermpimu,.false.)
 
    if (rank.gt.ndir-1) then
       call tmatxbrecip(mu,murec,nrhs,dipfield,dipfieldbis)
-      call commrecdirsolv(nrhs,1,dipfieldbis,dipfield,buffermpi1,&
-         &buffermpi2,reqrecdirrec,reqrecdirsend)
-      call commrecdirsolv(nrhs,2,dipfieldbis,dipfield,buffermpi1,&
-         &buffermpi2,reqrecdirrec,reqrecdirsend)
+      call polar_post_recdir(recdir_ticket,nrhs,dipfieldbis,buffermpi1,buffermpi2,reciprocal_work,send_phase=.true.)
+      call polar_finish_recdir(recdir_ticket,nrhs,dipfield,buffermpi1,reciprocal_work)
    end if
 
    if (rank.le.ndir-1) then
@@ -452,29 +438,24 @@ subroutine inducepcg_pme(matvec,nrhs,precnd,ef,mu,murec)
 !
 !     MPI : begin reception
 !
-      call polar_post_comm(comm_ticket,nrhs,pp)
-      call polar_finish(comm_ticket,nrhs,pp)
+      call polar_post_comm(comm_ticket,nrhs,pp,channel=reciprocal_work)
+      call polar_finish(comm_ticket,nrhs,pp,channel=reciprocal_work)
       call polar_post_dip_comm(dip_ticket,nrhs,murec,pp,buffermpimu,buffermpimu,.false.)
       call polar_finish_dip_comm(dip_ticket,nrhs,murec,pp,buffermpimu,buffermpimu,.false.)
 
       if (rank.le.ndir-1) then
-         call commrecdirsolv(nrhs,0,dipfieldbis,dipfield,buffermpi1,&
-            &buffermpi2,reqrecdirrec,reqrecdirsend)
-!
+         call polar_post_recdir(recdir_ticket,nrhs,dipfieldbis,buffermpi1,buffermpi2,reciprocal_work,send_phase=.false.)
       else
          call tmatxbrecip(mu,murec,nrhs,dipfield,dipfieldbis)
-         call commrecdirsolv(nrhs,1,dipfieldbis,dipfield,buffermpi1,&
-            &buffermpi2,reqrecdirrec,reqrecdirsend)
-         call commrecdirsolv(nrhs,2,dipfieldbis,dipfield,buffermpi1,&
-            &buffermpi2,reqrecdirrec,reqrecdirsend)
+         call polar_post_recdir(recdir_ticket,nrhs,dipfieldbis,buffermpi1,buffermpi2,reciprocal_work,send_phase=.true.)
+         call polar_finish_recdir(recdir_ticket,nrhs,dipfield,buffermpi1,reciprocal_work)
       end if
       if (rank.le.ndir-1) then
 !
          call matvec(nrhs,.true.,pp,h)
          call commfield(nrhs,h)
 !
-         call commrecdirsolv(nrhs,2,dipfieldbis,dipfield,buffermpi1,&
-            &buffermpi2,reqrecdirrec,reqrecdirsend)
+         call polar_finish_recdir(recdir_ticket,nrhs,dipfield,buffermpi1,reciprocal_work)
 !
          do i = 1, npoleloc
             do k = 1, nrhs
@@ -541,8 +522,8 @@ subroutine inducepcg_pme(matvec,nrhs,precnd,ef,mu,murec)
          end do
 !
       end if
-      call polar_post_comm(comm_ticket,nrhs,pp)
-      call polar_finish(comm_ticket,nrhs,pp)
+      call polar_post_comm(comm_ticket,nrhs,pp,channel=reciprocal_work)
+      call polar_finish(comm_ticket,nrhs,pp,channel=reciprocal_work)
       call polar_post_dip_comm(dip_ticket,nrhs,murec,pp,buffermpimu,buffermpimu,.false.)
       call polar_finish_dip_comm(dip_ticket,nrhs,murec,pp,buffermpimu,buffermpimu,.false.)
 !
@@ -564,8 +545,8 @@ subroutine inducepcg_pme(matvec,nrhs,precnd,ef,mu,murec)
 !
    if (rank.le.ndir-1) then
    end if
-   call polar_post_comm(comm_ticket,nrhs,mu)
-   call polar_finish(comm_ticket,nrhs,mu)
+   call polar_post_comm(comm_ticket,nrhs,mu,channel=reciprocal_work)
+   call polar_finish(comm_ticket,nrhs,mu,channel=reciprocal_work)
    call polar_post_dip_comm(dip_ticket,nrhs,murec,mu,buffermpimu,buffermpimu,.false.)
    call polar_finish_dip_comm(dip_ticket,nrhs,murec,mu,buffermpimu,buffermpimu,.false.)
 !
@@ -586,8 +567,6 @@ subroutine inducepcg_pme(matvec,nrhs,precnd,ef,mu,murec)
       end do
    end if
    deallocate (buffermpimu)
-   deallocate (reqrecdirsend)
-   deallocate (reqrecdirrec)
    deallocate (diag)
    deallocate (pp)
    if (rank.le.ndir-1) then
@@ -610,6 +589,7 @@ subroutine inducejac_pme(matvec,nrhs,dodiis,ef,mu,murec)
    use ewald
    use iounit
    use math
+   use mdevice, only: reciprocal_work
    use mpole
    use parallel
    use polar
@@ -648,8 +628,7 @@ subroutine inducejac_pme(matvec,nrhs,dodiis,ef,mu,murec)
    real(t_p), allocatable :: buffermpimu(:,:,:)
    integer ierr, tag, proc
    integer reqnorm,reqdiis(2*ndismx+1)
-   integer,allocatable :: reqrecdirrec(:),reqrecdirsend(:)
-   type(polar_comm_t) :: comm_ticket, dip_ticket
+   type(polar_comm_t) :: comm_ticket, dip_ticket, recdir_ticket
    integer status(MPI_STATUS_SIZE)
 !
 1000 format(' itsolv converged after ',I3,' iterations.',/,&
@@ -693,23 +672,18 @@ subroutine inducejac_pme(matvec,nrhs,dodiis,ef,mu,murec)
    buffermpi1 = 0_ti_p
    allocate (buffermpi2(3,nrhs,max(npolerecloc,1)))
    buffermpi2 = 0_ti_p
-   allocate (reqrecdirsend(nproc))
-   allocate (reqrecdirrec(nproc))
 !
 !     main loop:
 !
    do it = 1, politer
       rnorm = 0.0_ti_p
 !
-      call polar_post_comm(comm_ticket,nrhs,mu)
-      call polar_finish(comm_ticket,nrhs,mu)
+      call polar_post_comm(comm_ticket,nrhs,mu,channel=reciprocal_work)
+      call polar_finish(comm_ticket,nrhs,mu,channel=reciprocal_work)
       call polar_post_dip_comm(dip_ticket,nrhs,murec,mu,buffermpimu,buffermpimu,.false.)
       call polar_finish_dip_comm(dip_ticket,nrhs,murec,mu,buffermpimu,buffermpimu,.false.)
 
       if (rank.le.ndir-1) then
-         call commrecdirsolv(nrhs,0,dipfieldbis,dipfield,buffermpi1,&
-            &buffermpi2,reqrecdirrec,reqrecdirsend)
-!
 !     The PME processes compute the reciprocal matrix vector product
 !
 !        else
@@ -718,13 +692,12 @@ subroutine inducejac_pme(matvec,nrhs,dodiis,ef,mu,murec)
          call tmatxbrecip(mu,murec,nrhs,dipfield,dipfieldbis)
          time1 = mpi_wtime()
          if (it.eq.1) timerecdip = timerecdip + time1-time0
-         call commrecdirsolv(nrhs,1,dipfieldbis,dipfield,buffermpi1,&
-            &buffermpi2,reqrecdirrec,reqrecdirsend)
-         call commrecdirsolv(nrhs,2,dipfieldbis,dipfield,buffermpi1,&
-            &buffermpi2,reqrecdirrec,reqrecdirsend)
+         call polar_post_recdir(recdir_ticket,nrhs,dipfieldbis,buffermpi1,buffermpi2,reciprocal_work,send_phase=.true.)
+         call polar_finish_recdir(recdir_ticket,nrhs,dipfield,buffermpi1,reciprocal_work)
       end if
 !
       if (rank.le.ndir-1) then
+         call polar_post_recdir(recdir_ticket,nrhs,dipfieldbis,buffermpi1,buffermpi2,reciprocal_work,send_phase=.false.)
 !
 !     jacobi step:
 !
@@ -738,8 +711,7 @@ subroutine inducejac_pme(matvec,nrhs,dodiis,ef,mu,murec)
          if (it.eq.1) timerealdip = timerealdip + time1-time0
          call commfield(nrhs,h)
 !
-         call commrecdirsolv(nrhs,2,dipfieldbis,dipfield,buffermpi1,&
-            &buffermpi2,reqrecdirrec,reqrecdirsend)
+         call polar_finish_recdir(recdir_ticket,nrhs,dipfield,buffermpi1,reciprocal_work)
 !
          h(1:3,1:nrhs,1:npoleloc) = h(:,:,1:npoleloc)+&
             &dipfield(:,:,1:npoleloc)&
@@ -796,8 +768,8 @@ subroutine inducejac_pme(matvec,nrhs,dodiis,ef,mu,murec)
          time2 = mpi_wtime()
 !
          time0 = mpi_wtime()
-         call polar_post_comm(comm_ticket,nrhs,mu,.false.,munew)
-         call polar_finish(comm_ticket,nrhs,mu)
+         call polar_post_comm(comm_ticket,nrhs,mu,.false.,munew,channel=reciprocal_work)
+         call polar_finish(comm_ticket,nrhs,mu,channel=reciprocal_work)
          call polar_post_dip_comm(dip_ticket,nrhs,murec,munew,buffermpimu,buffermpimu,.false.)
          call polar_finish_dip_comm(dip_ticket,nrhs,murec,munew,buffermpimu,buffermpimu,.false.)
          mu(:,:,1:npoleloc) = munew(:,:,1:npoleloc)
@@ -839,8 +811,6 @@ subroutine inducejac_pme(matvec,nrhs,dodiis,ef,mu,murec)
 !
 !     free the memory.
 !
-   deallocate (reqrecdirsend)
-   deallocate (reqrecdirrec)
    deallocate (buffermpimu)
    if (rank.le.ndir-1) then
       deallocate (munew)

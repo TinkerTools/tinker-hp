@@ -34,7 +34,7 @@ submodule (initialization) initialization_lifecycle
    use keys  , only: nkey
    use linmin, only: stpmax
    use mdevice   , only: direct_work, initialize_device, &
-                     recip_work => reciprocal_work, default_work, sync_work, finalize_device
+                     dev_recip_work => reciprocal_work, sync_work, finalize_device
    use minima, only: fctmin, maxiter, nextiter
    use moldyn, only: a, aalt, aalt2, nalt, nalt2, stepfast, stepint, v
    use mpi, only: MPI_COMM_NULL, MPI_COMM_RANK, MPI_COMM_SIZE, MPI_COMM_WORLD, MPI_Finalized, &
@@ -43,7 +43,7 @@ submodule (initialization) initialization_lifecycle
    use output, only: coordtype
    use params, only: nprm
    use parallel, only: active_polar_tickets, construct_topology, configure_layout, release, host_handle, &
-      &domain_handle, topology_classical, topology_polymer
+      &domain_handle, topology_classical, topology_polymer, topo_cfg_t
    use pme, only: pme_device_ready, release_pme_device
    use polar, only: release_polar_workspace
    use precis, only: p_tiny => tiny, small, p_huge => huge
@@ -258,7 +258,9 @@ contains
             call apply_early_configuration(configuration)
             call read_bead_config()
          end if
-         call construct_topology(platform, configuration, topology_kind, status_value)
+         call construct_topology(platform, topo_cfg_t( &
+            &replicas_enabled=configuration%replicas_enabled, &
+            &replica_count=configuration%replica_count), topology_kind, status_value)
          if (failed(status_value)) return
          platform_ready = .true.
          call initialize_device(host_handle(platform), status_value)
@@ -267,7 +269,7 @@ contains
             return
          end if
          device_ready = .true.
-         reciprocal_work = recip_work
+         reciprocal_work = dev_recip_work
          call initDevice(.true.)
          if (mode == bar_file_only .or. mode == platform_bootstrap) return
          call initialize_energy_state(application, raw_cli, configuration, molecular_structure, platform, &
@@ -305,7 +307,9 @@ contains
       if (topology_kind == topology_polymer) call read_bead_config()
       call run_phase(phase_mpi_platform, probe, status_value)
       if (failed(status_value)) return
-      call construct_topology(platform, configuration, topology_kind, status_value)
+      call construct_topology(platform, topo_cfg_t( &
+         &replicas_enabled=configuration%replicas_enabled, &
+         &replica_count=configuration%replica_count), topology_kind, status_value)
       if (failed(status_value)) then
          if (application%identity == dynamic_application%identity) then
             call enrich_status(status_value, 'Dynamic MPI Platform')
@@ -331,7 +335,7 @@ contains
          return
       end if
       device_ready = .true.
-      reciprocal_work = recip_work
+      reciprocal_work = dev_recip_work
       call initDevice(.true.)
       call run_phase(phase_structure, probe, status_value)
       if (failed(status_value)) then
@@ -382,7 +386,7 @@ contains
          call cleanup(application, platform, reciprocal_work, platform_ready, device_ready, status_value)
          return
       end if
-      call configure_layout(platform, configuration, molecular_structure, status_value)
+      call configure_layout(platform, configuration%key_discovered, molecular_structure%atom_count, status_value)
       if (failed(status_value)) then
          if (application%identity == dynamic_application%identity) then
             call enrich_status(status_value, 'Dynamic MPI Platform')
@@ -475,7 +479,7 @@ contains
       call unitcell
       call cutoffs
       call lattice
-      call configure_layout(platform, configuration, molecular_structure, status_value)
+      call configure_layout(platform, configuration%key_discovered, molecular_structure%atom_count, status_value)
       if (failed(status_value)) return
       call mechanic(configuration, status_value)
       if (failed(status_value)) return
@@ -543,10 +547,9 @@ contains
 #endif
          call finalize_device(dev_clean_stat)
          if (failed(dev_clean_stat)) cleanup_status = dev_clean_stat
-         if (direct_work%queue >= 0 .or. recip_work%queue >= 0 .or. &
-               &default_work%queue >= 0 .or. sync_work%queue >= 0 .or. &
-               &direct_work%stream /= 0 .or. recip_work%stream /= 0 .or. &
-               &default_work%stream /= 0 .or. sync_work%stream /= 0) then
+         if (direct_work%queue >= 0 .or. dev_recip_work%queue >= 0 .or. &
+               &sync_work%queue >= 0 .or. direct_work%stream /= 0 .or. &
+               &dev_recip_work%stream /= 0 .or. sync_work%stream /= 0) then
             call set_status(cleanup_status, status_invalid_argument, &
                &'Initialization cleanup retained a GPU execution channel')
          end if

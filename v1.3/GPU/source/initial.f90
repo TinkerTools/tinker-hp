@@ -12,34 +12,29 @@ subroutine initDevice(platform_ready)
       &delambdavsave
    use domdec ,only: nproc,rank,ranktot
    use parallel, only: get_host_comm
-   use energi
+   use energi, only: create_energi_on_device
    use inter  ,only: einter
-   use inform
+   use inform, only: tindGdb
    use mamd   ,only: aMDwattype
-   use mdevice,only: reciprocal_work,direct_work,init_legacy,publish_warning,&
+   use mdevice,only: reciprocal_work,direct_work,publish_warning,&
       &set_gpu_config,device_number
-   use nvshmem
+   use nvshmem, only: init_nvshmem
    use pme, only: initialize_pme_device
    use reduction, only: create_reduction_buffers
 #ifdef _OPENACC
    use interfaces,only:C_init_env
 #endif
    use sizes  ,only: tinkerdebug
-   use virial
+   use virial, only: create_vir_device
    !use tinMemory
    !use utils
    implicit none
    integer,volatile:: ierr,i
-   logical, intent(in), optional :: platform_ready
-   logical :: platform_is_ready
-   platform_is_ready = .false.
-   if (present(platform_ready)) platform_is_ready = platform_ready
+   logical, intent(in) :: platform_ready
 !
 !     Inititialize gpu stuff
 !
-   if (.not.platform_is_ready) then
-      call init_legacy
-   end if
+   if (.not.platform_ready) error stop 'GPU platform must be initialized through mdevice'
    call init_nvshmem(get_host_comm())
    !call mHalte
 !

@@ -130,15 +130,15 @@ end subroutine
 !
 !
 subroutine chkttor&
-   &(ib,ic,id,sign,value1,value2,x,y,z,type_,atomic)
+   &(ib,ic,id,n,sign,value1,value2,x,y,z,type_,atomic)
 !$acc routine seq
    use sizes
-   use atoms  ,only:n
    use couple
    use tinheader
    implicit none
    integer i,j,k,m
    integer ia,ib,ic,id
+   integer,intent(in)::n
    real(t_p),intent(in)::x(n),y(n),z(n)
    integer  ,intent(in)::type_(n),atomic(n)
    real(t_p),intent(out):: sign

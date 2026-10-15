@@ -49,6 +49,8 @@ subroutine baoabpi(istep,dt)
    use moldyn
    use utilbaoabpi
    use commstuffpi
+   use parallel, only: exchange_polymer_recip_forces, &
+      &exchange_polymer_normal_modes, exchange_polymer_contracted_forces
    use spectra
    implicit none
    integer, intent(in) :: istep
@@ -122,7 +124,7 @@ subroutine baoabpi(istep,dt)
 
    if(PITIMER) call stopwatchpi(timegrad,.false.,.false.)
    if(.not.(centroid_recip .or. contract))&
-      &call commforcesrecpi(derivs,derivsRec,nbeadsloc)
+      &call exchange_polymer_recip_forces(polymer_main,derivs,derivsRec)
    call commforcesblocpi(derivs,nbeadsloc,.FALSE.)
 
    ibeadbeg=polymer_main%ibead_beg(rank_polymer+1)
@@ -151,7 +153,7 @@ subroutine baoabpi(istep,dt)
             ENDDO ; ENDDO ; ENDDO
    endif
 
-   call comm_for_normal_modes(polymer_main,polymer_main%forces)
+   call exchange_polymer_normal_modes(polymer_main,polymer_main%forces)
    if(PITIMER) call stopwatchpi(timecom,.true.,.false.)
 
    !!! COMPUTE FORCES ON  CONTRACTED BEADS!!!
@@ -171,9 +173,9 @@ subroutine baoabpi(istep,dt)
       if(PITIMER) call stopwatchpi(timecontract,.false.,.false.)
 
       if(.not.centroid_recip)&
-         &call commforcesrecpi(derivs_ctr,derivsRec,nbeadsloc_ctr)
+         &call exchange_polymer_recip_forces(polymer_ctr,derivs_ctr,derivsRec)
       call commforcesblocpi(derivs_ctr,nbeadsloc_ctr,.FALSE.)
-      call commforces_ctr(polymer_ctr,derivs_ctr)
+      call exchange_polymer_contracted_forces(polymer_ctr,derivs_ctr)
       call project_forces_ctr(polymer_main,polymer_ctr)
       if(PITIMER) call stopwatchpi(timecom,.true.,.false.)
    endif

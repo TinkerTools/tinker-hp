@@ -112,10 +112,6 @@ subroutine pimd_bis(raw_cli,status_value)
    call configure_piqtb_communication(replica_handle(platform), replica_size(platform), &
       &replica_rank(platform), domain_size(platform))
 
-   ! Common initialization loads the primary structure without consuming the
-   ! legacy argument slot that PIMD's remaining parser expects to skip.
-   call nextarg(string, exist)
-
    write(*,*) ranktot,'polymer',nproc_polymer,rank_polymer
    write(*,*) ranktot,'spatial',nproc,rank
 

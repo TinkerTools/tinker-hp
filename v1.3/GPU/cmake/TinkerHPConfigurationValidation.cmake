@@ -156,6 +156,7 @@ function(tinkerhp_assert_parallel_scientific_registration name precision)
       -DCMAKE_CXX_COMPILER=g++
       -DCMAKE_Fortran_COMPILER=gfortran
       -DTINKERHP_PRECISION=${precision}
+      -DTINKERHP_ENABLE_FPA=${TINKERHP_ENABLE_FPA}
       -DTINKERHP_ENABLE_PARALLEL_SCIENTIFIC_TESTS=ON
     RESULT_VARIABLE result
   )
@@ -194,6 +195,20 @@ function(tinkerhp_assert_parallel_scientific_registration name precision)
   string(FIND "${tests}" "${forbidden_test}" forbidden_index)
   if(NOT forbidden_index EQUAL -1)
     message(FATAL_ERROR "${name} registered a parallel scientific test for another precision")
+  endif()
+  if(precision STREQUAL "MIXED")
+    foreach(mixed_test
+        tinkerhp-parallel-scientific-dynamic-mixed-auto-2
+        tinkerhp-parallel-scientific-dynamic-mixed-1d-4)
+      string(REGEX MATCH
+        "add_test\\(\\[=\\[${mixed_test}\\]=\\][^\\n]*--feature\\\" \\\"FPA\\\""
+        fpa_registration "${tests}")
+      if(TINKERHP_ENABLE_FPA AND fpa_registration STREQUAL "")
+        message(FATAL_ERROR "${name} ${mixed_test} omits its FPA oracle feature")
+      elseif(NOT TINKERHP_ENABLE_FPA AND NOT fpa_registration STREQUAL "")
+        message(FATAL_ERROR "${name} ${mixed_test} declares FPA while FPA is disabled")
+      endif()
+    endforeach()
   endif()
 endfunction()
 
@@ -514,6 +529,133 @@ function(tinkerhp_assert_pimd_watersmall_scientific_registration
   endforeach()
 endfunction()
 
+function(tinkerhp_assert_pimd_double_layout_registration name precision parallel expected)
+  set(build_dir "${TINKERHP_VALIDATION_DIR}/${name}")
+  execute_process(
+    COMMAND "${CMAKE_COMMAND}" -S "${TINKERHP_SOURCE_DIR}" -B "${build_dir}" -G Ninja
+      -DTINKERHP_INTERNAL_VALIDATE_ONLY=ON
+      -DBUILD_TESTING=ON
+      -DCMAKE_C_COMPILER=gcc
+      -DCMAKE_CXX_COMPILER=g++
+      -DCMAKE_Fortran_COMPILER=gfortran
+      -DTINKERHP_PRECISION=${precision}
+      -DTINKERHP_ENABLE_PARALLEL_SCIENTIFIC_TESTS=${parallel}
+    RESULT_VARIABLE configure_result
+    OUTPUT_QUIET
+    ERROR_QUIET)
+  if(NOT configure_result EQUAL 0)
+    message(FATAL_ERROR "${name} PIMD DOUBLE-layout configuration failed")
+  endif()
+
+  file(READ "${build_dir}/CTestTestfile.cmake" tests)
+  string(REGEX MATCHALL
+    "add_test\\(\\[=\\[tinkerhp-parallel-scientific-pimd-double-layout-energy\\]=\\]"
+    registrations "${tests}")
+  list(LENGTH registrations registration_count)
+  if(expected)
+    if(NOT precision STREQUAL "DOUBLE" OR NOT registration_count EQUAL 1)
+      message(FATAL_ERROR "${name} did not register exactly one DOUBLE paired-layout PIMD test")
+    endif()
+    set(test_name "tinkerhp-parallel-scientific-pimd-double-layout-energy")
+    string(FIND "${tests}" "add_test([=[${test_name}]=]" test_start)
+    string(FIND "${tests}" "set_tests_properties([=[${test_name}]=]" properties_start)
+    if(test_start EQUAL -1 OR properties_start EQUAL -1)
+      message(FATAL_ERROR "${name} is missing the paired-layout PIMD registration or properties")
+    endif()
+    string(SUBSTRING "${tests}" ${test_start} -1 test_tail)
+    string(FIND "${test_tail}" "\n" test_line_length)
+    string(SUBSTRING "${test_tail}" 0 ${test_line_length} test_record)
+    string(SUBSTRING "${tests}" ${properties_start} -1 properties_tail)
+    string(FIND "${properties_tail}" "\n" properties_line_length)
+    string(SUBSTRING "${properties_tail}" 0 ${properties_line_length} properties_record)
+    foreach(required
+        "--profile\" \"pimd-layout\""
+        "--precision\" \"DOUBLE\""
+        "--mpi-ranks\" \"4\""
+        "watersmall_b2.key"
+        "watersmall.xyz"
+        "watersmall.double.2b.pimd.ref"
+        "watersmall\" \"50\" \"2\" \"20\" \"2\" \"300\" \"-k\" \"watersmall_b2")
+      string(FIND "${test_record}" "${required}" required_index)
+      if(required_index EQUAL -1)
+        message(FATAL_ERROR "${name} registration is missing ${required}")
+      endif()
+    endforeach()
+    foreach(required "PROCESSORS \"4\"" "RUN_SERIAL \"TRUE\"" "TIMEOUT \"180\"")
+      string(FIND "${properties_record}" "${required}" required_index)
+      if(required_index EQUAL -1)
+        message(FATAL_ERROR "${name} registration is missing ${required}")
+      endif()
+    endforeach()
+  elseif(NOT registration_count EQUAL 0)
+    message(FATAL_ERROR "${name} unexpectedly registered the paired-layout PIMD test")
+  endif()
+endfunction()
+
+function(tinkerhp_assert_pimd_fpa_layout_registration name fpa colvars parallel expected)
+  set(build_dir "${TINKERHP_VALIDATION_DIR}/${name}")
+  execute_process(
+    COMMAND "${CMAKE_COMMAND}" -S "${TINKERHP_SOURCE_DIR}" -B "${build_dir}" -G Ninja
+      -DTINKERHP_INTERNAL_VALIDATE_ONLY=ON
+      -DBUILD_TESTING=ON
+      -DCMAKE_C_COMPILER=gcc
+      -DCMAKE_CXX_COMPILER=g++
+      -DCMAKE_Fortran_COMPILER=gfortran
+      -DTINKERHP_PRECISION=MIXED
+      -DTINKERHP_ENABLE_FPA=${fpa}
+      -DTINKERHP_ENABLE_COLVARS=${colvars}
+      -DTINKERHP_ENABLE_PARALLEL_SCIENTIFIC_TESTS=${parallel}
+    RESULT_VARIABLE configure_result
+    OUTPUT_QUIET
+    ERROR_QUIET)
+  if(NOT configure_result EQUAL 0)
+    message(FATAL_ERROR "${name} MIXED/FPA PIMD-layout configuration failed")
+  endif()
+
+  file(READ "${build_dir}/CTestTestfile.cmake" tests)
+  set(test_name "tinkerhp-parallel-scientific-pimd-fpa-colvars-layout-energy")
+  string(REGEX MATCHALL
+    "add_test\\(\\[=\\[${test_name}\\]=\\]" registrations "${tests}")
+  list(LENGTH registrations registration_count)
+  if(expected)
+    if(NOT fpa STREQUAL "ON" OR NOT colvars STREQUAL "ON"
+        OR NOT parallel STREQUAL "ON" OR NOT registration_count EQUAL 1)
+      message(FATAL_ERROR "${name} did not register exactly one FPA/Colvars paired PIMD test")
+    endif()
+    string(FIND "${tests}" "add_test([=[${test_name}]=]" test_start)
+    string(FIND "${tests}" "set_tests_properties([=[${test_name}]=]" properties_start)
+    if(test_start EQUAL -1 OR properties_start EQUAL -1)
+      message(FATAL_ERROR "${name} is missing the FPA paired PIMD registration or properties")
+    endif()
+    string(SUBSTRING "${tests}" ${test_start} -1 test_tail)
+    string(FIND "${test_tail}" "\n" test_line_length)
+    string(SUBSTRING "${test_tail}" 0 ${test_line_length} test_record)
+    string(SUBSTRING "${tests}" ${properties_start} -1 properties_tail)
+    string(FIND "${properties_tail}" "\n" properties_line_length)
+    string(SUBSTRING "${properties_tail}" 0 ${properties_line_length} properties_record)
+    foreach(required
+        "--profile\" \"pimd-layout\""
+        "--precision\" \"MIXED\""
+        "--mpi-ranks\" \"4\""
+        "--feature\" \"FPA\""
+        "--feature\" \"COLVARS\""
+        "watersmall.fpa.2b.pimd.ref")
+      string(FIND "${test_record}" "${required}" required_index)
+      if(required_index EQUAL -1)
+        message(FATAL_ERROR "${name} registration is missing ${required}")
+      endif()
+    endforeach()
+    foreach(required "PROCESSORS \"4\"" "RUN_SERIAL \"TRUE\"" "TIMEOUT \"180\"")
+      string(FIND "${properties_record}" "${required}" required_index)
+      if(required_index EQUAL -1)
+        message(FATAL_ERROR "${name} registration is missing ${required}")
+      endif()
+    endforeach()
+  elseif(NOT registration_count EQUAL 0)
+    message(FATAL_ERROR "${name} unexpectedly registered the FPA paired PIMD test")
+  endif()
+endfunction()
+
 function(tinkerhp_assert_analyze_beads_watersmall_functional_registration name precision fpa expected)
   set(build_dir "${TINKERHP_VALIDATION_DIR}/${name}")
   execute_process(
@@ -643,6 +785,256 @@ function(tinkerhp_assert_iceii_minimize_scientific_registration name precision e
     "${lower_key_contents}")
   if(NOT forced_mode STREQUAL "")
     message(FATAL_ERROR "${name} IceII fixture still forces a run mode")
+  endif()
+endfunction()
+
+function(tinkerhp_extract_ctest_line contents command test_name output)
+  string(FIND "${contents}" "${command}([=[${test_name}]=]" line_start)
+  if(line_start EQUAL -1)
+    set("${output}" "" PARENT_SCOPE)
+    return()
+  endif()
+  string(SUBSTRING "${contents}" ${line_start} -1 line)
+  string(FIND "${line}" "\n" line_end)
+  if(line_end EQUAL -1)
+    set("${output}" "${line}" PARENT_SCOPE)
+  else()
+    string(SUBSTRING "${line}" 0 ${line_end} line)
+    set("${output}" "${line}" PARENT_SCOPE)
+  endif()
+endfunction()
+
+function(tinkerhp_prepare_registration_tests name precision fpa parallel output_tests)
+  set(build_dir "${TINKERHP_VALIDATION_DIR}/${name}")
+  execute_process(
+    COMMAND "${CMAKE_COMMAND}" -S "${TINKERHP_SOURCE_DIR}" -B "${build_dir}" -G Ninja
+      -DTINKERHP_INTERNAL_VALIDATE_ONLY=ON
+      -DBUILD_TESTING=ON
+      -DCMAKE_C_COMPILER=gcc
+      -DCMAKE_CXX_COMPILER=g++
+      -DCMAKE_Fortran_COMPILER=gfortran
+      -DTINKERHP_PRECISION=${precision}
+      -DTINKERHP_ENABLE_FPA=${fpa}
+      -DTINKERHP_ENABLE_PARALLEL_SCIENTIFIC_TESTS=${parallel}
+    RESULT_VARIABLE result
+  )
+  if(NOT result EQUAL 0)
+    message(FATAL_ERROR "${name} registration-test configuration failed")
+  endif()
+
+  file(READ "${build_dir}/CTestTestfile.cmake" tests)
+  foreach(test_name IN LISTS ARGN)
+    if(test_name STREQUAL "")
+      continue()
+    endif()
+    string(REGEX MATCHALL
+      "add_test\\(\\[=\\[${test_name}\\]=\\]"
+      registered "${tests}")
+    list(LENGTH registered registration_count)
+    if(NOT registration_count EQUAL 1)
+      message(FATAL_ERROR "${name} did not register exactly one ${test_name} test")
+    endif()
+  endforeach()
+  set("${output_tests}" "${tests}" PARENT_SCOPE)
+endfunction()
+
+function(tinkerhp_assert_watersmall_minimize_registration
+    name precision fpa parallel expected_sequential expected_parallel)
+  tinkerhp_prepare_registration_tests(
+    "${name}" "${precision}" "${fpa}" "${parallel}" tests
+    "${expected_sequential}" "${expected_parallel}")
+
+  if(NOT expected_sequential STREQUAL "")
+    tinkerhp_extract_ctest_line(
+      "${tests}" add_test "${expected_sequential}" sequential_registration)
+    foreach(required
+        "--profile\" \"minimize-convergence\""
+        "--precision\" \"${precision}\""
+        "--mpi-ranks\" \"1\""
+        "watersmall_amoebap.key"
+        "watersmall.xyz"
+        "--replace-output-dir"
+        "watersmall\" \"1.0\" \"-k\" \"watersmall_amoebap.key")
+      string(FIND "${sequential_registration}" "${required}" required_index)
+      if(required_index EQUAL -1)
+        message(FATAL_ERROR
+          "${name} sequential watersmall Minimize test is missing ${required}")
+      endif()
+    endforeach()
+    if(precision STREQUAL "MIXED")
+      string(FIND "${sequential_registration}" "--feature\" \"FPA\"" fpa_index)
+      if(fpa AND fpa_index EQUAL -1)
+        message(FATAL_ERROR "${name} MIXED Minimize test omitted FPA")
+      elseif(NOT fpa AND NOT fpa_index EQUAL -1)
+        message(FATAL_ERROR "${name} non-FPA Minimize test unexpectedly enables FPA")
+      endif()
+    endif()
+  else()
+    string(REGEX MATCHALL
+      "add_test\\(\\[=\\[tinkerhp-scientific-minimize-watersmall-(double|fpa)\\]=\\]"
+      sequential_tests "${tests}")
+    if(sequential_tests)
+      message(FATAL_ERROR "${name} unexpectedly registered sequential watersmall Minimize")
+    endif()
+  endif()
+
+  if(NOT expected_parallel STREQUAL "")
+    tinkerhp_extract_ctest_line(
+      "${tests}" add_test "${expected_parallel}" parallel_registration)
+    foreach(required
+        "--profile\" \"minimize-convergence\""
+        "--precision\" \"${precision}\""
+        "--mpi-ranks\" \"2\""
+        "--mpi-layout\" \"1x1x2\""
+        "--sequential-report"
+        "watersmall_amoebap.key"
+        "watersmall.xyz"
+        "watersmall\" \"1.0\" \"-k\" \"watersmall_amoebap.key")
+      string(FIND "${parallel_registration}" "${required}" required_index)
+      if(required_index EQUAL -1)
+        message(FATAL_ERROR
+          "${name} parallel watersmall Minimize test is missing ${required}")
+      endif()
+    endforeach()
+    if(precision STREQUAL "DOUBLE")
+      set(expected_fixture "watersmall_minimize_double_sequential")
+    else()
+      set(expected_fixture "watersmall_minimize_fpa_sequential")
+    endif()
+    tinkerhp_extract_ctest_line(
+      "${tests}" set_tests_properties "${expected_parallel}" parallel_properties)
+    string(FIND "${parallel_properties}" "FIXTURES_REQUIRED \"${expected_fixture}\""
+      fixture_index)
+    if(fixture_index EQUAL -1)
+      message(FATAL_ERROR
+        "${name} parallel watersmall Minimize test does not require its sequential fixture")
+    endif()
+    if(precision STREQUAL "MIXED")
+      string(FIND "${parallel_registration}" "--feature\" \"FPA\"" fpa_index)
+      if(fpa AND fpa_index EQUAL -1)
+        message(FATAL_ERROR "${name} parallel MIXED Minimize test omitted FPA")
+      endif()
+    endif()
+  else()
+    string(REGEX MATCHALL
+      "add_test\\(\\[=\\[tinkerhp-parallel-scientific-minimize-watersmall-(double|fpa)\\]=\\]"
+      parallel_tests "${tests}")
+    if(parallel_tests)
+      message(FATAL_ERROR "${name} unexpectedly registered parallel watersmall Minimize")
+    endif()
+  endif()
+endfunction()
+
+function(tinkerhp_assert_dhfr_analyze_registration
+    name precision fpa parallel expected_sequential expected_parallel)
+  tinkerhp_prepare_registration_tests(
+    "${name}" "${precision}" "${fpa}" "${parallel}" tests
+    "${expected_sequential}" "${expected_parallel}")
+
+  if(expected_sequential STREQUAL "")
+    string(REGEX MATCHALL
+      "add_test\\(\\[=\\[tinkerhp-scientific-analyze-dhfr-(double|fpa)-sequential\\]=\\]"
+      sequential_tests "${tests}")
+    if(sequential_tests)
+      message(FATAL_ERROR "${name} unexpectedly registered a DHFR Analyze baseline")
+    endif()
+  else()
+    tinkerhp_extract_ctest_line(
+      "${tests}" add_test "${expected_sequential}" sequential_registration)
+    foreach(required
+        "--profile"
+        "analyze-baseline"
+        "--precision"
+        "${precision}"
+        "--mpi-ranks"
+        "1"
+        "--mpi-layout"
+        "1x1x1"
+        "--output-dir"
+        "dhfr2.key"
+        "dhfr2.xyz"
+        "dhfr2"
+        "-k"
+        "dhfr2"
+        "E")
+      string(FIND "${sequential_registration}" "${required}" required_index)
+      if(required_index EQUAL -1)
+        message(FATAL_ERROR "${name} sequential DHFR Analyze test is missing ${required}")
+      endif()
+    endforeach()
+    if(precision STREQUAL "MIXED" AND fpa)
+      string(FIND "${sequential_registration}" "--feature" feature_index)
+      string(FIND "${sequential_registration}" "FPA" fpa_index)
+      if(feature_index EQUAL -1 OR fpa_index EQUAL -1)
+        message(FATAL_ERROR "${name} sequential MIXED Analyze test omitted FPA")
+      endif()
+    endif()
+    set(fixture "dhfr_analyze_double_sequential")
+    if(precision STREQUAL "MIXED")
+      set(fixture "dhfr_analyze_fpa_sequential")
+    endif()
+    tinkerhp_extract_ctest_line(
+      "${tests}" set_tests_properties "${expected_sequential}" sequential_properties)
+    string(FIND "${sequential_properties}" "FIXTURES_SETUP" fixture_property_index)
+    string(FIND "${sequential_properties}" "${fixture}" fixture_index)
+    if(fixture_property_index EQUAL -1 OR fixture_index EQUAL -1)
+      message(FATAL_ERROR "${name} sequential DHFR Analyze test is missing its fixture setup")
+    endif()
+  endif()
+
+  if(expected_parallel STREQUAL "")
+    string(REGEX MATCHALL
+      "add_test\\(\\[=\\[tinkerhp-parallel-scientific-analyze-dhfr-(double|fpa)\\]=\\]"
+      parallel_tests "${tests}")
+    if(parallel_tests)
+      message(FATAL_ERROR "${name} unexpectedly registered parallel DHFR Analyze")
+    endif()
+  else()
+    tinkerhp_extract_ctest_line(
+      "${tests}" add_test "${expected_parallel}" parallel_registration)
+    foreach(required
+        "--profile"
+        "analyze"
+        "--precision"
+        "${precision}"
+        "--mpi-ranks"
+        "2"
+        "--mpi-layout"
+        "1x1x2"
+        "--sequential-report"
+        "--expected-decomposition"
+        "auto"
+        "dhfr2.key"
+        "dhfr2.xyz"
+        "dhfr2"
+        "-k"
+        "dhfr2"
+        "E")
+      string(FIND "${parallel_registration}" "${required}" required_index)
+      if(required_index EQUAL -1)
+        message(FATAL_ERROR "${name} parallel DHFR Analyze test is missing ${required}")
+      endif()
+    endforeach()
+    if(precision STREQUAL "MIXED" AND fpa)
+      string(FIND "${parallel_registration}" "--feature" feature_index)
+      string(FIND "${parallel_registration}" "FPA" fpa_index)
+      if(feature_index EQUAL -1 OR fpa_index EQUAL -1)
+        message(FATAL_ERROR "${name} parallel MIXED Analyze test omitted FPA")
+      endif()
+      set(fixture "dhfr_analyze_fpa_sequential")
+    else()
+      set(fixture "dhfr_analyze_double_sequential")
+    endif()
+    tinkerhp_extract_ctest_line(
+      "${tests}" set_tests_properties "${expected_parallel}" parallel_properties)
+    string(FIND "${parallel_properties}" "PROCESSORS" processors_index)
+    string(FIND "${parallel_properties}" "2" processor_count_index)
+    string(FIND "${parallel_properties}" "FIXTURES_REQUIRED" fixture_property_index)
+    string(FIND "${parallel_properties}" "${fixture}" fixture_index)
+    if(processors_index EQUAL -1 OR processor_count_index EQUAL -1
+        OR fixture_property_index EQUAL -1 OR fixture_index EQUAL -1)
+      message(FATAL_ERROR "${name} parallel DHFR Analyze test has incomplete MPI fixture properties")
+    endif()
   endif()
 endfunction()
 
@@ -909,10 +1301,16 @@ end module empolegpu
   endforeach()
 endfunction()
 
-function(tinkerhp_assert_compatibility_make_submodule_classification)
+function(tinkerhp_assert_compatibility_make_source_classification)
   set(fixture_dir "${TINKERHP_VALIDATION_DIR}/compatibility-make-submodules")
   file(REMOVE_RECURSE "${fixture_dir}")
   file(MAKE_DIRECTORY "${fixture_dir}")
+  file(READ "${TINKERHP_SOURCE_DIR}/source/Makefile.pgi" compatibility_make)
+  string(FIND "${compatibility_make}"
+    "sm_%.gpu.o: $(src_dir)/sm_%.gpu.f90" specialized_gpu_submodule_rule_index)
+  if(specialized_gpu_submodule_rule_index EQUAL -1)
+    message(FATAL_ERROR "Compatibility Make is missing the specialized GPU submodule rule")
+  endif()
   file(WRITE "${fixture_dir}/depend.mk" "# fixture dependencies\n")
   file(WRITE "${fixture_dir}/Makefile"
     "include ${TINKERHP_SOURCE_DIR}/source/Makefile.pgi\n\nprint-submodule-inventory:\n\t@:\n")
@@ -922,6 +1320,8 @@ function(tinkerhp_assert_compatibility_make_submodule_classification)
       sm_cuda.cu.f90)
     file(WRITE "${fixture_dir}/${source}" "! make-rule fixture\n")
   endforeach()
+  file(WRITE "${fixture_dir}/ordinary.gpu.f90" "! ordinary OpenACC fixture\n")
+  file(WRITE "${fixture_dir}/legacygpu.f90" "! retired filename fixture\n")
 
   execute_process(
     COMMAND make -n -f "${TINKERHP_SOURCE_DIR}/source/Makefile.pgi"
@@ -973,27 +1373,49 @@ function(tinkerhp_assert_compatibility_make_submodule_classification)
 
   execute_process(
     COMMAND make -n -f "${TINKERHP_SOURCE_DIR}/source/Makefile.pgi"
-      "src_dir=${TINKERHP_SOURCE_DIR}/source"
-      "RunF77=fortran-openacc"
-      "RunCUFC=fortran-cuda"
+      "src_dir=${fixture_dir}"
+      "RunF77=fortran"
       "GPUFLAGS=OPENACC_FLAGS"
-      "CUFFLAGS=CUDA_FORTRAN_FLAGS"
-      mdstate.gpu.o
+      "FFLAGS=HOST_FLAGS"
+      "INC_FFTDECOMP=${fixture_dir}"
+      ordinary.gpu.o
     WORKING_DIRECTORY "${fixture_dir}"
     RESULT_VARIABLE result
-    OUTPUT_VARIABLE legacy_output
+    OUTPUT_VARIABLE ordinary_output
     ERROR_VARIABLE error
   )
   if(NOT result EQUAL 0)
-    message(FATAL_ERROR "Compatibility Make legacy filename fixture failed: ${error}")
+    message(FATAL_ERROR "Compatibility Make ordinary GPU filename fixture failed: ${error}")
   endif()
   foreach(expected
-      "OPENACC_FLAGS -I${TINKERHP_SOURCE_DIR}/source -c ${TINKERHP_SOURCE_DIR}/source/mdstate.gpu.f90")
-    string(FIND "${legacy_output}" "${expected}" expected_index)
+      "fortran OPENACC_FLAGS -I${fixture_dir} -c ${fixture_dir}/ordinary.gpu.f90 -o ordinary.gpu.o")
+    string(FIND "${ordinary_output}" "${expected}" expected_index)
     if(expected_index EQUAL -1)
-      message(FATAL_ERROR "Compatibility Make no longer supports the legacy filename rule: ${expected}")
+      message(FATAL_ERROR "Compatibility Make does not select the generic ordinary GPU rule: ${expected}")
     endif()
   endforeach()
+
+  execute_process(
+    COMMAND make -n -f "${TINKERHP_SOURCE_DIR}/source/Makefile.pgi"
+      "src_dir=${fixture_dir}"
+      "RunF77=fortran"
+      "GPUFLAGS=OPENACC_FLAGS"
+      "FFLAGS=HOST_FLAGS"
+      "INC_FFTDECOMP=${fixture_dir}"
+      legacygpu.o
+    WORKING_DIRECTORY "${fixture_dir}"
+    RESULT_VARIABLE result
+    OUTPUT_VARIABLE retired_output
+    ERROR_VARIABLE error
+  )
+  if(NOT result EQUAL 0)
+    message(FATAL_ERROR "Compatibility Make retired filename fixture failed: ${error}")
+  endif()
+  string(FIND "${retired_output}" "OPENACC_FLAGS" retired_gpu_rule_index)
+  string(FIND "${retired_output}" "HOST_FLAGS" fallback_rule_index)
+  if(NOT retired_gpu_rule_index EQUAL -1 OR fallback_rule_index EQUAL -1)
+    message(FATAL_ERROR "Compatibility Make still selects the legacy undotted GPU rule: ${retired_output}")
+  endif()
 endfunction()
 
 function(tinkerhp_assert_compatibility_make_submodule_dependencies)
@@ -1753,6 +2175,13 @@ tinkerhp_assert_pimd_watersmall_scientific_registration(
 tinkerhp_assert_pimd_watersmall_scientific_registration(
   pimd-watersmall-parallel-fpa MIXED ON ON 2
   300)
+tinkerhp_assert_pimd_double_layout_registration(pimd-layout-option-disabled DOUBLE OFF FALSE)
+tinkerhp_assert_pimd_double_layout_registration(pimd-layout-double-enabled DOUBLE ON TRUE)
+tinkerhp_assert_pimd_double_layout_registration(pimd-layout-mixed-excluded MIXED ON FALSE)
+tinkerhp_assert_pimd_fpa_layout_registration(pimd-fpa-layout-option-disabled ON ON OFF FALSE)
+tinkerhp_assert_pimd_fpa_layout_registration(pimd-fpa-layout-enabled ON ON ON TRUE)
+tinkerhp_assert_pimd_fpa_layout_registration(pimd-fpa-layout-no-fpa OFF ON ON FALSE)
+tinkerhp_assert_pimd_fpa_layout_registration(pimd-fpa-layout-no-colvars ON OFF ON FALSE)
 tinkerhp_assert_pimd_piqtb_functional_registration()
 tinkerhp_assert_analyze_beads_watersmall_functional_registration(
   analyze-beads-watersmall-double DOUBLE OFF 1)
@@ -1764,10 +2193,42 @@ tinkerhp_assert_iceii_minimize_scientific_registration(
   iceii-minimize-double DOUBLE tinkerhp-scientific-minimize-iceii-double
   iceII-large-amoeba_b.double.min.ref)
 tinkerhp_assert_iceii_minimize_scientific_registration(iceii-minimize-mixed MIXED "" "")
+tinkerhp_assert_dhfr_analyze_registration(
+  dhfr-analyze-double-parallel DOUBLE OFF ON
+  tinkerhp-scientific-analyze-dhfr-double-sequential
+  tinkerhp-parallel-scientific-analyze-dhfr-double)
+tinkerhp_assert_dhfr_analyze_registration(
+  dhfr-analyze-double-opt-out DOUBLE OFF OFF
+  tinkerhp-scientific-analyze-dhfr-double-sequential "")
+tinkerhp_assert_dhfr_analyze_registration(
+  dhfr-analyze-fpa-parallel MIXED ON ON
+  tinkerhp-scientific-analyze-dhfr-fpa-sequential
+  tinkerhp-parallel-scientific-analyze-dhfr-fpa)
+tinkerhp_assert_dhfr_analyze_registration(
+  dhfr-analyze-fpa-opt-out MIXED ON OFF
+  tinkerhp-scientific-analyze-dhfr-fpa-sequential "")
+tinkerhp_assert_dhfr_analyze_registration(
+  dhfr-analyze-mixed-no-fpa MIXED OFF ON "" "")
+tinkerhp_assert_watersmall_minimize_registration(
+  watersmall-minimize-double-default DOUBLE OFF OFF
+  tinkerhp-scientific-minimize-watersmall-double "")
+tinkerhp_assert_watersmall_minimize_registration(
+  watersmall-minimize-double-parallel DOUBLE OFF ON
+  tinkerhp-scientific-minimize-watersmall-double
+  tinkerhp-parallel-scientific-minimize-watersmall-double)
+tinkerhp_assert_watersmall_minimize_registration(
+  watersmall-minimize-fpa-default MIXED ON OFF
+  tinkerhp-scientific-minimize-watersmall-fpa "")
+tinkerhp_assert_watersmall_minimize_registration(
+  watersmall-minimize-fpa-parallel MIXED ON ON
+  tinkerhp-scientific-minimize-watersmall-fpa
+  tinkerhp-parallel-scientific-minimize-watersmall-fpa)
+tinkerhp_assert_watersmall_minimize_registration(
+  watersmall-minimize-mixed-no-fpa MIXED OFF ON "" "")
 tinkerhp_assert_fortran_makefile_preprocess_definitions()
 tinkerhp_assert_nvhpc_makefile_fortran_launcher()
 tinkerhp_assert_makefile_conditional_module_dependencies()
-tinkerhp_assert_compatibility_make_submodule_classification()
+tinkerhp_assert_compatibility_make_source_classification()
 tinkerhp_assert_compatibility_make_submodule_dependencies()
 tinkerhp_validate_nn_configuration(nn-managed-local managed-local 3.11.8 0 12.5 TRUE TRUE)
 tinkerhp_validate_nn_configuration(nn-explicit explicit 3.10.14 0 12.5 TRUE TRUE)
@@ -1786,19 +2247,19 @@ tinkerhp_assert_invalid_link_mode_rejected()
 # CMake must receive definitions for the preprocessing scan, but compilation of
 # the generated *-pp.f90 file must not invoke CPP again.
 tinkerhp_assert_fortran_ninja_preprocess_definitions(mixed-fpa
-  "source/newinduce_pmegpu.f90" -DMIXED -DUSE_DETERMINISTIC_REDUCTION -DORTHOGONAL_BOX_SHAPE_ONLY)
+  "source/newinduce_pme.gpu.f90" -DMIXED -DUSE_DETERMINISTIC_REDUCTION -DORTHOGONAL_BOX_SHAPE_ONLY)
 tinkerhp_assert_fortran_ninja_preprocess_definitions(mixed-fpa
   "src/fft_cufft.f90" -DOVERWRITE)
 tinkerhp_assert_fortran_ninja_preprocess_definitions(mixed-fpa-colvars
-  "source/newinduce_pmegpu.f90" -DMIXED -DUSE_DETERMINISTIC_REDUCTION -DCOLVARS -DCOLVARS_MPI -DCOLVARS_TCL)
+  "source/newinduce_pme.gpu.f90" -DMIXED -DUSE_DETERMINISTIC_REDUCTION -DCOLVARS -DCOLVARS_MPI -DCOLVARS_TCL)
 tinkerhp_assert_fortran_ninja_preprocess_definitions_absent(mixed-fpa
   "src/fft_cufft.f90" -D_OPENACC)
 tinkerhp_assert_fortran_ninja_preprocess_definitions_absent(mixed-fpa-shared-colvars
-  "source/empole1gpu.f90" -D_OPENACC)
+  "source/empole1.gpu.f90" -D_OPENACC)
 tinkerhp_assert_fortran_ninja_preprocess_definitions_absent(mixed-fpa-shared-colvars
   "source/echarge.cu.f90" -D_CUDA)
 tinkerhp_assert_fortran_ninja_preprocess_definitions(mixed-fpa-nvtx-no-mutation
-  "source/newinduce_pmegpu.f90" -DMIXED -DUSE_DETERMINISTIC_REDUCTION -DUSE_NVTX -DTINKER_NO_MUTATE)
+  "source/newinduce_pme.gpu.f90" -DMIXED -DUSE_DETERMINISTIC_REDUCTION -DUSE_NVTX -DTINKER_NO_MUTATE)
 
 file(READ "${TINKERHP_VALIDATION_DIR}/mixed-fpa-nvtx-no-mutation/build.ninja" nvtx_ninja)
 string(FIND "${nvtx_ninja}" "-lnvToolsExt" nvtx_link_index)

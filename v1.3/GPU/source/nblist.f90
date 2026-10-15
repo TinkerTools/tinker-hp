@@ -900,7 +900,7 @@ subroutine reinitnl(istep)
       do i = 1, idomlen
          iloc  = ibufbeg+i-1
          iglob = glob(iloc)
-         call distprocpart1(iglob,rank,d,.true.,x,y,z)
+         call distprocpart1(iglob,rank,d,.true.,n,x,y,z)
          if (d.le.(distcut)) then
 !$acc atomic capture
             nlocnl = nlocnl + 1

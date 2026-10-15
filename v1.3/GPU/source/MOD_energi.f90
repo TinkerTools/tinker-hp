@@ -115,19 +115,19 @@ contains
    end subroutine
 
    module subroutine allreduceen(epot)
-      use domdec, only: nproc, ndir
       use inter
-      use mpi
+      use domdec  , only: nproc
       use parallel, only: reduce_sum, reduction_all
-      use potent, only: use_pmecore
       implicit none
       real(r_p), intent(inout) :: epot
       real(r_p) epot_buffer(1)
       real(r_p) buffer(22)
 
-      if (nproc.eq.1.or.use_pmecore.and.ndir.eq.1) return
-
-!$acc data create(buffer,epot_buffer)
+      if (nproc.eq.1) return
+!$acc wait
+!$acc data create(buffer,epot_buffer) &
+!$acc      present(eba,ea,eb,ec,em,ep,ev,eub,eaa,eopb,eopd, &
+!$acc              eid,eit,et,ept,ebt,eat,ett,esum,eg,ex,einter,epot)
 !$acc serial
       buffer = [eba,ea,eb,ec,em,ep,ev,eub,eaa,eopb,eopd,eid,eit,et,ept,ebt,eat,ett,esum,eg,ex,einter]
       epot_buffer(1) = epot

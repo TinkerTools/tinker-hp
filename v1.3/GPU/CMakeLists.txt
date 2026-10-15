@@ -65,7 +65,7 @@ option(TINKERHP_ENABLE_FPA "Enable Fixed Precision Arithmetic in mixed precision
 option(TINKERHP_ENABLE_NN "Enable neural-network plugin integration." OFF)
 option(TINKERHP_ENABLE_NVTX "Enable NVTX markers." OFF)
 option(TINKERHP_ENABLE_PARALLEL_SCIENTIFIC_TESTS
-  "Register opt-in MPI scientific contracts for dynamic/dhfr2dyn." OFF)
+  "Register opt-in MPI scientific contracts." OFF)
 option(TINKERHP_ENABLE_PERFORMANCE_TESTS
   "Register opt-in performance observations for maintained scientific workloads." OFF)
 option(TINKERHP_ENABLE_OPENMP "Enable OpenMP GPU offload mode." OFF)
@@ -1002,6 +1002,16 @@ if(BUILD_TESTING)
     ${TINKERHP_OPENACC_PREPROCESS_DEFINITIONS}
   )
   target_link_libraries(tinkerhp-parallel-contract PRIVATE tinkerhp_core)
+  add_executable(tinkerhp-parallel-topology-contract tests/test_parallel_topology.f90)
+  set_source_files_properties(tests/test_parallel_topology.f90 PROPERTIES
+    Fortran_PREPROCESS ON)
+  tinkerhp_configure_fortran_target(tinkerhp-parallel-topology-contract
+    "${TINKERHP_MAIN_MODULE_DIR}" "")
+  tinkerhp_add_preprocessor_definitions(tinkerhp-parallel-topology-contract
+    ${TINKERHP_MAIN_PREPROCESS_DEFINITIONS}
+    ${TINKERHP_OPENACC_PREPROCESS_DEFINITIONS}
+  )
+  target_link_libraries(tinkerhp-parallel-topology-contract PRIVATE tinkerhp_core)
   add_test(
     NAME tinkerhp-parallel-contract
     COMMAND mpirun -n 1 "$<TARGET_FILE:tinkerhp-parallel-contract>"
@@ -1020,10 +1030,10 @@ if(BUILD_TESTING)
   )
   add_test(
     NAME tinkerhp-parallel-root-exchange-contract
-    COMMAND mpirun -n 4 "$<TARGET_FILE:tinkerhp-parallel-contract>"
+    COMMAND mpirun -n 4 "$<TARGET_FILE:tinkerhp-parallel-topology-contract>"
   )
   set_tests_properties(tinkerhp-parallel-root-exchange-contract PROPERTIES
-    ENVIRONMENT "TINKERHP_SOURCE_DIR=${CMAKE_SOURCE_DIR};TINKER_PARAMS=.;TINKER_ASYNC_COVER=1;OMPI_MCA_oob_tcp_if_include=lo;OMPI_MCA_btl=self,vader"
+    ENVIRONMENT "TINKERHP_SOURCE_DIR=${CMAKE_SOURCE_DIR};TINKER_PARAMS=.;OMPI_MCA_oob_tcp_if_include=lo;OMPI_MCA_btl=self,vader"
     PROCESSORS 4
     RUN_SERIAL TRUE
   )
@@ -1110,7 +1120,40 @@ if(BUILD_TESTING)
       "-Dcontract=$<TARGET_FILE:tinkerhp-vcouple-contract>"
       -P "${CMAKE_SOURCE_DIR}/tests/run_vcouple_contract.cmake"
   )
+  function(tinkerhp_add_dhfr_analyze_baseline suffix precision)
+    set(_tinkerhp_analyze_features)
+    if(precision STREQUAL "MIXED")
+      list(APPEND _tinkerhp_analyze_features --feature FPA)
+    endif()
+    add_test(
+      NAME "tinkerhp-scientific-analyze-dhfr-${suffix}-sequential"
+      COMMAND "${Python3_EXECUTABLE}" "${CMAKE_SOURCE_DIR}/tests/runtime_refactor_oracle.py" run
+        --profile analyze-baseline
+        --executable "$<TARGET_FILE:analyze>"
+        --build-report "${CMAKE_BINARY_DIR}/tinkerhp-build-report.txt"
+        --precision "${precision}"
+        ${_tinkerhp_analyze_features}
+        --backend GPU
+        --mpi-launcher mpirun
+        --mpi-ranks 1
+        --mpi-layout 1x1x1
+        --fixture-dir "${CMAKE_SOURCE_DIR}/examples"
+        --key dhfr2.key
+        --primary-xyz dhfr2.xyz
+        --replace-output-dir
+        --output-dir "${CMAKE_BINARY_DIR}/scientific-test-contract/dhfr-analyze-${suffix}-sequential"
+        -- dhfr2 -k dhfr2 E
+    )
+    set_tests_properties("tinkerhp-scientific-analyze-dhfr-${suffix}-sequential" PROPERTIES
+      ENVIRONMENT "OMPI_MCA_oob_tcp_if_include=lo;OMPI_MCA_btl=self,vader"
+      PROCESSORS 1
+      RUN_SERIAL TRUE
+      TIMEOUT 180
+      FIXTURES_SETUP "dhfr_analyze_${suffix}_sequential"
+    )
+  endfunction()
   if(TINKERHP_PRECISION STREQUAL "DOUBLE")
+    tinkerhp_add_dhfr_analyze_baseline(double DOUBLE)
     add_test(
       NAME tinkerhp-scientific-dynamic-bench6-double
       COMMAND "${Python3_EXECUTABLE}" "${CMAKE_SOURCE_DIR}/tests/runtime_refactor_oracle.py" run
@@ -1219,6 +1262,31 @@ if(BUILD_TESTING)
       PROCESSORS 1
       RUN_SERIAL TRUE
       TIMEOUT 180
+    )
+    add_test(
+      NAME tinkerhp-scientific-minimize-watersmall-double
+      COMMAND "${Python3_EXECUTABLE}" "${CMAKE_SOURCE_DIR}/tests/runtime_refactor_oracle.py" run
+        --profile minimize-convergence
+        --executable "$<TARGET_FILE:minimize>"
+        --build-report "${CMAKE_BINARY_DIR}/tinkerhp-build-report.txt"
+        --precision DOUBLE
+        --backend GPU
+        --mpi-launcher mpirun
+        --mpi-ranks 1
+        --mpi-layout 1x1x1
+        --fixture-dir "${CMAKE_SOURCE_DIR}/examples"
+        --key watersmall_amoebap.key
+        --primary-xyz watersmall.xyz
+        --replace-output-dir
+        --output-dir "${CMAKE_BINARY_DIR}/scientific-test-contract/watersmall-minimize-double-sequential"
+        -- watersmall 1.0 -k watersmall_amoebap.key
+    )
+    set_tests_properties(tinkerhp-scientific-minimize-watersmall-double PROPERTIES
+      ENVIRONMENT "OMPI_MCA_oob_tcp_if_include=lo;OMPI_MCA_btl=self,vader"
+      PROCESSORS 1
+      RUN_SERIAL TRUE
+      TIMEOUT 300
+      FIXTURES_SETUP watersmall_minimize_double_sequential
     )
     set(_tinkerhp_bar_output_root
       "${CMAKE_BINARY_DIR}/bar-scientific-test-contract")
@@ -1468,6 +1536,33 @@ if(BUILD_TESTING)
     )
   endif()
   if(TINKERHP_PRECISION STREQUAL "MIXED" AND TINKERHP_ENABLE_FPA)
+    tinkerhp_add_dhfr_analyze_baseline(fpa MIXED)
+    add_test(
+      NAME tinkerhp-scientific-minimize-watersmall-fpa
+      COMMAND "${Python3_EXECUTABLE}" "${CMAKE_SOURCE_DIR}/tests/runtime_refactor_oracle.py" run
+        --profile minimize-convergence
+        --executable "$<TARGET_FILE:minimize>"
+        --build-report "${CMAKE_BINARY_DIR}/tinkerhp-build-report.txt"
+        --precision MIXED
+        --backend GPU
+        --mpi-launcher mpirun
+        --mpi-ranks 1
+        --mpi-layout 1x1x1
+        --feature FPA
+        --fixture-dir "${CMAKE_SOURCE_DIR}/examples"
+        --key watersmall_amoebap.key
+        --primary-xyz watersmall.xyz
+        --replace-output-dir
+        --output-dir "${CMAKE_BINARY_DIR}/scientific-test-contract/watersmall-minimize-fpa-sequential"
+        -- watersmall 1.0 -k watersmall_amoebap.key
+    )
+    set_tests_properties(tinkerhp-scientific-minimize-watersmall-fpa PROPERTIES
+      ENVIRONMENT "OMPI_MCA_oob_tcp_if_include=lo;OMPI_MCA_btl=self,vader"
+      PROCESSORS 1
+      RUN_SERIAL TRUE
+      TIMEOUT 300
+      FIXTURES_SETUP watersmall_minimize_fpa_sequential
+    )
     add_test(
       NAME tinkerhp-scientific-dynamic-bench6-fpa
       COMMAND "${Python3_EXECUTABLE}" "${CMAKE_SOURCE_DIR}/tests/runtime_refactor_oracle.py" run
@@ -1529,6 +1624,35 @@ if(BUILD_TESTING)
       PROCESSORS "${ranks}"
       RUN_SERIAL TRUE
       TIMEOUT 120
+    )
+  endfunction()
+  function(tinkerhp_add_pimd_layout_test name precision reference output_root)
+    set(feature_arguments ${ARGN})
+    add_test(
+      NAME "${name}"
+      COMMAND "${Python3_EXECUTABLE}" "${CMAKE_SOURCE_DIR}/tests/runtime_refactor_oracle.py" run
+        --profile pimd-layout
+        --executable "$<TARGET_FILE:pimd>"
+        --build-report "${CMAKE_BINARY_DIR}/tinkerhp-build-report.txt"
+        --precision "${precision}"
+        --backend GPU
+        --mpi-launcher mpirun
+        --mpi-ranks 4
+        --mpi-layout 2-bead-groups/2-spatial-ranks
+        --fixture-dir "${CMAKE_SOURCE_DIR}/examples/NQE/liquid_water/RPMD"
+        --key watersmall_b2.key
+        --primary-xyz watersmall.xyz
+        --reference "${CMAKE_SOURCE_DIR}/examples/NQE/liquid_water/RPMD/${reference}"
+        ${feature_arguments}
+        --energy-horizon 50
+        --output-root "${output_root}"
+        -- watersmall 50 2 20 2 300 -k watersmall_b2
+    )
+    set_tests_properties("${name}" PROPERTIES
+      ENVIRONMENT "OMPI_MCA_oob_tcp_if_include=lo;OMPI_MCA_btl=self,vader"
+      PROCESSORS 4
+      RUN_SERIAL TRUE
+      TIMEOUT 180
     )
   endfunction()
   function(tinkerhp_add_analyze_beads_watersmall_functional_test name precision output_root)
@@ -1736,7 +1860,76 @@ if(BUILD_TESTING)
   if(TINKERHP_ENABLE_PARALLEL_SCIENTIFIC_TESTS)
     set(_tinkerhp_parallel_scientific_output_root
       "${CMAKE_BINARY_DIR}/parallel-scientific-test-contract")
+    function(tinkerhp_add_parallel_dhfr_analyze_test suffix precision sequential_fixture)
+      set(_tinkerhp_analyze_features)
+      if(precision STREQUAL "MIXED")
+        list(APPEND _tinkerhp_analyze_features --feature FPA)
+      endif()
+      add_test(
+        NAME "tinkerhp-parallel-scientific-analyze-dhfr-${suffix}"
+        COMMAND "${Python3_EXECUTABLE}" "${CMAKE_SOURCE_DIR}/tests/runtime_refactor_oracle.py" run
+          --profile analyze
+          --executable "$<TARGET_FILE:analyze>"
+          --build-report "${CMAKE_BINARY_DIR}/tinkerhp-build-report.txt"
+          --precision "${precision}"
+          ${_tinkerhp_analyze_features}
+          --backend GPU
+          --mpi-launcher mpirun
+          --mpi-ranks 2
+          --mpi-layout 1x1x2
+          --sequential-report "${CMAKE_BINARY_DIR}/scientific-test-contract/dhfr-analyze-${suffix}-sequential/report.json"
+          --fixture-dir "${CMAKE_SOURCE_DIR}/examples"
+          --key dhfr2.key
+          --primary-xyz dhfr2.xyz
+          --expected-decomposition auto
+          --output-root "${_tinkerhp_parallel_scientific_output_root}"
+          -- dhfr2 -k dhfr2 E
+      )
+      set_tests_properties("tinkerhp-parallel-scientific-analyze-dhfr-${suffix}" PROPERTIES
+        ENVIRONMENT "OMPI_MCA_oob_tcp_if_include=lo;OMPI_MCA_btl=self,vader"
+        PROCESSORS 2
+        RUN_SERIAL TRUE
+        TIMEOUT 180
+        FIXTURES_REQUIRED "${sequential_fixture}"
+      )
+    endfunction()
+    function(tinkerhp_add_parallel_minimize_watersmall_test name precision sequential_dir fixture_name)
+      set(_tinkerhp_minimize_features)
+      if(precision STREQUAL "MIXED")
+        list(APPEND _tinkerhp_minimize_features --feature FPA)
+      endif()
+      add_test(
+        NAME "${name}"
+        COMMAND "${Python3_EXECUTABLE}" "${CMAKE_SOURCE_DIR}/tests/runtime_refactor_oracle.py" run
+          --profile minimize-convergence
+          --executable "$<TARGET_FILE:minimize>"
+          --build-report "${CMAKE_BINARY_DIR}/tinkerhp-build-report.txt"
+          --precision "${precision}"
+          ${_tinkerhp_minimize_features}
+          --backend GPU
+          --mpi-launcher mpirun
+          --mpi-ranks 2
+          --mpi-layout 1x1x2
+          --sequential-report "${sequential_dir}/report.json"
+          --fixture-dir "${CMAKE_SOURCE_DIR}/examples"
+          --key watersmall_amoebap.key
+          --primary-xyz watersmall.xyz
+          --output-root "${_tinkerhp_parallel_scientific_output_root}"
+          -- watersmall 1.0 -k watersmall_amoebap.key
+      )
+      set_tests_properties("${name}" PROPERTIES
+        ENVIRONMENT "OMPI_MCA_oob_tcp_if_include=lo;OMPI_MCA_btl=self,vader"
+        PROCESSORS 2
+        RUN_SERIAL TRUE
+        TIMEOUT 300
+        FIXTURES_REQUIRED "${fixture_name}"
+      )
+    endfunction()
     function(tinkerhp_add_parallel_scientific_test name ranks precision reference key decomposition)
+      set(_tinkerhp_parallel_scientific_features)
+      if(precision STREQUAL "MIXED" AND TINKERHP_ENABLE_FPA)
+        list(APPEND _tinkerhp_parallel_scientific_features --feature FPA)
+      endif()
       add_test(
         NAME "${name}"
         COMMAND "${Python3_EXECUTABLE}" "${CMAKE_SOURCE_DIR}/tests/runtime_refactor_oracle.py" run
@@ -1744,6 +1937,7 @@ if(BUILD_TESTING)
           --executable "$<TARGET_FILE:dynamic>"
           --build-report "${CMAKE_BINARY_DIR}/tinkerhp-build-report.txt"
           --precision "${precision}"
+          ${_tinkerhp_parallel_scientific_features}
           --backend GPU
           --mpi-launcher mpirun
           --mpi-ranks "${ranks}"
@@ -1756,7 +1950,32 @@ if(BUILD_TESTING)
       )
       set_tests_properties("${name}" PROPERTIES RUN_SERIAL TRUE TIMEOUT 180)
     endfunction()
+    if(TINKERHP_PRECISION STREQUAL "DOUBLE")
+      tinkerhp_add_parallel_dhfr_analyze_test(
+        double DOUBLE dhfr_analyze_double_sequential)
+      tinkerhp_add_parallel_minimize_watersmall_test(
+        tinkerhp-parallel-scientific-minimize-watersmall-double DOUBLE
+        "${CMAKE_BINARY_DIR}/scientific-test-contract/watersmall-minimize-double-sequential"
+        watersmall_minimize_double_sequential)
+      tinkerhp_add_pimd_layout_test(
+        tinkerhp-parallel-scientific-pimd-double-layout-energy DOUBLE
+        watersmall.double.2b.pimd.ref "${_tinkerhp_parallel_scientific_output_root}")
+    endif()
     if(TINKERHP_PRECISION STREQUAL "MIXED")
+      if(TINKERHP_ENABLE_FPA)
+        tinkerhp_add_parallel_dhfr_analyze_test(
+          fpa MIXED dhfr_analyze_fpa_sequential)
+        tinkerhp_add_parallel_minimize_watersmall_test(
+          tinkerhp-parallel-scientific-minimize-watersmall-fpa MIXED
+          "${CMAKE_BINARY_DIR}/scientific-test-contract/watersmall-minimize-fpa-sequential"
+          watersmall_minimize_fpa_sequential)
+      endif()
+      if(TINKERHP_ENABLE_FPA AND TINKERHP_ENABLE_COLVARS)
+        tinkerhp_add_pimd_layout_test(
+          tinkerhp-parallel-scientific-pimd-fpa-colvars-layout-energy MIXED
+          watersmall.fpa.2b.pimd.ref "${_tinkerhp_parallel_scientific_output_root}"
+          --feature FPA --feature COLVARS)
+      endif()
       tinkerhp_add_pimd_restart_test(
         tinkerhp-parallel-functional-pimd-restart-complete-4 4 MIXED complete
         "${_tinkerhp_parallel_scientific_output_root}")

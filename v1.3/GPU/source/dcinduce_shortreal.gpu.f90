@@ -19,6 +19,7 @@ subroutine dcinduce_shortrealgpu
    use ewald
    use iounit
    use math
+   use mdevice, only: direct_work
    use mpole
    use parallel, only: polar_comm_t, polar_post_comm, polar_finish, commfield, commfieldgpu, commfieldshort
    use pme
@@ -116,8 +117,8 @@ subroutine dcinduce_shortrealgpu
       end do
    end if
 
-   call polar_post_comm(comm_ticket,nrhs,mu,.true.)
-   call polar_finish(comm_ticket,nrhs,mu)
+   call polar_post_comm(comm_ticket,nrhs,mu,.true.,channel=direct_work)
+   call polar_finish(comm_ticket,nrhs,mu,channel=direct_work)
 !
 !     now, call the proper solver.
 !
@@ -166,6 +167,7 @@ subroutine inducedc_shortrealgpu(matvec,nrhs,dodiis,ef,mu)
    use ewald
    use iounit
    use math
+   use mdevice, only: direct_work
    use mpole
    use parallel, only: polar_comm_t, polar_post_comm, polar_finish, commfield, commfieldgpu, commfieldshort
    use polar
@@ -244,7 +246,7 @@ subroutine inducedc_shortrealgpu(matvec,nrhs,dodiis,ef,mu)
       call matvec(nrhs,.false.,mu,h)
       time2 = mpi_wtime()
       if (it.eq.1) timerealdip = timerealdip + time2-time1
-      call commfieldshort(nrhs,h)
+      call commfieldshort(nrhs,h,direct_work)
 
 !
 !     jacobi step:
@@ -337,8 +339,8 @@ subroutine inducedc_shortrealgpu(matvec,nrhs,dodiis,ef,mu)
       end if
       time2 = mpi_wtime()
 !
-      call polar_post_comm(comm_ticket,nrhs,mu,.true.,munew)
-      call polar_finish(comm_ticket,nrhs,mu)
+      call polar_post_comm(comm_ticket,nrhs,mu,.true.,munew,channel=direct_work)
+      call polar_finish(comm_ticket,nrhs,mu,channel=direct_work)
       mu(:,:,1:npoleloc) = munew(:,:,1:npoleloc)
 !
 !     compute the norm of the increment.

@@ -158,7 +158,7 @@ contains
 !
 !     print the value used for the random number seed
 !
-      if ((verbose).and.(rank.eq.0)) then
+      if ((verbose).and.(ranktot.eq.0)) then
          write (iout,20)  seed
 20       format (/,' Random Number Generator Initialized',&
             &' with SEED :',3x,i12)

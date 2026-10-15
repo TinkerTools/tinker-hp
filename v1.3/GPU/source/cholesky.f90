@@ -24,7 +24,7 @@
 !
 #include "tinker_precision.h"
 subroutine cholesky (nvar,a,b)
-   use mdevice, only: default_work
+   use mdevice, only: reciprocal_work
    implicit none
    integer i,j,k,nvar
    integer ii,ij,ik,ki,kk
@@ -37,7 +37,7 @@ subroutine cholesky (nvar,a,b)
 !     Cholesky factorization to reduce "A" to (L)(D)(L transpose)
 !     "L" has a unit diagonal; store 1.0/D on the diagonal of "A"
 !
-!$acc serial present(a,b) async(default_work%queue)
+!$acc serial present(a,b) async(reciprocal_work%queue)
    ii = 1
    do i = 1, nvar
       im = i - 1
